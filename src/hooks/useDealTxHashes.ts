@@ -28,13 +28,13 @@ export interface DealTxMap {
 }
 
 const EVENT_DEFS = [
-  { name: "created", label: "Deal Created", abi: parseAbiItem("event DealCreated(uint256 indexed dealId, uint256 indexed adId, address indexed buyer, uint256 inrAmount, uint256 deadline)") },
-  { name: "buyerConfirmed", label: "Buyer Confirmed Payment", abi: parseAbiItem("event BuyerConfirmedPayment(uint256 indexed dealId)") },
-  { name: "sellerConfirmed", label: "Seller Confirmed Receipt", abi: parseAbiItem("event SellerConfirmedReceipt(uint256 indexed dealId)") },
-  { name: "completed", label: "Deal Completed", abi: parseAbiItem("event DealCompleted(uint256 indexed dealId)") },
-  { name: "cancelled", label: "Deal Cancelled", abi: parseAbiItem("event DealCancelled(uint256 indexed dealId, string reason)") },
-  { name: "disputed", label: "Dispute Raised", abi: parseAbiItem("event DealDisputed(uint256 indexed dealId, address indexed by)") },
-  { name: "resolved", label: "Dispute Resolved", abi: parseAbiItem("event DisputeResolved(uint256 indexed dealId, address indexed recipient)") },
+  { name: "created", label: "Deal Created", abi: parseAbiItem("event DealCreated(uint256 indexed dealId, uint256 indexed adId, address indexed buyer, uint256 amount)") },
+  { name: "buyerConfirmed", label: "Buyer Confirmed Payment", abi: parseAbiItem("event DealPaid(uint256 indexed dealId)") },
+  { name: "completed", label: "Deal Completed", abi: parseAbiItem("event DealReleased(uint256 indexed dealId, uint256 buyerPayout, uint256 sellerFee, uint256 buyerFee)") },
+  { name: "cancelled", label: "Deal Refunded", abi: parseAbiItem("event DealRefunded(uint256 indexed dealId, uint256 amount)") },
+  { name: "disputed", label: "Dispute Raised", abi: parseAbiItem("event DisputeRaised(uint256 indexed dealId, address indexed by)") },
+  { name: "resolved", label: "Admin Released", abi: parseAbiItem("event AdminReleased(uint256 indexed dealId)") },
+  { name: "resolved", label: "Admin Refunded", abi: parseAbiItem("event AdminRefunded(uint256 indexed dealId)") },
 ] as const;
 
 export function useDealTxHashes(dealIds: number[]): DealTxMap {
