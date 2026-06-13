@@ -2,6 +2,7 @@ import { useLocation, Link } from "react-router-dom";
 import { ArrowLeftRight, PlusCircle, ShoppingBag, Handshake } from "lucide-react";
 import { useAccount } from "wagmi";
 import { useGlobalUnreadCount } from "@/hooks/useGlobalUnreadCount";
+import { isNativeApp } from "@/lib/platform";
 
 const NAV_ITEMS = [
   { label: "P2P", href: "/", icon: ArrowLeftRight },
@@ -14,6 +15,9 @@ const BottomNav = () => {
   const location = useLocation();
   const { address } = useAccount();
   const unreadCount = useGlobalUnreadCount(address);
+
+  // Hide bottom nav inside the native app — navigation lives in the side drawer.
+  if (isNativeApp()) return null;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/50 bg-background/95 backdrop-blur-2xl md:hidden">
