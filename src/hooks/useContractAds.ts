@@ -47,11 +47,11 @@ export function useContractAds() {
   const ads: LiveAd[] = [];
 
   if (adsData) {
-    for (const res of adsData) {
+    for (const [index, res] of adsData.entries()) {
       if (res.status !== "success" || !res.result) continue;
       const ad = res.result as any;
 
-      const id = ad.id !== undefined ? ad.id : ad[0];
+      const id = ad.id !== undefined ? ad.id : index + 1;
       const seller = ad.seller || ad[0];
       const tokenAddr = ad.token || ad[1];
       const tokenAmount = ad.remainingAmount !== undefined ? ad.remainingAmount : ad[3];
