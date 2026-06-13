@@ -2,12 +2,14 @@
 pragma solidity ^0.8.20;
 
 /**
- * SellEscrow v4.1 — Crypto P2P (BNB Smart Chain)
+ * SellEscrow v4.2 — Crypto P2P (BNB Smart Chain)
  *
- * Hardened version. Changes vs v4:
+ * Hardening vs v4:
  *  + ReentrancyGuard on every state-changing external fn
- *  + sellerReclaimExpired(dealId)  — seller self-refunds unpaid LOCKED slice after PAY_WINDOW
- *  + ERC20 balanceOf delta (handles fee-on-transfer / rebasing tokens correctly)
+ *  + sellerReclaimExpired(dealId) — seller self-refunds unpaid LOCKED slice after PAY_WINDOW
+ *  + ERC20 balanceOf delta on deposit (safe vs fee-on-transfer / rebasing tokens)
+ *  + SafeERC20-style low-level transfer/transferFrom (handles USDT-style non-returning tokens)
+ *  + Centralised _checkAndAutoCloseAd() called by BOTH release and refund (fixes dust trap)
  *  + 2-step ownership transfer
  *  + Max 1 open deal per (buyer, ad) — anti-grief
  *  + Events on owner / feeCollector changes
