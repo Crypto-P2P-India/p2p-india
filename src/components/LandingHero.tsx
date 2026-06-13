@@ -25,13 +25,9 @@ const LandingHero = () => (
     {/* Hero — compact, Binance-clean */}
     <section className="relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-primary/[0.05] via-transparent to-transparent pointer-events-none" />
-      <div className="mx-auto max-w-7xl px-5 pt-8 pb-10 sm:px-6 sm:pt-14 sm:pb-16 relative">
+      <div className="mx-auto max-w-7xl px-5 pt-12 pb-10 sm:px-6 sm:pt-20 sm:pb-16 relative">
         <ScrollReveal duration={600}>
           <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card/60 backdrop-blur-sm px-3 py-1 text-[11px] font-medium text-muted-foreground mb-5">
-              <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-              Live on BNB Smart Chain Mainnet
-            </div>
             <h1
               className="text-3xl font-extrabold text-foreground sm:text-5xl tracking-tight"
               style={{ lineHeight: "1.05", textWrap: "balance" }}
