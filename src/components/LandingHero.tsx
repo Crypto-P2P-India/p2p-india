@@ -65,7 +65,7 @@ const LandingHero = () => (
               >
                 Browse Ads
               </button>
-              <ConnectButton />
+              
               <a
                 href="https://bscscan.com/address/0xd79ef02e1F64EF4368b942020129bd0Bc7da0d95"
                 target="_blank"
