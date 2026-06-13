@@ -2,19 +2,18 @@
 pragma solidity ^0.8.20;
 
 /**
- * SellEscrow v4.2 — Crypto P2P (BNB Smart Chain)
+ * SellEscrow v5 — Crypto P2P (BNB Smart Chain)
  *
- * Hardening vs v4:
- *  + ReentrancyGuard on every state-changing external fn
- *  + sellerReclaimExpired(dealId) — seller self-refunds unpaid LOCKED slice after PAY_WINDOW
- *  + ERC20 balanceOf delta on deposit (safe vs fee-on-transfer / rebasing tokens)
- *  + SafeERC20-style low-level transfer/transferFrom (handles USDT-style non-returning tokens)
- *  + Centralised _checkAndAutoCloseAd() called by BOTH release and refund (fixes dust trap)
- *  + 2-step ownership transfer
- *  + Max 1 open deal per (buyer, ad) — anti-grief
- *  + Events on owner / feeCollector changes
- *
- * Deploy owner = a multisig (Gnosis Safe on BSC) for production.
+ * New in v5:
+ *  + Prepaid 0.15% seller fee held in escrow at ad creation
+ *      - Consumed proportionally on successful release
+ *      - Refunded proportionally on cancel / refund / unsold dust
+ *  + Explicit seller cancelAd works for any leftover (incl. dust below minFill)
+ *  + 2-step admin ownership transfer (kept from v4.2)
+ *  + SafeERC20-style low-level calls (USDT non-returning safe)
+ *  + balanceOf delta on deposit (fee-on-transfer safe — but rejects if received < required)
+ *  + ReentrancyGuard on every state-changing fn
+ *  + Anti-grief: max 1 open deal per (buyer, ad)
  */
 
 interface IERC20 {
@@ -45,8 +44,8 @@ contract SellEscrow {
     }
 
     // ---------- Fees ----------
-    uint16 public constant SELLER_FEE_BPS = 15; // 0.15%
-    uint16 public constant BUYER_FEE_BPS  = 10; // 0.10%
+    uint16 public constant SELLER_FEE_BPS = 15; // 0.15% (prepaid by seller upfront)
+    uint16 public constant BUYER_FEE_BPS  = 10; // 0.10% (deducted from buyer payout)
     uint16 public constant BPS_DENOM      = 10000;
 
     // ---------- Timers ----------
@@ -62,8 +61,9 @@ contract SellEscrow {
         uint256 totalAmount;
         uint256 remainingAmount;
         uint256 lockedInDeals;
+        uint256 feeReserve;       // prepaid seller fee remaining (in token units)
         uint256 minFillAmount;
-        uint256 pricePerToken;    // INR paise per 1 token unit (off-chain semantics)
+        uint256 pricePerToken;
         string  paymentMethod;
         bool    active;
         uint64  createdAt;
@@ -86,12 +86,11 @@ contract SellEscrow {
     mapping(uint256 => Ad)   public ads;
     mapping(uint256 => Deal) public deals;
     mapping(address => uint256) public feeBalance;
-    // anti-grief: one open deal per buyer per ad
-    mapping(uint256 => mapping(address => uint256)) public openDealByBuyer; // adId => buyer => dealId (0 if none)
+    mapping(uint256 => mapping(address => uint256)) public openDealByBuyer;
 
     // ---------- Events ----------
-    event AdCreated(uint256 indexed adId, address indexed seller, address token, uint256 amount, uint256 price);
-    event AdCancelled(uint256 indexed adId, uint256 refunded);
+    event AdCreated(uint256 indexed adId, address indexed seller, address token, uint256 amount, uint256 price, uint256 prepaidFee);
+    event AdCancelled(uint256 indexed adId, uint256 refunded, uint256 feeRefunded);
     event AdClosedByAdmin(uint256 indexed adId);
     event DealCreated(uint256 indexed dealId, uint256 indexed adId, address indexed buyer, uint256 amount);
     event DealPaid(uint256 indexed dealId);
@@ -127,35 +126,53 @@ contract SellEscrow {
         feeCollector = _f;
     }
 
-    // ---------- Create SELL Ad ----------
-    function createSellAdNative(uint256 minFillAmount, uint256 pricePerToken, string calldata paymentMethod)
-        external payable nonReentrant returns (uint256 adId)
-    {
-        require(msg.value > 0, "ZERO_AMOUNT");
-        require(minFillAmount > 0 && minFillAmount <= msg.value, "BAD_MIN");
-        require(pricePerToken > 0, "BAD_PRICE");
-        adId = _createAd(address(0), msg.value, minFillAmount, pricePerToken, paymentMethod);
+    // ---------- Helpers ----------
+    function _sellerFee(uint256 amount) internal pure returns (uint256) {
+        return (amount * SELLER_FEE_BPS) / BPS_DENOM;
     }
 
+    // ---------- Create SELL Ad ----------
+    /// @notice Seller specifies trade `amount`. Must send `amount + 0.15% fee` as msg.value.
+    function createSellAdNative(uint256 amount, uint256 minFillAmount, uint256 pricePerToken, string calldata paymentMethod)
+        external payable nonReentrant returns (uint256 adId)
+    {
+        require(amount > 0, "ZERO_AMOUNT");
+        require(minFillAmount > 0 && minFillAmount <= amount, "BAD_MIN");
+        require(pricePerToken > 0, "BAD_PRICE");
+        uint256 fee = _sellerFee(amount);
+        require(msg.value == amount + fee, "BAD_VALUE");
+        adId = _createAd(address(0), amount, fee, minFillAmount, pricePerToken, paymentMethod);
+    }
+
+    /// @notice Seller specifies trade `amount`. Contract pulls `amount + 0.15% fee`.
     function createSellAdToken(address token, uint256 amount, uint256 minFillAmount, uint256 pricePerToken, string calldata paymentMethod)
         external nonReentrant returns (uint256 adId)
     {
         require(token != address(0), "BAD_TOKEN");
         require(amount > 0, "ZERO_AMOUNT");
+        require(minFillAmount > 0 && minFillAmount <= amount, "BAD_MIN");
         require(pricePerToken > 0, "BAD_PRICE");
 
-        uint256 before = IERC20(token).balanceOf(address(this));
-        _safeTransferFrom(token, msg.sender, address(this), amount);
-        uint256 received = IERC20(token).balanceOf(address(this)) - before;
-        require(received > 0, "NO_RECEIVE");
-        require(minFillAmount > 0 && minFillAmount <= received, "BAD_MIN");
+        uint256 fee = _sellerFee(amount);
+        uint256 required = amount + fee;
 
-        adId = _createAd(token, received, minFillAmount, pricePerToken, paymentMethod);
+        uint256 before = IERC20(token).balanceOf(address(this));
+        _safeTransferFrom(token, msg.sender, address(this), required);
+        uint256 received = IERC20(token).balanceOf(address(this)) - before;
+        // Reject fee-on-transfer / deflationary tokens — funds would otherwise get stuck
+        require(received >= required, "FEE_ON_TRANSFER_TOKEN");
+
+        adId = _createAd(token, amount, fee, minFillAmount, pricePerToken, paymentMethod);
     }
 
-    function _createAd(address token, uint256 amount, uint256 minFill, uint256 price, string calldata pm)
-        internal returns (uint256 adId)
-    {
+    function _createAd(
+        address token,
+        uint256 amount,
+        uint256 prepaidFee,
+        uint256 minFill,
+        uint256 price,
+        string calldata pm
+    ) internal returns (uint256 adId) {
         adId = nextAdId++;
         ads[adId] = Ad({
             seller: msg.sender,
@@ -163,29 +180,32 @@ contract SellEscrow {
             totalAmount: amount,
             remainingAmount: amount,
             lockedInDeals: 0,
+            feeReserve: prepaidFee,
             minFillAmount: minFill,
             pricePerToken: price,
             paymentMethod: pm,
             active: true,
             createdAt: uint64(block.timestamp)
         });
-        emit AdCreated(adId, msg.sender, token, amount, price);
+        emit AdCreated(adId, msg.sender, token, amount, price, prepaidFee);
     }
 
-    // ---------- Cancel Ad (seller) ----------
+    // ---------- Cancel Ad (seller) — works for any leftover incl. dust ----------
     function cancelAd(uint256 adId) external nonReentrant {
         Ad storage a = ads[adId];
         require(a.seller == msg.sender, "NOT_SELLER");
         require(a.active, "INACTIVE");
         require(a.lockedInDeals == 0, "HAS_OPEN_DEALS");
         uint256 refund = a.remainingAmount;
+        uint256 feeRefund = a.feeReserve;
         a.remainingAmount = 0;
+        a.feeReserve = 0;
         a.active = false;
-        if (refund > 0) _payout(a.token, a.seller, refund);
-        emit AdCancelled(adId, refund);
+        if (refund + feeRefund > 0) _payout(a.token, a.seller, refund + feeRefund);
+        emit AdCancelled(adId, refund, feeRefund);
     }
 
-    // ---------- Take Deal (buyer, partial fill) ----------
+    // ---------- Take Deal (buyer) ----------
     function takeDeal(uint256 adId, uint256 amount) external nonReentrant returns (uint256 dealId) {
         Ad storage a = ads[adId];
         require(a.active, "AD_INACTIVE");
@@ -211,7 +231,6 @@ contract SellEscrow {
         emit DealCreated(dealId, adId, msg.sender, amount);
     }
 
-    // ---------- Buyer marks PAID ----------
     function markPaid(uint256 dealId) external nonReentrant {
         Deal storage d = deals[dealId];
         require(d.buyer == msg.sender, "NOT_BUYER");
@@ -222,7 +241,6 @@ contract SellEscrow {
         emit DealPaid(dealId);
     }
 
-    // ---------- Seller confirms release ----------
     function confirmReceived(uint256 dealId) external nonReentrant {
         Deal storage d = deals[dealId];
         Ad storage a = ads[d.adId];
@@ -231,7 +249,6 @@ contract SellEscrow {
         _releaseToBuyer(dealId);
     }
 
-    // ---------- Seller reclaims expired unpaid slice (anti-grief) ----------
     function sellerReclaimExpired(uint256 dealId) external nonReentrant {
         Deal storage d = deals[dealId];
         Ad storage a = ads[d.adId];
@@ -241,7 +258,6 @@ contract SellEscrow {
         _returnSliceToAd(dealId);
     }
 
-    // ---------- Raise dispute ----------
     function raiseDispute(uint256 dealId) external nonReentrant {
         Deal storage d = deals[dealId];
         Ad storage a = ads[d.adId];
@@ -255,7 +271,6 @@ contract SellEscrow {
         emit DisputeRaised(dealId, msg.sender);
     }
 
-    // ---------- Admin resolution ----------
     function adminReleaseToBuyer(uint256 dealId) external onlyOwner nonReentrant {
         require(deals[dealId].state == DealState.DISPUTED, "NOT_DISPUTED");
         _releaseToBuyer(dealId);
@@ -273,8 +288,10 @@ contract SellEscrow {
         require(a.active, "INACTIVE");
         a.active = false;
         uint256 refund = a.remainingAmount;
+        uint256 feeRefund = a.feeReserve;
         a.remainingAmount = 0;
-        if (refund > 0) _payout(a.token, a.seller, refund);
+        a.feeReserve = 0;
+        if (refund + feeRefund > 0) _payout(a.token, a.seller, refund + feeRefund);
         emit AdClosedByAdmin(adId);
     }
 
@@ -284,13 +301,16 @@ contract SellEscrow {
         Ad storage a = ads[d.adId];
         uint256 amount = d.amount;
 
-        uint256 sellerFee = (amount * SELLER_FEE_BPS) / BPS_DENOM;
-        uint256 buyerFee  = (amount * BUYER_FEE_BPS)  / BPS_DENOM;
-        uint256 totalFee  = sellerFee + buyerFee;
-        uint256 buyerPayout = amount - totalFee;
+        // seller fee already prepaid — consume proportional slice from reserve
+        uint256 sellerFee = _sellerFee(amount);
+        if (sellerFee > a.feeReserve) sellerFee = a.feeReserve; // rounding safety
+        a.feeReserve -= sellerFee;
+
+        uint256 buyerFee  = (amount * BUYER_FEE_BPS) / BPS_DENOM;
+        uint256 buyerPayout = amount - buyerFee;
 
         a.lockedInDeals -= amount;
-        feeBalance[a.token] += totalFee;
+        feeBalance[a.token] += sellerFee + buyerFee;
         d.state = DealState.RELEASED;
         delete openDealByBuyer[d.adId][d.buyer];
 
@@ -303,10 +323,16 @@ contract SellEscrow {
         Deal storage d = deals[dealId];
         Ad storage a = ads[d.adId];
         uint256 amount = d.amount;
+
+        // refund proportional prepaid fee back to seller too
+        uint256 sliceFee = _sellerFee(amount);
+        if (sliceFee > a.feeReserve) sliceFee = a.feeReserve;
+        a.feeReserve -= sliceFee;
+
         a.lockedInDeals -= amount;
         d.state = DealState.REFUNDED;
         delete openDealByBuyer[d.adId][d.buyer];
-        _payout(a.token, a.seller, amount);
+        _payout(a.token, a.seller, amount + sliceFee);
         _checkAndAutoCloseAd(a);
         emit DealRefunded(dealId, amount);
     }
@@ -317,22 +343,25 @@ contract SellEscrow {
         uint256 amount = d.amount;
         a.lockedInDeals   -= amount;
         a.remainingAmount += amount;
+        // feeReserve untouched — slice is back in the ad for someone else to take
         d.state = DealState.REFUNDED;
         delete openDealByBuyer[d.adId][d.buyer];
         emit DealRefunded(dealId, amount);
     }
 
-    // Centralised auto-close — called by BOTH release and refund paths to prevent dust trap
+    // Auto-close ad if nothing more is sellable — refunds dust + remaining prepaid fee
     function _checkAndAutoCloseAd(Ad storage a) internal {
         if (a.active && a.lockedInDeals == 0 && a.remainingAmount < a.minFillAmount) {
             uint256 dust = a.remainingAmount;
+            uint256 feeRefund = a.feeReserve;
             a.remainingAmount = 0;
+            a.feeReserve = 0;
             a.active = false;
-            if (dust > 0) _payout(a.token, a.seller, dust);
+            if (dust + feeRefund > 0) _payout(a.token, a.seller, dust + feeRefund);
         }
     }
 
-    // ---------- SafeERC20 (handles USDT-style non-returning tokens) ----------
+    // ---------- SafeERC20 (USDT-style non-returning tokens) ----------
     function _safeTransferFrom(address token, address from, address to, uint256 amount) internal {
         (bool ok, bytes memory data) = token.call(
             abi.encodeWithSelector(IERC20.transferFrom.selector, from, to, amount)
@@ -363,6 +392,12 @@ contract SellEscrow {
 
     function getAd(uint256 adId) external view returns (Ad memory) { return ads[adId]; }
     function getDeal(uint256 dealId) external view returns (Deal memory) { return deals[dealId]; }
+
+    /// @notice Preview how much native/token must be sent for an ad of given trade amount.
+    function quoteCreateCost(uint256 amount) external pure returns (uint256 totalRequired, uint256 prepaidFee) {
+        prepaidFee = _sellerFee(amount);
+        totalRequired = amount + prepaidFee;
+    }
 
     receive() external payable { revert("USE_CREATE_AD"); }
 }
