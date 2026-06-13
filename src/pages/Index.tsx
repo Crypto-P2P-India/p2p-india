@@ -8,7 +8,7 @@ import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import FaqSection from "@/components/FaqSection";
-import NewsSection from "@/components/NewsSection";
+
 import LandingHero from "@/components/LandingHero";
 import OrderCard from "@/components/OrderCard";
 import CreateOrderModal from "@/components/CreateOrderModal";
@@ -265,7 +265,7 @@ const Index = () => {
         )}
       </main>
 
-      <NewsSection />
+      
       <FaqSection />
       <Footer />
 

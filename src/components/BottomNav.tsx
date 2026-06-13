@@ -1,13 +1,12 @@
 import { useLocation, Link } from "react-router-dom";
-import { ArrowLeftRight, Newspaper, PlusCircle, ShoppingBag, Handshake } from "lucide-react";
+import { ArrowLeftRight, PlusCircle, ShoppingBag, Handshake } from "lucide-react";
 import { useAccount } from "wagmi";
 import { useGlobalUnreadCount } from "@/hooks/useGlobalUnreadCount";
 
 const NAV_ITEMS = [
   { label: "P2P", href: "/", icon: ArrowLeftRight },
-  { label: "News", href: "/news", icon: Newspaper },
-  { label: "", href: "/create", icon: PlusCircle, isCenter: true },
   { label: "My Ads", href: "/my-ads", icon: ShoppingBag },
+  { label: "", href: "/create", icon: PlusCircle, isCenter: true },
   { label: "Deals", href: "/my-orders", icon: Handshake },
 ];
 
