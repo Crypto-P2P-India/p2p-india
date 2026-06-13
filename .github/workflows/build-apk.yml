@@ -28,17 +28,17 @@ jobs:
           npm --version
           node -e "const major = Number(process.versions.node.split('.')[0]); if (major < 22) throw new Error('Node 22+ is required for Capacitor');"
 
-      - name: Setup Java JDK 21
+      - name: Setup Java JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '21'
+          java-version: '17'
 
       - name: Verify Java version
         run: |
           java -version
           javac -version
-          javac -version 2>&1 | grep -q "21\." || { echo "JDK 21 is required for Capacitor Android"; exit 1; }
+          javac -version 2>&1 | grep -q "17\." || { echo "JDK 17 is required for this Android build"; exit 1; }
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
@@ -70,7 +70,7 @@ jobs:
       - name: Build signed APK
         working-directory: android
         run: |
-          export JAVA_HOME="${JAVA_HOME_21_X64:-$JAVA_HOME}"
+          export JAVA_HOME="${JAVA_HOME_17_X64:-$JAVA_HOME}"
           export PATH="$JAVA_HOME/bin:$PATH"
           java -version
           javac -version
