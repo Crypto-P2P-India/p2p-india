@@ -49,38 +49,16 @@ export default function DeployContractCard() {
         bytecode: SELL_ESCROW_BYTECODE as `0x${string}`,
         args: [collector as `0x${string}`],
       });
-      let gas = 3_800_000n;
-      let gasPrice = parseGwei("1");
-
-      try {
-        if (publicClient) {
-          const estimatedGas = await publicClient.estimateGas({
-            account: address as `0x${string}`,
-            data: deployData,
-          });
-          gas = (estimatedGas * 130n) / 100n;
-          gasPrice = await publicClient.getGasPrice();
-        }
-      } catch {
-        toast.info("Using safe manual gas settings…");
-      }
-
       toast.info("Confirm the deployment in your wallet…");
       const sendDeployment = walletClient.sendTransaction as unknown as (parameters: {
         account: `0x${string}`;
         chain: typeof bsc;
         data: `0x${string}`;
-        gas: bigint;
-        gasPrice: bigint;
-        type: "legacy";
       }) => Promise<`0x${string}`>;
       const hash = await sendDeployment({
         account: address as `0x${string}`,
         chain: bsc,
         data: deployData,
-        gas,
-        gasPrice,
-        type: "legacy",
       });
       setTxHash(hash);
     } catch (e: unknown) {
