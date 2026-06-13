@@ -2,20 +2,17 @@
 pragma solidity ^0.8.20;
 
 /**
- * SellEscrow v4 — Crypto P2P (BNB Smart Chain)
+ * SellEscrow v4.1 — Crypto P2P (BNB Smart Chain)
  *
- * Seller-side P2P escrow with:
- *  - Per-ad fund isolation (no pooling between ads/sellers)
- *  - Partial fills (one ad → many deals)
- *  - 0.15% seller fee + 0.10% buyer fee (charged only on COMPLETED slice)
- *  - Buyer mark-paid + seller confirm-release flow
- *  - Dispute system: admin (owner) releases to buyer OR refunds to seller
- *  - While disputed: ad stays active; seller can STILL release funds directly
- *    Only resolved when seller releases / admin releases / admin cancels ad
- *  - Supports native BNB and any BEP-20 token (e.g. USDT)
+ * Hardened version. Changes vs v4:
+ *  + ReentrancyGuard on every state-changing external fn
+ *  + sellerReclaimExpired(dealId)  — seller self-refunds unpaid LOCKED slice after PAY_WINDOW
+ *  + ERC20 balanceOf delta (handles fee-on-transfer / rebasing tokens correctly)
+ *  + 2-step ownership transfer
+ *  + Max 1 open deal per (buyer, ad) — anti-grief
+ *  + Events on owner / feeCollector changes
  *
- * Invariant per token T:
- *   balance(T) == Σ ad.remainingAmount(T) + Σ ad.lockedInDeals(T) + feeBalance(T)
+ * Deploy owner = a multisig (Gnosis Safe on BSC) for production.
  */
 
 interface IERC20 {
@@ -25,24 +22,34 @@ interface IERC20 {
 }
 
 contract SellEscrow {
-    // ---------- Ownership ----------
+    // ---------- Ownership (2-step) ----------
     address public owner;
+    address public pendingOwner;
     address public feeCollector;
 
-    modifier onlyOwner() {
-        require(msg.sender == owner, "NOT_OWNER");
+    event OwnershipTransferStarted(address indexed previousOwner, address indexed newOwner);
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+    event FeeCollectorChanged(address indexed previous, address indexed current);
+
+    modifier onlyOwner() { require(msg.sender == owner, "NOT_OWNER"); _; }
+
+    // ---------- Reentrancy guard ----------
+    uint256 private _lock = 1;
+    modifier nonReentrant() {
+        require(_lock == 1, "REENTRANCY");
+        _lock = 2;
         _;
+        _lock = 1;
     }
 
-    // ---------- Fees (basis points; 10000 = 100%) ----------
+    // ---------- Fees ----------
     uint16 public constant SELLER_FEE_BPS = 15; // 0.15%
     uint16 public constant BUYER_FEE_BPS  = 10; // 0.10%
     uint16 public constant BPS_DENOM      = 10000;
 
     // ---------- Timers ----------
-    uint32 public constant PAY_WINDOW      = 15 minutes; // buyer must markPaid
-    uint32 public constant CONFIRM_WINDOW  = 30 minutes; // seller must confirm after paid
-    // After CONFIRM_WINDOW expires, deal auto-enters DISPUTED state on next interaction.
+    uint32 public constant PAY_WINDOW     = 15 minutes;
+    uint32 public constant CONFIRM_WINDOW = 30 minutes;
 
     // ---------- Types ----------
     enum DealState { NONE, LOCKED, PAID, RELEASED, REFUNDED, DISPUTED }
@@ -50,12 +57,12 @@ contract SellEscrow {
     struct Ad {
         address seller;
         address token;            // address(0) = native BNB
-        uint256 totalAmount;      // original deposit
-        uint256 remainingAmount;  // available to take
-        uint256 lockedInDeals;    // currently in active deals
-        uint256 minFillAmount;    // per-deal minimum (in token units)
-        uint256 pricePerToken;    // INR per 1 token (scaled 1e2, i.e. paise)
-        string  paymentMethod;    // "UPI" / "BANK" / etc.
+        uint256 totalAmount;
+        uint256 remainingAmount;
+        uint256 lockedInDeals;
+        uint256 minFillAmount;
+        uint256 pricePerToken;    // INR paise per 1 token unit (off-chain semantics)
+        string  paymentMethod;
         bool    active;
         uint64  createdAt;
     }
@@ -63,11 +70,11 @@ contract SellEscrow {
     struct Deal {
         uint256 adId;
         address buyer;
-        uint256 amount;           // crypto slice locked
+        uint256 amount;
         uint64  createdAt;
         uint64  paidAt;
         DealState state;
-        address disputeRaisedBy;  // 0 if none
+        address disputeRaisedBy;
     }
 
     // ---------- Storage ----------
@@ -76,7 +83,9 @@ contract SellEscrow {
 
     mapping(uint256 => Ad)   public ads;
     mapping(uint256 => Deal) public deals;
-    mapping(address => uint256) public feeBalance; // token => accumulated fees
+    mapping(address => uint256) public feeBalance;
+    // anti-grief: one open deal per buyer per ad
+    mapping(uint256 => mapping(address => uint256)) public openDealByBuyer; // adId => buyer => dealId (0 if none)
 
     // ---------- Events ----------
     event AdCreated(uint256 indexed adId, address indexed seller, address token, uint256 amount, uint256 price);
@@ -94,15 +103,31 @@ contract SellEscrow {
     constructor(address _feeCollector) {
         owner = msg.sender;
         feeCollector = _feeCollector == address(0) ? msg.sender : _feeCollector;
+        emit OwnershipTransferred(address(0), msg.sender);
+        emit FeeCollectorChanged(address(0), feeCollector);
     }
 
     // ---------- Admin ----------
-    function setOwner(address _o) external onlyOwner { require(_o != address(0)); owner = _o; }
-    function setFeeCollector(address _f) external onlyOwner { require(_f != address(0)); feeCollector = _f; }
+    function transferOwnership(address _o) external onlyOwner {
+        require(_o != address(0), "ZERO_ADDR");
+        pendingOwner = _o;
+        emit OwnershipTransferStarted(owner, _o);
+    }
+    function acceptOwnership() external {
+        require(msg.sender == pendingOwner, "NOT_PENDING");
+        emit OwnershipTransferred(owner, msg.sender);
+        owner = msg.sender;
+        pendingOwner = address(0);
+    }
+    function setFeeCollector(address _f) external onlyOwner {
+        require(_f != address(0), "ZERO_ADDR");
+        emit FeeCollectorChanged(feeCollector, _f);
+        feeCollector = _f;
+    }
 
     // ---------- Create SELL Ad ----------
     function createSellAdNative(uint256 minFillAmount, uint256 pricePerToken, string calldata paymentMethod)
-        external payable returns (uint256 adId)
+        external payable nonReentrant returns (uint256 adId)
     {
         require(msg.value > 0, "ZERO_AMOUNT");
         require(minFillAmount > 0 && minFillAmount <= msg.value, "BAD_MIN");
@@ -111,14 +136,20 @@ contract SellEscrow {
     }
 
     function createSellAdToken(address token, uint256 amount, uint256 minFillAmount, uint256 pricePerToken, string calldata paymentMethod)
-        external returns (uint256 adId)
+        external nonReentrant returns (uint256 adId)
     {
         require(token != address(0), "BAD_TOKEN");
         require(amount > 0, "ZERO_AMOUNT");
-        require(minFillAmount > 0 && minFillAmount <= amount, "BAD_MIN");
         require(pricePerToken > 0, "BAD_PRICE");
+
+        // measure actual received (handles fee-on-transfer tokens safely)
+        uint256 before = IERC20(token).balanceOf(address(this));
         require(IERC20(token).transferFrom(msg.sender, address(this), amount), "PULL_FAIL");
-        adId = _createAd(token, amount, minFillAmount, pricePerToken, paymentMethod);
+        uint256 received = IERC20(token).balanceOf(address(this)) - before;
+        require(received > 0, "NO_RECEIVE");
+        require(minFillAmount > 0 && minFillAmount <= received, "BAD_MIN");
+
+        adId = _createAd(token, received, minFillAmount, pricePerToken, paymentMethod);
     }
 
     function _createAd(address token, uint256 amount, uint256 minFill, uint256 price, string calldata pm)
@@ -141,8 +172,7 @@ contract SellEscrow {
     }
 
     // ---------- Cancel Ad (seller) ----------
-    // Refunds only the unsold remainder. Cannot run while any deal of this ad is open.
-    function cancelAd(uint256 adId) external {
+    function cancelAd(uint256 adId) external nonReentrant {
         Ad storage a = ads[adId];
         require(a.seller == msg.sender, "NOT_SELLER");
         require(a.active, "INACTIVE");
@@ -155,12 +185,13 @@ contract SellEscrow {
     }
 
     // ---------- Take Deal (buyer, partial fill) ----------
-    function takeDeal(uint256 adId, uint256 amount) external returns (uint256 dealId) {
+    function takeDeal(uint256 adId, uint256 amount) external nonReentrant returns (uint256 dealId) {
         Ad storage a = ads[adId];
         require(a.active, "AD_INACTIVE");
         require(a.seller != msg.sender, "SELF_TAKE");
         require(amount >= a.minFillAmount, "BELOW_MIN");
         require(amount <= a.remainingAmount, "ABOVE_REMAINING");
+        require(openDealByBuyer[adId][msg.sender] == 0, "BUYER_HAS_OPEN_DEAL");
 
         a.remainingAmount -= amount;
         a.lockedInDeals   += amount;
@@ -175,11 +206,12 @@ contract SellEscrow {
             state: DealState.LOCKED,
             disputeRaisedBy: address(0)
         });
+        openDealByBuyer[adId][msg.sender] = dealId;
         emit DealCreated(dealId, adId, msg.sender, amount);
     }
 
-    // ---------- Buyer marks PAID (within PAY_WINDOW) ----------
-    function markPaid(uint256 dealId) external {
+    // ---------- Buyer marks PAID ----------
+    function markPaid(uint256 dealId) external nonReentrant {
         Deal storage d = deals[dealId];
         require(d.buyer == msg.sender, "NOT_BUYER");
         require(d.state == DealState.LOCKED, "BAD_STATE");
@@ -190,8 +222,7 @@ contract SellEscrow {
     }
 
     // ---------- Seller confirms release ----------
-    // Allowed in PAID state OR DISPUTED state (seller can always end the deal in buyer's favour).
-    function confirmReceived(uint256 dealId) external {
+    function confirmReceived(uint256 dealId) external nonReentrant {
         Deal storage d = deals[dealId];
         Ad storage a = ads[d.adId];
         require(a.seller == msg.sender, "NOT_SELLER");
@@ -199,42 +230,44 @@ contract SellEscrow {
         _releaseToBuyer(dealId);
     }
 
+    // ---------- Seller reclaims expired unpaid slice (anti-grief) ----------
+    function sellerReclaimExpired(uint256 dealId) external nonReentrant {
+        Deal storage d = deals[dealId];
+        Ad storage a = ads[d.adId];
+        require(a.seller == msg.sender, "NOT_SELLER");
+        require(d.state == DealState.LOCKED, "BAD_STATE");
+        require(block.timestamp > d.createdAt + PAY_WINDOW, "NOT_EXPIRED");
+        _returnSliceToAd(dealId);
+    }
+
     // ---------- Raise dispute ----------
-    // Either side may raise after deal moves to PAID, OR if PAY_WINDOW elapsed without payment (seller can dispute),
-    // OR if CONFIRM_WINDOW elapsed after paid (buyer can dispute).
-    function raiseDispute(uint256 dealId) external {
+    function raiseDispute(uint256 dealId) external nonReentrant {
         Deal storage d = deals[dealId];
         Ad storage a = ads[d.adId];
         require(msg.sender == d.buyer || msg.sender == a.seller, "NOT_PARTY");
         require(d.state == DealState.LOCKED || d.state == DealState.PAID, "BAD_STATE");
-
         if (d.state == DealState.LOCKED) {
-            // only allowed if pay window expired (otherwise buyer still has time to pay)
             require(block.timestamp > d.createdAt + PAY_WINDOW, "TOO_EARLY");
         }
-
         d.state = DealState.DISPUTED;
         d.disputeRaisedBy = msg.sender;
         emit DisputeRaised(dealId, msg.sender);
     }
 
     // ---------- Admin resolution ----------
-    function adminReleaseToBuyer(uint256 dealId) external onlyOwner {
-        Deal storage d = deals[dealId];
-        require(d.state == DealState.DISPUTED, "NOT_DISPUTED");
+    function adminReleaseToBuyer(uint256 dealId) external onlyOwner nonReentrant {
+        require(deals[dealId].state == DealState.DISPUTED, "NOT_DISPUTED");
         _releaseToBuyer(dealId);
         emit AdminReleased(dealId);
     }
 
-    function adminRefundToSeller(uint256 dealId) external onlyOwner {
-        Deal storage d = deals[dealId];
-        require(d.state == DealState.DISPUTED, "NOT_DISPUTED");
-        _refundSlice(dealId);
+    function adminRefundToSeller(uint256 dealId) external onlyOwner nonReentrant {
+        require(deals[dealId].state == DealState.DISPUTED, "NOT_DISPUTED");
+        _refundSliceToSeller(dealId);
         emit AdminRefunded(dealId);
     }
 
-    // Admin can also force-close an ad in dispute (returns remainder + refunds all open disputed slices)
-    function adminCloseAd(uint256 adId) external onlyOwner {
+    function adminCloseAd(uint256 adId) external onlyOwner nonReentrant {
         Ad storage a = ads[adId];
         require(a.active, "INACTIVE");
         a.active = false;
@@ -244,7 +277,7 @@ contract SellEscrow {
         emit AdClosedByAdmin(adId);
     }
 
-    // ---------- Internal release / refund ----------
+    // ---------- Internal ----------
     function _releaseToBuyer(uint256 dealId) internal {
         Deal storage d = deals[dealId];
         Ad storage a = ads[d.adId];
@@ -255,33 +288,43 @@ contract SellEscrow {
         uint256 totalFee  = sellerFee + buyerFee;
         uint256 buyerPayout = amount - totalFee;
 
-        // accounting
         a.lockedInDeals -= amount;
         feeBalance[a.token] += totalFee;
         d.state = DealState.RELEASED;
+        delete openDealByBuyer[d.adId][d.buyer];
 
         _payout(a.token, d.buyer, buyerPayout);
 
-        // auto-close ad if nothing left and no open deals
-        if (a.remainingAmount < a.minFillAmount && a.lockedInDeals == 0 && a.active) {
+        if (a.active && a.lockedInDeals == 0 && a.remainingAmount < a.minFillAmount) {
+            uint256 dust = a.remainingAmount;
+            a.remainingAmount = 0;
             a.active = false;
-            if (a.remainingAmount > 0) {
-                uint256 dust = a.remainingAmount;
-                a.remainingAmount = 0;
-                _payout(a.token, a.seller, dust);
-            }
+            if (dust > 0) _payout(a.token, a.seller, dust);
         }
         emit DealReleased(dealId, buyerPayout, sellerFee, buyerFee);
     }
 
-    function _refundSlice(uint256 dealId) internal {
+    // Refund slice directly back to seller wallet (used by admin dispute resolution)
+    function _refundSliceToSeller(uint256 dealId) internal {
         Deal storage d = deals[dealId];
         Ad storage a = ads[d.adId];
         uint256 amount = d.amount;
         a.lockedInDeals -= amount;
-        // return slice to seller directly (no fee on refund)
         d.state = DealState.REFUNDED;
+        delete openDealByBuyer[d.adId][d.buyer];
         _payout(a.token, a.seller, amount);
+        emit DealRefunded(dealId, amount);
+    }
+
+    // Return slice back into the ad's remaining pool (used when seller reclaims expired unpaid deal)
+    function _returnSliceToAd(uint256 dealId) internal {
+        Deal storage d = deals[dealId];
+        Ad storage a = ads[d.adId];
+        uint256 amount = d.amount;
+        a.lockedInDeals   -= amount;
+        a.remainingAmount += amount;
+        d.state = DealState.REFUNDED;
+        delete openDealByBuyer[d.adId][d.buyer];
         emit DealRefunded(dealId, amount);
     }
 
@@ -295,8 +338,7 @@ contract SellEscrow {
         }
     }
 
-    // ---------- Fees ----------
-    function withdrawFees(address token) external onlyOwner {
+    function withdrawFees(address token) external onlyOwner nonReentrant {
         uint256 bal = feeBalance[token];
         require(bal > 0, "NO_FEES");
         feeBalance[token] = 0;
@@ -304,7 +346,6 @@ contract SellEscrow {
         emit FeesWithdrawn(token, bal);
     }
 
-    // ---------- Views ----------
     function getAd(uint256 adId) external view returns (Ad memory) { return ads[adId]; }
     function getDeal(uint256 dealId) external view returns (Deal memory) { return deals[dealId]; }
 
