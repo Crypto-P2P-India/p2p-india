@@ -17,7 +17,9 @@ interface CreateOrderModalProps {
   onClose: () => void;
 }
 
-const NATIVE_BNB = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
+const NATIVE_BNB = "0x0000000000000000000000000000000000000000";
+const SELLER_FEE_BPS = 15n;
+const BPS_DENOM = 10000n;
 
 const CRYPTOS = [
   { symbol: "USDT", address: USDT_ADDRESS },
@@ -111,6 +113,8 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
   const selectedToken = CRYPTOS.find((c) => c.symbol === crypto)!;
   const isBNB = crypto === "BNB";
   const tokenAmountWei = amount ? parseUnits(amount, 18) : BigInt(0);
+  const sellerFeeWei = (tokenAmountWei * SELLER_FEE_BPS) / BPS_DENOM;
+  const createRequiredWei = tokenAmountWei + sellerFeeWei;
 
   // For BNB: user enters INR per USD rate, we multiply by live BNB/USD price
   const { bnbPrice, isLoading: bnbPriceLoading } = useBnbPrice(isBNB && open);
@@ -136,8 +140,8 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
     ? bnbBalance ? parseFloat(formatUnits(bnbBalance.value, 18)) : 0
     : usdtBalance ? parseFloat(formatUnits(usdtBalance as bigint, 18)) : 0;
   const walletBalanceFormatted = walletBalance.toFixed(4);
-  const amountNum = amount ? parseFloat(amount) : 0;
-  const exceedsBalance = amountNum > walletBalance;
+  const createRequiredAmount = parseFloat(formatUnits(createRequiredWei, 18));
+  const exceedsBalance = createRequiredAmount > walletBalance;
 
   // Allowance
   const { data: allowance } = useReadContract({
@@ -147,7 +151,7 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
     args: address ? [address, P2P_CONTRACT_ADDRESS] : undefined,
     query: { enabled: !isBNB && !!address && open },
   });
-  const needsApproval = !isBNB && (allowance === undefined || (allowance as bigint) < tokenAmountWei);
+  const needsApproval = !isBNB && (allowance === undefined || (allowance as bigint) < createRequiredWei);
 
   // Transactions
   const { writeContract: approve, data: approveTxHash, isPending: isApproving, reset: resetApprove, error: approveError } = useWriteContract();
@@ -235,9 +239,11 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
       createAd({
         address: P2P_CONTRACT_ADDRESS,
         abi: P2P_ESCROW_ABI,
-        functionName: "createAd",
-        args: [selectedToken.address as `0x${string}`, tokenAmountWei, pricePerTokenWei, BigInt(dealTimeout), BigInt(adDuration), paymentStr],
-        value: isBNB ? tokenAmountWei : BigInt(0),
+        functionName: isBNB ? "createSellAdNative" : "createSellAdToken",
+        args: isBNB
+          ? [tokenAmountWei, tokenAmountWei, pricePerTokenWei, paymentStr]
+          : [selectedToken.address as `0x${string}`, tokenAmountWei, tokenAmountWei, pricePerTokenWei, paymentStr],
+        value: isBNB ? createRequiredWei : BigInt(0),
       } as any);
     } catch (e: any) {
       toast.error(e?.shortMessage || "Transaction failed");
@@ -258,7 +264,7 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
           address: USDT_ADDRESS,
           abi: ERC20_ABI,
           functionName: "approve",
-          args: [P2P_CONTRACT_ADDRESS, tokenAmountWei],
+          args: [P2P_CONTRACT_ADDRESS, createRequiredWei],
         } as any);
       } catch (e: any) {
         toast.error(e?.shortMessage || "Approval failed");
