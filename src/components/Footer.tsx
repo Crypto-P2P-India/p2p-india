@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Download } from "lucide-react";
 import { APP_VERSION } from "@/lib/platform";
+import { P2P_CONTRACT_ADDRESS } from "@/config/wagmi";
 
 const Footer = () => (
   <footer className="border-t border-border bg-surface-1 mt-12 safe-bottom">
@@ -59,12 +60,12 @@ const Footer = () => (
         <p className="text-xs text-muted-foreground">
           Smart Contract:{" "}
           <a
-            href="https://bscscan.com/address/0xd79ef02e1F64EF4368b942020129bd0Bc7da0d95"
+            href={`https://bscscan.com/address/${P2P_CONTRACT_ADDRESS}`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-primary hover:underline font-mono"
           >
-            0xd79e…0d95
+            {P2P_CONTRACT_ADDRESS.slice(0, 6)}…{P2P_CONTRACT_ADDRESS.slice(-4)}
           </a>
         </p>
       </div>
