@@ -1,9 +1,12 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, ArrowLeftRight, ShoppingBag, Handshake, PlusCircle, Info, BookOpen, FileText, Shield } from "lucide-react";
+import { Menu, ArrowLeftRight, ShoppingBag, Handshake, PlusCircle, Info, BookOpen, FileText, Shield, MessageCircle, Wallet } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useAccount } from "wagmi";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useGlobalUnreadCount } from "@/hooks/useGlobalUnreadCount";
+
+const TG_LINK = "https://t.me/Tobi3811";
 
 const PRIMARY = [
   { label: "P2P Marketplace", href: "/", icon: ArrowLeftRight },
@@ -36,7 +39,11 @@ const SideMenu = () => {
           <Menu className="h-6 w-6" strokeWidth={2.25} />
         </button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-[82%] max-w-sm p-0 flex flex-col">
+      <SheetContent
+        side="left"
+        className="w-[82%] max-w-sm p-0 flex flex-col"
+        style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.5cm)" }}
+      >
         <SheetHeader className="p-5 border-b border-border/50 text-left">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
@@ -83,6 +90,52 @@ const SideMenu = () => {
               <span>Post Ad</span>
             </button>
           </div>
+
+          {/* Wallet */}
+          <div className="mt-5 pt-4 border-t border-border/50">
+            <p className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Wallet
+            </p>
+            <ConnectButton.Custom>
+              {({ account, chain, openAccountModal, openChainModal, openConnectModal, mounted }) => {
+                const ready = mounted;
+                const connected = ready && account && chain;
+                return (
+                  <button
+                    onClick={() => {
+                      if (!connected) openConnectModal();
+                      else if (chain.unsupported) openChainModal();
+                      else openAccountModal();
+                    }}
+                    className="flex w-full items-center gap-3 rounded-xl border border-border/60 bg-muted/40 px-3 py-3 text-sm font-semibold text-foreground active:scale-[0.98] transition-transform"
+                  >
+                    <Wallet className="h-5 w-5 text-primary" />
+                    <span className="flex-1 text-left truncate">
+                      {connected ? account.displayName : "Connect Wallet"}
+                    </span>
+                    {connected && (
+                      <span className="text-[10px] font-bold text-muted-foreground">
+                        {chain.unsupported ? "Wrong net" : chain.name}
+                      </span>
+                    )}
+                  </button>
+                );
+              }}
+            </ConnectButton.Custom>
+
+            <a
+              href={TG_LINK}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={close}
+              className="mt-2 flex w-full items-center gap-3 rounded-xl border border-border/60 bg-muted/40 px-3 py-3 text-sm font-semibold text-foreground active:scale-[0.98] transition-transform"
+            >
+              <MessageCircle className="h-5 w-5 text-primary" />
+              <span className="flex-1 text-left">Support</span>
+              <span className="text-[10px] font-bold text-muted-foreground">Telegram</span>
+            </a>
+          </div>
+
 
           <div className="mt-6 pt-4 border-t border-border/50">
             <p className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
