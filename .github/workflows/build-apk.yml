@@ -34,6 +34,12 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
+      - name: Verify Java version
+        run: |
+          java -version
+          javac -version
+          javac -version 2>&1 | grep -q "21\." || { echo "JDK 21 is required for Capacitor Android"; exit 1; }
+
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
@@ -64,6 +70,11 @@ jobs:
       - name: Build signed APK
         working-directory: android
         run: |
+          export JAVA_HOME="${JAVA_HOME_21_X64:-$JAVA_HOME}"
+          export PATH="$JAVA_HOME/bin:$PATH"
+          java -version
+          javac -version
+          ./gradlew --version
           ./gradlew assembleRelease \
             -Pandroid.injected.signing.store.file=$(pwd)/app/crypto-p2p.jks \
             -Pandroid.injected.signing.store.password=${{ secrets.ANDROID_KEYSTORE_PASSWORD }} \
