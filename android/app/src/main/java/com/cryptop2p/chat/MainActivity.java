@@ -1,4 +1,4 @@
-package com.cryptop2p.india;
+package com.cryptop2p.chat;
 
 import com.getcapacitor.BridgeActivity;
 
