@@ -66,12 +66,21 @@ export default function DeployContractCard() {
       }
 
       toast.info("Confirm the deployment in your wallet…");
-      const hash = await walletClient.sendTransaction({
+      const sendDeployment = walletClient.sendTransaction as unknown as (parameters: {
+        account: `0x${string}`;
+        chain: typeof bsc;
+        data: `0x${string}`;
+        gas: bigint;
+        gasPrice: bigint;
+        type: "legacy";
+      }) => Promise<`0x${string}`>;
+      const hash = await sendDeployment({
         account: address as `0x${string}`,
         chain: bsc,
         data: deployData,
         gas,
         gasPrice,
+        type: "legacy",
       });
       setTxHash(hash);
     } catch (e: unknown) {
