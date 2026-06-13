@@ -3,10 +3,10 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 import ScrollReveal from "@/components/ScrollReveal";
 
 const HIGHLIGHTS = [
-  { icon: Zap, title: "Zero Fees", sub: "No commissions on trades" },
-  { icon: Lock, title: "Non-Custodial", sub: "Your keys, your crypto" },
-  { icon: ShieldCheck, title: "Escrow Secured", sub: "Smart contract holds funds" },
-  { icon: Link2, title: "BNB Smart Chain", sub: "Fully on-chain, verified" },
+  { icon: Zap, title: "Zero Fees", sub: "No commissions on trades. Direct value transfer without middlemen.", glow: true },
+  { icon: Lock, title: "Non-Custodial", sub: "Your keys, your crypto. Funds only locked in transparent smart contracts." },
+  { icon: ShieldCheck, title: "Smart Escrow", sub: "Automated protection for both buyers and sellers using on-chain logic." },
+  { icon: Link2, title: "BNB Smart Chain", sub: "Fully on-chain, verifiable, and lightning-fast settlement." },
 ];
 
 const STEPS = [
@@ -22,26 +22,47 @@ const scrollToAds = () => {
 
 const LandingHero = () => (
   <>
-    {/* Hero — compact, Binance-clean */}
+    {/* Hero — premium obsidian-glass, centered */}
     <section className="relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-b from-primary/[0.05] via-transparent to-transparent pointer-events-none" />
-      <div className="mx-auto max-w-7xl px-5 pt-12 pb-10 sm:px-6 sm:pt-20 sm:pb-16 relative">
-        <ScrollReveal duration={600}>
-          <div className="max-w-2xl">
+      {/* Decorative emerald glow */}
+      <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-primary/10 blur-[120px] rounded-full" />
+
+      <div className="relative mx-auto max-w-7xl px-5 pt-14 pb-16 sm:px-6 sm:pt-24 sm:pb-24">
+        <div className="flex flex-col items-center text-center">
+          <ScrollReveal duration={600}>
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-primary">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+              </span>
+              Secured by Smart Contracts
+            </div>
+          </ScrollReveal>
+
+          <ScrollReveal delay={80} duration={600}>
             <h1
-              className="text-3xl font-extrabold text-foreground sm:text-5xl tracking-tight"
+              className="mt-6 max-w-4xl text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-foreground"
               style={{ lineHeight: "1.05", textWrap: "balance" }}
             >
-              Secure <span className="text-primary">P2P</span>
-              <br className="sm:hidden" /> Marketplace
+              Secure{" "}
+              <span className="bg-gradient-to-r from-primary to-teal-300 bg-clip-text text-transparent">
+                P2P
+              </span>{" "}
+              Marketplace
             </h1>
-            <p className="mt-4 text-sm sm:text-base text-muted-foreground max-w-md leading-relaxed">
-              Zero fees. Full custody. Smart contract escrow for every deal.
+          </ScrollReveal>
+
+          <ScrollReveal delay={140} duration={600}>
+            <p className="mt-5 max-w-2xl text-sm sm:text-lg leading-relaxed text-muted-foreground">
+              Trade crypto directly with other users with zero fees. Full custody, decentralized escrow, and lightning-fast settlement.
             </p>
-            <div className="mt-6 flex flex-wrap items-center gap-3">
+          </ScrollReveal>
+
+          <ScrollReveal delay={200} duration={600}>
+            <div className="mt-9 flex flex-wrap items-center justify-center gap-3 sm:gap-4">
               <button
                 onClick={scrollToAds}
-                className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/10 active:scale-[0.98] transition-transform"
+                className="rounded-xl bg-primary px-6 sm:px-8 py-3.5 sm:py-4 text-sm sm:text-base font-bold text-primary-foreground shadow-xl shadow-primary/10 transition-all hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.98]"
               >
                 Browse Ads
               </button>
@@ -56,19 +77,22 @@ const LandingHero = () => (
                 <ExternalLink className="h-3.5 w-3.5" />
               </a>
             </div>
-          </div>
-        </ScrollReveal>
+          </ScrollReveal>
+        </div>
 
-        {/* Highlight strip — 2x2 on mobile, 4-up on desktop */}
-        <div className="mt-10 grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
+        {/* Highlight cards */}
+        <div className="mt-16 sm:mt-24 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {HIGHLIGHTS.map((h, i) => (
             <ScrollReveal key={h.title} delay={80 + i * 60} duration={500}>
-              <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-sm p-3.5 transition-colors hover:border-primary/20">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 mb-2.5">
-                  <h.icon className="h-4 w-4 text-primary" />
+              <div className="group relative h-full overflow-hidden rounded-2xl border border-border/40 bg-card/30 backdrop-blur-sm p-5 sm:p-7 transition-all hover:border-primary/30 hover:bg-card/50">
+                {h.glow && (
+                  <div className="pointer-events-none absolute -right-4 -top-4 h-24 w-24 rounded-full bg-primary/10 blur-3xl transition-all group-hover:bg-primary/20" />
+                )}
+                <div className="relative mb-4 sm:mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <h.icon className="h-5 w-5" />
                 </div>
-                <p className="text-xs font-bold text-foreground">{h.title}</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">{h.sub}</p>
+                <h3 className="relative text-base sm:text-lg font-bold text-foreground">{h.title}</h3>
+                <p className="relative mt-1.5 text-xs sm:text-sm leading-relaxed text-muted-foreground">{h.sub}</p>
               </div>
             </ScrollReveal>
           ))}
