@@ -1,6 +1,7 @@
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { Link } from "react-router-dom";
 import ThemeToggle from "@/components/ThemeToggle";
+import ApkDownloadButton from "@/components/ApkDownloadButton";
 
 const Navbar = () => {
   return (
@@ -25,6 +26,7 @@ const Navbar = () => {
 
         {/* Right side */}
         <div className="flex items-center gap-2 sm:gap-3">
+          <ApkDownloadButton />
           <ThemeToggle />
           <ConnectButton chainStatus="icon" accountStatus="address" showBalance={false} />
         </div>
