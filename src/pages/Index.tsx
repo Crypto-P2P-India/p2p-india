@@ -226,7 +226,9 @@ const Index = () => {
             <p className="text-muted-foreground text-sm mb-4 max-w-sm">
               Connect your BNB Smart Chain wallet to view live ads, create orders, and start trading.
             </p>
-            <ConnectButton />
+            <div className="scale-90 origin-center">
+              <ConnectButton showBalance={false} chainStatus="icon" accountStatus="avatar" />
+            </div>
           </div>
         )}
 
