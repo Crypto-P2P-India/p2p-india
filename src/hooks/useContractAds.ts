@@ -4,7 +4,7 @@ import { P2P_CONTRACT_ADDRESS, USDT_ADDRESS } from "@/config/wagmi";
 import { P2P_ESCROW_ABI } from "@/config/abi";
 
 const NATIVE_BNB = "0x0000000000000000000000000000000000000000";
-const DEFAULT_AD_DURATION = 72 * 60 * 60;
+const NO_AD_EXPIRY = 9_999_999_999;
 const DEFAULT_DEAL_TIMEOUT = 15 * 60;
 
 export interface LiveAd {
@@ -59,9 +59,7 @@ export function useContractAds() {
       const pricePerToken = ad.pricePerToken !== undefined ? ad.pricePerToken : ad[7];
       const paymentInfo = ad.paymentMethod !== undefined ? ad.paymentMethod : ad[8];
       const active = ad.active !== undefined ? ad.active : ad[9];
-      const createdAt = ad.createdAt !== undefined ? ad.createdAt : ad[10];
       const status = active ? (BigInt(String(lockedInDeals || 0)) > 0n ? 1 : 0) : 3;
-      const adExpiry = Number(createdAt || 0) + DEFAULT_AD_DURATION;
 
       if (id === undefined || tokenAmount === undefined) continue;
 
@@ -82,7 +80,7 @@ export function useContractAds() {
         pricePerToken: priceFormatted,
         inrTotal,
         dealTimeout: DEFAULT_DEAL_TIMEOUT,
-        adExpiry: Number(adExpiry),
+        adExpiry: NO_AD_EXPIRY,
         paymentInfo: String(paymentInfo),
         status: Number(status),
       });
