@@ -91,6 +91,52 @@ const SideMenu = () => {
             </button>
           </div>
 
+          {/* Wallet */}
+          <div className="mt-5 pt-4 border-t border-border/50">
+            <p className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Wallet
+            </p>
+            <ConnectButton.Custom>
+              {({ account, chain, openAccountModal, openChainModal, openConnectModal, mounted }) => {
+                const ready = mounted;
+                const connected = ready && account && chain;
+                return (
+                  <button
+                    onClick={() => {
+                      if (!connected) openConnectModal();
+                      else if (chain.unsupported) openChainModal();
+                      else openAccountModal();
+                    }}
+                    className="flex w-full items-center gap-3 rounded-xl border border-border/60 bg-muted/40 px-3 py-3 text-sm font-semibold text-foreground active:scale-[0.98] transition-transform"
+                  >
+                    <Wallet className="h-5 w-5 text-primary" />
+                    <span className="flex-1 text-left truncate">
+                      {connected ? account.displayName : "Connect Wallet"}
+                    </span>
+                    {connected && (
+                      <span className="text-[10px] font-bold text-muted-foreground">
+                        {chain.unsupported ? "Wrong net" : chain.name}
+                      </span>
+                    )}
+                  </button>
+                );
+              }}
+            </ConnectButton.Custom>
+
+            <a
+              href={TG_LINK}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={close}
+              className="mt-2 flex w-full items-center gap-3 rounded-xl border border-border/60 bg-muted/40 px-3 py-3 text-sm font-semibold text-foreground active:scale-[0.98] transition-transform"
+            >
+              <MessageCircle className="h-5 w-5 text-primary" />
+              <span className="flex-1 text-left">Support</span>
+              <span className="text-[10px] font-bold text-muted-foreground">Telegram</span>
+            </a>
+          </div>
+
+
           <div className="mt-6 pt-4 border-t border-border/50">
             <p className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
               More
