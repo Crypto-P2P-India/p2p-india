@@ -16,14 +16,9 @@ const Navbar = () => {
             <div className="relative h-10 w-10 sm:h-11 sm:w-11 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center overflow-hidden border border-primary/10 shadow-sm">
               <img src="/favicon.png" alt="Crypto P2P" className="h-7 w-7 sm:h-8 sm:w-8" />
             </div>
-            <div className="flex flex-col">
-              <span className="text-lg sm:text-xl font-extrabold tracking-tight text-foreground leading-tight">
-                Crypto P2P
-              </span>
-              <span className="text-[9px] sm:text-[10px] font-semibold text-primary/70 leading-none tracking-[0.15em] uppercase">
-                Peer to Peer Trading
-              </span>
-            </div>
+            <span className="text-lg sm:text-xl font-extrabold tracking-tight text-foreground leading-tight">
+              Crypto P2P
+            </span>
           </Link>
 
           {/* Right side */}
