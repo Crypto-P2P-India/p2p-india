@@ -144,9 +144,8 @@ contract SellEscrow {
         require(amount > 0, "ZERO_AMOUNT");
         require(pricePerToken > 0, "BAD_PRICE");
 
-        // measure actual received (handles fee-on-transfer tokens safely)
         uint256 before = IERC20(token).balanceOf(address(this));
-        require(IERC20(token).transferFrom(msg.sender, address(this), amount), "PULL_FAIL");
+        _safeTransferFrom(token, msg.sender, address(this), amount);
         uint256 received = IERC20(token).balanceOf(address(this)) - before;
         require(received > 0, "NO_RECEIVE");
         require(minFillAmount > 0 && minFillAmount <= received, "BAD_MIN");
