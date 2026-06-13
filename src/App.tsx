@@ -17,14 +17,17 @@ import SupportButton from "@/components/SupportButton";
 import DisclaimerModal from "@/components/DisclaimerModal";
 import BottomNav from "@/components/BottomNav";
 import NotificationPermission from "@/components/NotificationPermission";
+import UpdateBanner from "@/components/UpdateBanner";
 
 const App = () => (
   <WalletProvider>
     <TooltipProvider>
+      <UpdateBanner />
       <DisclaimerModal />
       <NotificationPermission />
       <Toaster />
       <Sonner />
+
       <BrowserRouter>
         <div className="pb-16 md:pb-0">
           <Routes>
