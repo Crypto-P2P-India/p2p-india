@@ -66,12 +66,10 @@ export default function DeployContractCard() {
       }
 
       toast.info("Confirm the deployment in your wallet…");
-      const hash = await walletClient.deployContract({
-        abi: SELL_ESCROW_ABI as any,
-        bytecode: SELL_ESCROW_BYTECODE as `0x${string}`,
-        args: [collector as `0x${string}`],
+      const hash = await (walletClient as any).sendTransaction({
         account: address as `0x${string}`,
         chain: bsc,
+        data: deployData,
         gas,
         gasPrice,
       });
