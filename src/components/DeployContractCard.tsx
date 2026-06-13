@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useAccount, useChainId, useDeployContract, useWaitForTransactionReceipt, useSwitchChain } from "wagmi";
+import { useAccount, useChainId, usePublicClient, useWaitForTransactionReceipt, useSwitchChain, useWalletClient } from "wagmi";
 import { bsc } from "wagmi/chains";
-import { isAddress } from "viem";
+import { encodeDeployData, isAddress, parseGwei, type Abi } from "viem";
 import { Rocket, ExternalLink, Copy, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,10 +18,13 @@ export default function DeployContractCard() {
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
   const { switchChainAsync } = useSwitchChain();
+  const publicClient = usePublicClient({ chainId: bsc.id });
+  const { data: walletClient } = useWalletClient();
   const [feeCollector, setFeeCollector] = useState<string>("");
   const [deployedAddress, setDeployedAddress] = useState<string>("");
+  const [txHash, setTxHash] = useState<`0x${string}` | undefined>();
+  const [isPending, setIsPending] = useState(false);
 
-  const { deployContractAsync, data: txHash, isPending } = useDeployContract();
   const { isLoading: confirming, isSuccess, data: receipt } = useWaitForTransactionReceipt({ hash: txHash });
 
   if (isSuccess && receipt?.contractAddress && receipt.contractAddress !== deployedAddress) {
@@ -30,22 +33,61 @@ export default function DeployContractCard() {
 
   const onDeploy = async () => {
     if (!isConnected) return toast.error("Connect your wallet first");
+    if (!address || !walletClient) return toast.error("Wallet is not ready yet");
     const collector = (feeCollector || address || "").trim();
     if (!isAddress(collector)) return toast.error("Enter a valid fee-collector address (0x…)");
 
     try {
+      setIsPending(true);
       if (chainId !== bsc.id) {
         toast.info("Switching to BNB Smart Chain…");
         await switchChainAsync({ chainId: bsc.id });
       }
-      toast.info("Confirm the deployment in your wallet…");
-      await deployContractAsync({
-        abi: SELL_ESCROW_ABI as any,
+
+      const deployData = encodeDeployData({
+        abi: SELL_ESCROW_ABI as Abi,
         bytecode: SELL_ESCROW_BYTECODE as `0x${string}`,
         args: [collector as `0x${string}`],
       });
-    } catch (e: any) {
-      toast.error(e?.shortMessage || e?.message || "Deployment failed");
+      let gas = 3_800_000n;
+      let gasPrice = parseGwei("1");
+
+      try {
+        if (publicClient) {
+          const estimatedGas = await publicClient.estimateGas({
+            account: address as `0x${string}`,
+            data: deployData,
+          });
+          gas = (estimatedGas * 130n) / 100n;
+          gasPrice = await publicClient.getGasPrice();
+        }
+      } catch {
+        toast.info("Using safe manual gas settings…");
+      }
+
+      toast.info("Confirm the deployment in your wallet…");
+      const sendDeployment = walletClient.sendTransaction as unknown as (parameters: {
+        account: `0x${string}`;
+        chain: typeof bsc;
+        data: `0x${string}`;
+        gas: bigint;
+        gasPrice: bigint;
+        type: "legacy";
+      }) => Promise<`0x${string}`>;
+      const hash = await sendDeployment({
+        account: address as `0x${string}`,
+        chain: bsc,
+        data: deployData,
+        gas,
+        gasPrice,
+        type: "legacy",
+      });
+      setTxHash(hash);
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Deployment failed";
+      toast.error(message);
+    } finally {
+      setIsPending(false);
     }
   };
 
