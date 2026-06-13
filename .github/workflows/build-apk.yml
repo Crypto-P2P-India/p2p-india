@@ -153,10 +153,14 @@ jobs:
           git add public/downloads/crypto-p2p.apk
           git diff --staged --quiet && echo "No APK changes" && exit 0
           git commit -m "🤖 Auto-build: update APK"
+          git reset --hard HEAD
           for i in 1 2 3 4 5; do
             git fetch origin main
-            git rebase origin/main
-            git push origin HEAD:main && exit 0
+            if git rebase origin/main && git push origin HEAD:main; then
+              exit 0
+            fi
+            git rebase --abort || true
+            git reset --hard HEAD
             echo "Push failed, retrying ($i)..."
             sleep 3
           done
