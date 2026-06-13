@@ -68,10 +68,10 @@ export function useContractDeals() {
   const deals: LiveDeal[] = [];
 
   if (dealsData) {
-    for (const res of dealsData) {
+    for (const [index, res] of dealsData.entries()) {
       if (res.status !== "success" || !res.result) continue;
       const d = res.result as any;
-      const rawId = d.id !== undefined ? d.id : deals.length + 1;
+      const rawId = d.id !== undefined ? d.id : index + 1;
       const rawAdId = d.adId !== undefined ? d.adId : d[0];
       const rawBuyer = d.buyer || d[1];
       const rawTokenAmount = d.amount !== undefined ? d.amount : d[2];
