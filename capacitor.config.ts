@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.cryptop2p.india',
-  appName: 'Crypto P2P India',
+  appId: 'com.cryptop2p.chat',
+  appName: 'Crypto P2P',
   webDir: 'dist',
   android: {
     buildOptions: {
