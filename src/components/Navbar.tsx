@@ -30,7 +30,7 @@ const Navbar = () => {
         </div>
       </nav>
       {/* Spacer to offset fixed navbar height (including safe-area inset) */}
-      <div aria-hidden className="h-16 sm:h-20" style={{ paddingTop: "env(safe-area-inset-top)" }} />
+      <div aria-hidden className="h-14 sm:h-20" style={{ paddingTop: "env(safe-area-inset-top)" }} />
     </>
   );
 };
