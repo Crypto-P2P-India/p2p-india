@@ -9,11 +9,15 @@ import {
   injectedWallet,
 } from "@rainbow-me/rainbowkit/wallets";
 import { bsc } from "wagmi/chains";
+import { http } from "wagmi";
 
 export const config = getDefaultConfig({
   appName: "Crypto P2P",
   projectId: "28e26a9fa8f1bef0d253abc623eec65c",
   chains: [bsc],
+  transports: {
+    [bsc.id]: http("https://bsc-dataseed.binance.org"),
+  },
   ssr: false,
   wallets: [
     {
