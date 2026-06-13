@@ -1,5 +1,4 @@
 import { ExternalLink, Zap, Lock, ShieldCheck, Link2 } from "lucide-react";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
 import ScrollReveal from "@/components/ScrollReveal";
 
 const HIGHLIGHTS = [
@@ -27,11 +26,21 @@ const LandingHero = () => (
       {/* Decorative emerald glow */}
       <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-primary/10 blur-[120px] rounded-full" />
 
-      <div className="relative mx-auto max-w-7xl px-5 pt-[2cm] pb-16 sm:px-6 sm:pt-[2cm] sm:pb-24">
+      <div className="relative mx-auto max-w-7xl px-5 pt-14 pb-16 sm:px-6 sm:pt-24 sm:pb-24">
         <div className="flex flex-col items-center text-center">
+          <ScrollReveal duration={600}>
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-primary">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+              </span>
+              Secured by Smart Contracts
+            </div>
+          </ScrollReveal>
+
           <ScrollReveal delay={80} duration={600}>
             <h1
-              className="max-w-4xl text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-foreground"
+              className="mt-6 max-w-4xl text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-foreground"
               style={{ lineHeight: "1.05", textWrap: "balance" }}
             >
               Secure{" "}
@@ -56,9 +65,7 @@ const LandingHero = () => (
               >
                 Browse Ads
               </button>
-              <div className="scale-50 origin-center -mx-4">
-                <ConnectButton />
-              </div>
+              
               <a
                 href="https://bscscan.com/address/0xd79ef02e1F64EF4368b942020129bd0Bc7da0d95"
                 target="_blank"

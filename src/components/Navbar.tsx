@@ -32,7 +32,9 @@ const Navbar = () => {
           <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             {!native && <ApkDownloadButton />}
             <ThemeToggle />
-            <ConnectButton chainStatus="icon" accountStatus="avatar" showBalance={false} />
+            <div className="scale-75 origin-right -mr-2">
+              <ConnectButton chainStatus="icon" accountStatus="avatar" showBalance={false} />
+            </div>
           </div>
         </div>
       </nav>
