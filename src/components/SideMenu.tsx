@@ -39,7 +39,11 @@ const SideMenu = () => {
           <Menu className="h-6 w-6" strokeWidth={2.25} />
         </button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-[82%] max-w-sm p-0 flex flex-col">
+      <SheetContent
+        side="left"
+        className="w-[82%] max-w-sm p-0 flex flex-col"
+        style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.5cm)" }}
+      >
         <SheetHeader className="p-5 border-b border-border/50 text-left">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
