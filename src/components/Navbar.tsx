@@ -10,22 +10,22 @@ const Navbar = () => {
       <nav className="fixed top-0 inset-x-0 z-50 border-b border-white/5 bg-background/70 backdrop-blur-xl">
         {/* Safe area spacer for mobile notch */}
         <div className="h-[env(safe-area-inset-top)] bg-background/70" />
-        <div className="mx-auto flex h-16 sm:h-20 max-w-7xl items-center justify-between px-4 sm:px-6">
+        <div className="mx-auto flex h-14 sm:h-20 max-w-7xl items-center justify-between gap-2 px-3 sm:px-6">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center overflow-hidden shadow-lg shadow-primary/20">
+          <Link to="/" className="flex items-center gap-2 min-w-0 shrink-0">
+            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center overflow-hidden shadow-lg shadow-primary/20 shrink-0">
               <img src="/favicon.png" alt="Crypto P2P" className="h-6 w-6" />
             </div>
-            <span className="text-lg sm:text-xl font-bold tracking-tight text-foreground">
+            <span className="text-base sm:text-xl font-bold tracking-tight text-foreground whitespace-nowrap">
               Crypto P2P
             </span>
           </Link>
 
           {/* Right side */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             {!isNativeApp() && <ApkDownloadButton />}
             <ThemeToggle />
-            <ConnectButton chainStatus="icon" accountStatus="address" showBalance={false} />
+            <ConnectButton chainStatus="icon" accountStatus="avatar" showBalance={false} />
           </div>
         </div>
       </nav>
