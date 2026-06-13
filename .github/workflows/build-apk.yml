@@ -67,7 +67,8 @@ jobs:
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS || 'crypto-p2p' }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD || secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: |
           set -e
           if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
@@ -76,11 +77,19 @@ jobs:
             echo "                       or: base64 -i crypto-p2p.jks | tr -d '\\n'  (macOS)"
             exit 1
           fi
+          if [ -z "$ANDROID_KEYSTORE_PASSWORD" ]; then
+            echo "ERROR: ANDROID_KEYSTORE_PASSWORD secret is empty."
+            echo "Add the exact password used when crypto-p2p.jks was created."
+            exit 1
+          fi
+          if [ -z "$ANDROID_KEY_PASSWORD" ]; then
+            echo "ERROR: ANDROID_KEY_PASSWORD is empty and could not default to ANDROID_KEYSTORE_PASSWORD."
+            exit 1
+          fi
+          echo "Using Android key alias: $ANDROID_KEY_ALIAS"
           mkdir -p android/app
-          # Strip whitespace/newlines that often sneak in when pasting the secret
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | tr -d '[:space:]' | base64 -d > android/app/crypto-p2p.jks
           ls -l android/app/crypto-p2p.jks
-          # Sanity-check magic bytes: a real JKS starts with FE ED FE ED, PKCS12 starts with 30 82
           HEADER=$(xxd -p -l 4 android/app/crypto-p2p.jks)
           echo "Keystore header bytes: $HEADER"
           case "$HEADER" in
@@ -93,7 +102,6 @@ jobs:
               exit 1
               ;;
           esac
-          # Show all aliases in the keystore (helps diagnose alias mismatch)
           echo "--- Aliases in keystore ---"
           if ! keytool -list -keystore android/app/crypto-p2p.jks -storepass "$ANDROID_KEYSTORE_PASSWORD" 2>&1; then
             echo "ERROR: Could not list keystore. The ANDROID_KEYSTORE_PASSWORD secret is wrong."
@@ -111,6 +119,10 @@ jobs:
 
       - name: Build signed APK
         working-directory: android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS || 'crypto-p2p' }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD || secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: |
           export JAVA_HOME="${JAVA_HOME_17_X64:-$JAVA_HOME}"
           export PATH="$JAVA_HOME/bin:$PATH"
@@ -119,9 +131,9 @@ jobs:
           ./gradlew --version
           ./gradlew assembleRelease \
             -Pandroid.injected.signing.store.file=$(pwd)/app/crypto-p2p.jks \
-            -Pandroid.injected.signing.store.password=${{ secrets.ANDROID_KEYSTORE_PASSWORD }} \
-            -Pandroid.injected.signing.key.alias=${{ secrets.ANDROID_KEY_ALIAS }} \
-            -Pandroid.injected.signing.key.password=${{ secrets.ANDROID_KEY_PASSWORD }}
+            -Pandroid.injected.signing.store.password="$ANDROID_KEYSTORE_PASSWORD" \
+            -Pandroid.injected.signing.key.alias="$ANDROID_KEY_ALIAS" \
+            -Pandroid.injected.signing.key.password="$ANDROID_KEY_PASSWORD"
 
       - name: Copy APK to public/downloads
         run: |
