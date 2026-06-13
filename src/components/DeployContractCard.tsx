@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useAccount, useChainId, usePublicClient, useWaitForTransactionReceipt, useSwitchChain, useWalletClient } from "wagmi";
+import { useAccount, useChainId, useWaitForTransactionReceipt, useSwitchChain, useWalletClient } from "wagmi";
 import { bsc } from "wagmi/chains";
-import { encodeDeployData, isAddress, parseGwei, type Abi } from "viem";
+import { encodeDeployData, isAddress, type Abi } from "viem";
 import { Rocket, ExternalLink, Copy, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
