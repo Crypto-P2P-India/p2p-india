@@ -27,7 +27,7 @@ const formatTime = (seconds: number) => {
   return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
 };
 
-const BSCSCAN_CONTRACT = "https://bscscan.com/address/0xd79ef02e1F64EF4368b942020129bd0Bc7da0d95";
+const BSCSCAN_CONTRACT = `https://bscscan.com/address/${P2P_CONTRACT_ADDRESS}`;
 
 const formatTimeout = (seconds: number) => {
   if (seconds >= 3600) return `${seconds / 3600}h`;
@@ -392,7 +392,7 @@ const MyAds = () => {
                                 {/* Cancel only if timed out AND buyer hasn't confirmed */}
                                 {isDealTimedOut && !relatedDeal.buyerConfirmed && (
                                   <Button variant="sell" size="sm" disabled={isProcessing} onClick={() => {
-                                    cancelDeal({ address: P2P_CONTRACT_ADDRESS, abi: P2P_ESCROW_ABI, functionName: "cancelTimedOutDeal", args: [BigInt(relatedDeal.dealId)] } as any);
+                                    cancelDeal({ address: P2P_CONTRACT_ADDRESS, abi: P2P_ESCROW_ABI, functionName: "sellerReclaimExpired", args: [BigInt(relatedDeal.dealId)] } as any);
                                   }}>
                                     {cancelDealPending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <AlertTriangle className="h-3 w-3 mr-1" />}
                                     Cancel &amp; Reclaim Funds
@@ -402,7 +402,7 @@ const MyAds = () => {
                                 {/* Release button when buyer confirmed */}
                                 {relatedDeal.buyerConfirmed && !relatedDeal.sellerConfirmed && (
                                   <Button variant="buy" size="sm" disabled={isProcessing} onClick={() => {
-                                    sellerConfirm({ address: P2P_CONTRACT_ADDRESS, abi: P2P_ESCROW_ABI, functionName: "sellerConfirmReceived", args: [BigInt(relatedDeal.dealId)] } as any);
+                                    sellerConfirm({ address: P2P_CONTRACT_ADDRESS, abi: P2P_ESCROW_ABI, functionName: "confirmReceived", args: [BigInt(relatedDeal.dealId)] } as any);
                                   }}>
                                     {sellerPending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <CheckCircle2 className="h-3 w-3 mr-1" />}
                                     I Received ₹{relatedDeal.inrAmount} — Release
@@ -412,7 +412,7 @@ const MyAds = () => {
                                 {/* Dispute only after timeout when one confirmed but not the other */}
                                 {isDealTimedOut && (relatedDeal.buyerConfirmed !== relatedDeal.sellerConfirmed) && (
                                   <Button variant="outline" size="sm" className="text-sell border-sell/30" disabled={isProcessing} onClick={() => {
-                                    raiseDispute({ address: P2P_CONTRACT_ADDRESS, abi: P2P_ESCROW_ABI, functionName: "raiseDispute", args: [BigInt(relatedDeal.dealId), "Seller dispute"] } as any);
+                                    raiseDispute({ address: P2P_CONTRACT_ADDRESS, abi: P2P_ESCROW_ABI, functionName: "raiseDispute", args: [BigInt(relatedDeal.dealId)] } as any);
                                   }}>
                                     {disputePending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <AlertTriangle className="h-3 w-3 mr-1" />}
                                     Dispute
@@ -532,7 +532,7 @@ const MyAds = () => {
                                     Cancel Ad &amp; Get Funds
                                   </Button>
                                 ) : (
-                                  <Button variant="outline" size="sm" className="text-primary border-primary/30 hover:bg-primary/10" onClick={() => { setPendingAdId(ad.adId); claimExpired({ address: P2P_CONTRACT_ADDRESS, abi: P2P_ESCROW_ABI, functionName: "claimExpiredAd", args: [BigInt(ad.adId)] } as any); }} disabled={claimPending && pendingAdId === ad.adId}>
+                                  <Button variant="outline" size="sm" className="text-primary border-primary/30 hover:bg-primary/10" onClick={() => { setPendingAdId(ad.adId); claimExpired({ address: P2P_CONTRACT_ADDRESS, abi: P2P_ESCROW_ABI, functionName: "cancelAd", args: [BigInt(ad.adId)] } as any); }} disabled={claimPending && pendingAdId === ad.adId}>
                                     {claimPending && pendingAdId === ad.adId ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
                                     Claim Funds Back
                                   </Button>

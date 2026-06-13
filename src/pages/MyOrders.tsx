@@ -262,7 +262,7 @@ const MyOrders = () => {
           <div className="mt-3 flex flex-wrap gap-2">
             {/* Cancel only if timed out AND buyer hasn't confirmed */}
             {isTimedOut && !deal.buyerConfirmed && (
-              <Button variant="sell" size="sm" disabled={isProcessing} onClick={() => { setPendingDealId(deal.dealId); cancelDeal({ address: P2P_CONTRACT_ADDRESS, abi: P2P_ESCROW_ABI, functionName: "cancelTimedOutDeal", args: [BigInt(deal.dealId)] } as any); }}>
+              <Button variant="sell" size="sm" disabled={isProcessing} onClick={() => { setPendingDealId(deal.dealId); cancelDeal({ address: P2P_CONTRACT_ADDRESS, abi: P2P_ESCROW_ABI, functionName: "sellerReclaimExpired", args: [BigInt(deal.dealId)] } as any); }}>
                 {cancelPending && pendingDealId === deal.dealId ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <AlertTriangle className="h-3 w-3 mr-1" />}
                 Cancel &amp; Return Funds
               </Button>
@@ -270,7 +270,7 @@ const MyOrders = () => {
 
             {/* Buyer confirm payment — only before timeout and if not yet confirmed */}
             {!isTimedOut && isBuyer && deal.status === 0 && !deal.buyerConfirmed && (
-              <Button variant="buy" size="sm" disabled={isProcessing} onClick={() => { setPendingDealId(deal.dealId); confirmPayment({ address: P2P_CONTRACT_ADDRESS, abi: P2P_ESCROW_ABI, functionName: "buyerConfirmPayment", args: [BigInt(deal.dealId)] } as any); }}>
+              <Button variant="buy" size="sm" disabled={isProcessing} onClick={() => { setPendingDealId(deal.dealId); confirmPayment({ address: P2P_CONTRACT_ADDRESS, abi: P2P_ESCROW_ABI, functionName: "markPaid", args: [BigInt(deal.dealId)] } as any); }}>
                 {payPending && pendingDealId === deal.dealId ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
                 I've Paid — Confirm
               </Button>
@@ -278,7 +278,7 @@ const MyOrders = () => {
 
             {/* Seller release — when buyer confirmed */}
             {!isBuyer && deal.buyerConfirmed && !deal.sellerConfirmed && (deal.status === 0 || deal.status === 1) && (
-              <Button variant="buy" size="sm" disabled={isProcessing} onClick={() => { setPendingDealId(deal.dealId); sellerConfirm({ address: P2P_CONTRACT_ADDRESS, abi: P2P_ESCROW_ABI, functionName: "sellerConfirmReceived", args: [BigInt(deal.dealId)] } as any); }}>
+              <Button variant="buy" size="sm" disabled={isProcessing} onClick={() => { setPendingDealId(deal.dealId); sellerConfirm({ address: P2P_CONTRACT_ADDRESS, abi: P2P_ESCROW_ABI, functionName: "confirmReceived", args: [BigInt(deal.dealId)] } as any); }}>
                 {sellerPending && pendingDealId === deal.dealId ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <CheckCircle2 className="h-3 w-3 mr-1" />}
                 I Received ₹{deal.inrAmount} — Release
               </Button>
@@ -286,7 +286,7 @@ const MyOrders = () => {
 
             {/* Dispute — after timeout when buyer confirmed but seller didn't */}
             {isTimedOut && deal.buyerConfirmed && !deal.sellerConfirmed && (deal.status === 0 || deal.status === 1) && (
-              <Button variant="outline" size="sm" className="text-sell border-sell/30" disabled={isProcessing} onClick={() => { setPendingDealId(deal.dealId); raiseDispute({ address: P2P_CONTRACT_ADDRESS, abi: P2P_ESCROW_ABI, functionName: "raiseDispute", args: [BigInt(deal.dealId), "Payment dispute"] } as any); }}>
+              <Button variant="outline" size="sm" className="text-sell border-sell/30" disabled={isProcessing} onClick={() => { setPendingDealId(deal.dealId); raiseDispute({ address: P2P_CONTRACT_ADDRESS, abi: P2P_ESCROW_ABI, functionName: "raiseDispute", args: [BigInt(deal.dealId)] } as any); }}>
                 {disputePending && pendingDealId === deal.dealId ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <AlertTriangle className="h-3 w-3 mr-1" />}
                 Raise Dispute
               </Button>

@@ -1,4 +1,5 @@
 import { CheckCircle2, XCircle, AlertTriangle, ExternalLink, ArrowRight } from "lucide-react";
+import { P2P_CONTRACT_ADDRESS } from "@/config/wagmi";
 
 interface DealOutcomeProps {
   status: number;
@@ -17,7 +18,7 @@ interface DealOutcomeProps {
 
 const shortAddr = (addr: string) => `${addr.slice(0, 6)}…${addr.slice(-4)}`;
 
-const BSCSCAN_CONTRACT = "https://bscscan.com/address/0xd79ef02e1F64EF4368b942020129bd0Bc7da0d95";
+const BSCSCAN_CONTRACT = `https://bscscan.com/address/${P2P_CONTRACT_ADDRESS}`;
 
 const DealOutcome = ({
   status,

@@ -6,6 +6,7 @@ import { useWriteContract, useWaitForTransactionReceipt, useReadContract } from 
 import { P2P_CONTRACT_ADDRESS } from "@/config/wagmi";
 import { P2P_ESCROW_ABI } from "@/config/abi";
 import { toast } from "sonner";
+import { parseUnits } from "viem";
 import { playSuccessChime, playAlertChime } from "@/lib/sounds";
 import ChatPanel from "./ChatPanel";
 import { parsePaymentInfo } from "@/lib/parsePaymentInfo";
@@ -135,8 +136,8 @@ const TradeWindow = ({ ad, userAddress, onClose }: TradeWindowProps) => {
     acceptAd({
       address: P2P_CONTRACT_ADDRESS,
       abi: P2P_ESCROW_ABI,
-      functionName: "acceptAd",
-      args: [BigInt(ad.adId)],
+      functionName: "takeDeal",
+      args: [BigInt(ad.adId), parseUnits(ad.tokenAmount, 18)],
     } as any);
   };
 
@@ -148,7 +149,7 @@ const TradeWindow = ({ ad, userAddress, onClose }: TradeWindowProps) => {
     confirmPayment({
       address: P2P_CONTRACT_ADDRESS,
       abi: P2P_ESCROW_ABI,
-      functionName: "buyerConfirmPayment",
+      functionName: "markPaid",
       args: [BigInt(dealId)],
     } as any);
   };
@@ -161,7 +162,7 @@ const TradeWindow = ({ ad, userAddress, onClose }: TradeWindowProps) => {
     sellerConfirm({
       address: P2P_CONTRACT_ADDRESS,
       abi: P2P_ESCROW_ABI,
-      functionName: "sellerConfirmReceived",
+      functionName: "confirmReceived",
       args: [BigInt(dealId)],
     } as any);
   };
@@ -172,7 +173,7 @@ const TradeWindow = ({ ad, userAddress, onClose }: TradeWindowProps) => {
       address: P2P_CONTRACT_ADDRESS,
       abi: P2P_ESCROW_ABI,
       functionName: "raiseDispute",
-      args: [BigInt(dealId), "Payment dispute"],
+      args: [BigInt(dealId)],
     } as any);
   };
 
@@ -181,7 +182,7 @@ const TradeWindow = ({ ad, userAddress, onClose }: TradeWindowProps) => {
     cancelDeal({
       address: P2P_CONTRACT_ADDRESS,
       abi: P2P_ESCROW_ABI,
-      functionName: "cancelTimedOutDeal",
+      functionName: "sellerReclaimExpired",
       args: [BigInt(dealId)],
     } as any);
   };

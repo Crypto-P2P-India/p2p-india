@@ -1,5 +1,6 @@
 import { ExternalLink, Zap, Lock, ShieldCheck, Link2 } from "lucide-react";
 import ScrollReveal from "@/components/ScrollReveal";
+import { P2P_CONTRACT_ADDRESS } from "@/config/wagmi";
 
 const HIGHLIGHTS = [
   { icon: Zap, title: "Zero Fees", sub: "No commissions on trades. Direct value transfer without middlemen.", glow: true },
@@ -67,7 +68,7 @@ const LandingHero = () => (
               </button>
               
               <a
-                href="https://bscscan.com/address/0xd79ef02e1F64EF4368b942020129bd0Bc7da0d95"
+                href={`https://bscscan.com/address/${P2P_CONTRACT_ADDRESS}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"

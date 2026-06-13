@@ -3,7 +3,9 @@ import { formatUnits } from "viem";
 import { P2P_CONTRACT_ADDRESS, USDT_ADDRESS } from "@/config/wagmi";
 import { P2P_ESCROW_ABI } from "@/config/abi";
 
-const NATIVE_BNB = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
+const NATIVE_BNB = "0x0000000000000000000000000000000000000000";
+const NO_AD_EXPIRY = 9_999_999_999;
+const DEFAULT_DEAL_TIMEOUT = 15 * 60;
 
 export interface LiveAd {
   adId: number;
@@ -45,21 +47,19 @@ export function useContractAds() {
   const ads: LiveAd[] = [];
 
   if (adsData) {
-    for (const res of adsData) {
+    for (const [index, res] of adsData.entries()) {
       if (res.status !== "success" || !res.result) continue;
       const ad = res.result as any;
 
-      // Handle both named and positional access (v3: adDuration at index 7)
-      const id = ad.id !== undefined ? ad.id : ad[0];
-      const seller = ad.seller || ad[1];
-      const tokenAddr = ad.token || ad[2];
-      const tokenAmount = ad.tokenAmount !== undefined ? ad.tokenAmount : ad[3];
-      const pricePerToken = ad.pricePerToken !== undefined ? ad.pricePerToken : ad[4];
-      const dealTimeout = ad.dealTimeout !== undefined ? ad.dealTimeout : ad[5];
-      const adExpiry = ad.adExpiry !== undefined ? ad.adExpiry : ad[6];
-      // v3: adDuration is at index 7, paymentInfo at 8, status at 9
-      const paymentInfo = ad.paymentInfo !== undefined ? ad.paymentInfo : ad[8];
-      const status = ad.status !== undefined ? ad.status : ad[9];
+      const id = ad.id !== undefined ? ad.id : index + 1;
+      const seller = ad.seller || ad[0];
+      const tokenAddr = ad.token || ad[1];
+      const tokenAmount = ad.remainingAmount !== undefined ? ad.remainingAmount : ad[3];
+      const lockedInDeals = ad.lockedInDeals !== undefined ? ad.lockedInDeals : ad[4];
+      const pricePerToken = ad.pricePerToken !== undefined ? ad.pricePerToken : ad[7];
+      const paymentInfo = ad.paymentMethod !== undefined ? ad.paymentMethod : ad[8];
+      const active = ad.active !== undefined ? ad.active : ad[9];
+      const status = active ? (BigInt(String(lockedInDeals || 0)) > 0n ? 1 : 0) : 3;
 
       if (id === undefined || tokenAmount === undefined) continue;
 
@@ -79,8 +79,8 @@ export function useContractAds() {
         tokenAmount: amountFormatted,
         pricePerToken: priceFormatted,
         inrTotal,
-        dealTimeout: Number(dealTimeout),
-        adExpiry: Number(adExpiry),
+        dealTimeout: DEFAULT_DEAL_TIMEOUT,
+        adExpiry: NO_AD_EXPIRY,
         paymentInfo: String(paymentInfo),
         status: Number(status),
       });

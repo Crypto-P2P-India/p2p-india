@@ -17,7 +17,9 @@ interface CreateOrderModalProps {
   onClose: () => void;
 }
 
-const NATIVE_BNB = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
+const NATIVE_BNB = "0x0000000000000000000000000000000000000000";
+const SELLER_FEE_BPS = 15n;
+const BPS_DENOM = 10000n;
 
 const CRYPTOS = [
   { symbol: "USDT", address: USDT_ADDRESS },
@@ -26,20 +28,6 @@ const CRYPTOS = [
 
 const PAYMENT_METHODS = ["UPI", "Bank Transfer", "Google Pay", "PhonePe", "PayPal", "Wise", "Cash/Bank Deposit", "Digital Rupee"] as const;
 type PaymentMethod = (typeof PAYMENT_METHODS)[number];
-
-const DEAL_TIMEOUTS = [
-  { label: "15 min", value: 900 },
-  { label: "30 min", value: 1800 },
-  { label: "1 hour", value: 3600 },
-  { label: "2 hours", value: 7200 },
-];
-const AD_DURATIONS = [
-  { label: "30 min", value: 1800 },
-  { label: "1 hour", value: 3600 },
-  { label: "6 hours", value: 21600 },
-  { label: "24 hours", value: 86400 },
-  { label: "72 hours", value: 259200 },
-];
 
 type Step = "form" | "approving" | "posting";
 
@@ -50,8 +38,6 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
   const [crypto, setCrypto] = useState("USDT");
   const [price, setPrice] = useState("");
   const [amount, setAmount] = useState("");
-  const [dealTimeout, setDealTimeout] = useState(900);
-  const [adDuration, setAdDuration] = useState(3600);
   const [step, setStep] = useState<Step>("form");
 
   // Payment fields
@@ -111,6 +97,8 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
   const selectedToken = CRYPTOS.find((c) => c.symbol === crypto)!;
   const isBNB = crypto === "BNB";
   const tokenAmountWei = amount ? parseUnits(amount, 18) : BigInt(0);
+  const sellerFeeWei = (tokenAmountWei * SELLER_FEE_BPS) / BPS_DENOM;
+  const createRequiredWei = tokenAmountWei + sellerFeeWei;
 
   // For BNB: user enters INR per USD rate, we multiply by live BNB/USD price
   const { bnbPrice, isLoading: bnbPriceLoading } = useBnbPrice(isBNB && open);
@@ -136,8 +124,10 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
     ? bnbBalance ? parseFloat(formatUnits(bnbBalance.value, 18)) : 0
     : usdtBalance ? parseFloat(formatUnits(usdtBalance as bigint, 18)) : 0;
   const walletBalanceFormatted = walletBalance.toFixed(4);
-  const amountNum = amount ? parseFloat(amount) : 0;
-  const exceedsBalance = amountNum > walletBalance;
+  const maxSellAmount = walletBalance > 0 ? walletBalance / 1.0015 : 0;
+  const createRequiredFormatted = formatUnits(createRequiredWei, 18);
+  const createRequiredAmount = parseFloat(formatUnits(createRequiredWei, 18));
+  const exceedsBalance = createRequiredAmount > walletBalance;
 
   // Allowance
   const { data: allowance } = useReadContract({
@@ -147,7 +137,7 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
     args: address ? [address, P2P_CONTRACT_ADDRESS] : undefined,
     query: { enabled: !isBNB && !!address && open },
   });
-  const needsApproval = !isBNB && (allowance === undefined || (allowance as bigint) < tokenAmountWei);
+  const needsApproval = !isBNB && (allowance === undefined || (allowance as bigint) < createRequiredWei);
 
   // Transactions
   const { writeContract: approve, data: approveTxHash, isPending: isApproving, reset: resetApprove, error: approveError } = useWriteContract();
@@ -235,9 +225,11 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
       createAd({
         address: P2P_CONTRACT_ADDRESS,
         abi: P2P_ESCROW_ABI,
-        functionName: "createAd",
-        args: [selectedToken.address as `0x${string}`, tokenAmountWei, pricePerTokenWei, BigInt(dealTimeout), BigInt(adDuration), paymentStr],
-        value: isBNB ? tokenAmountWei : BigInt(0),
+        functionName: isBNB ? "createSellAdNative" : "createSellAdToken",
+        args: isBNB
+          ? [tokenAmountWei, tokenAmountWei, pricePerTokenWei, paymentStr]
+          : [selectedToken.address as `0x${string}`, tokenAmountWei, tokenAmountWei, pricePerTokenWei, paymentStr],
+        value: isBNB ? createRequiredWei : BigInt(0),
       } as any);
     } catch (e: any) {
       toast.error(e?.shortMessage || "Transaction failed");
@@ -258,7 +250,7 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
           address: USDT_ADDRESS,
           abi: ERC20_ABI,
           functionName: "approve",
-          args: [P2P_CONTRACT_ADDRESS, tokenAmountWei],
+          args: [P2P_CONTRACT_ADDRESS, createRequiredWei],
         } as any);
       } catch (e: any) {
         toast.error(e?.shortMessage || "Approval failed");
@@ -560,7 +552,7 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
                   <span>{walletBalanceFormatted} {crypto}</span>
                   <button
                     type="button"
-                    onClick={() => setAmount(walletBalance.toString())}
+                    onClick={() => setAmount(maxSellAmount.toString())}
                     disabled={isProcessing || walletBalance <= 0}
                     className="text-primary font-medium hover:text-primary/80 transition-colors ml-1"
                   >
@@ -578,7 +570,7 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
               />
               {exceedsBalance && amount && (
                 <p className="text-xs text-destructive mt-1">
-                  Insufficient balance. You have {walletBalanceFormatted} {crypto}
+                  Insufficient balance. Deposit requires {createRequiredFormatted} {crypto} including escrow fee.
                 </p>
               )}
             </div>
@@ -588,6 +580,9 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
               <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-center">
                 <span className="text-xs text-muted-foreground">Buyer will pay </span>
                 <span className="text-lg font-bold text-primary">₹{inrTotal}</span>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Deposit: {createRequiredFormatted} {crypto} including prepaid escrow fee
+                </p>
                 {isBNB && bnbPrice && (
                   <p className="text-xs text-muted-foreground mt-1">
                     {amount} BNB × ${bnbPrice.toFixed(2)} × ₹{price} = ₹{inrTotal}
@@ -595,52 +590,6 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
                 )}
               </div>
             )}
-
-            {/* Deal Timeout */}
-            <div>
-              <Label className="text-xs text-muted-foreground mb-1.5 block">
-                Deal Timeout (buyer must pay within)
-              </Label>
-              <div className="flex flex-wrap gap-1.5">
-                {DEAL_TIMEOUTS.map((t) => (
-                  <button
-                    key={t.value}
-                    onClick={() => setDealTimeout(t.value)}
-                    disabled={isProcessing}
-                    className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
-                      dealTimeout === t.value
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-surface-3 text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {t.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Ad Duration */}
-            <div>
-              <Label className="text-xs text-muted-foreground mb-1.5 block">
-                Ad Duration (how long it stays live)
-              </Label>
-              <div className="flex flex-wrap gap-1.5">
-                {AD_DURATIONS.map((d) => (
-                  <button
-                    key={d.value}
-                    onClick={() => setAdDuration(d.value)}
-                    disabled={isProcessing}
-                    className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
-                      adDuration === d.value
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-surface-3 text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {d.label}
-                  </button>
-                ))}
-              </div>
-            </div>
 
             {/* Status indicators */}
             {step === "approving" && (
