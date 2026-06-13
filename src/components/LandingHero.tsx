@@ -1,5 +1,4 @@
 import { ExternalLink, Zap, Lock, ShieldCheck, Link2 } from "lucide-react";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
 import ScrollReveal from "@/components/ScrollReveal";
 
 const HIGHLIGHTS = [
