@@ -18,7 +18,6 @@ export default function DeployContractCard() {
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
   const { switchChainAsync } = useSwitchChain();
-  const publicClient = usePublicClient({ chainId: bsc.id });
   const { data: walletClient } = useWalletClient();
   const [feeCollector, setFeeCollector] = useState<string>("");
   const [deployedAddress, setDeployedAddress] = useState<string>("");
