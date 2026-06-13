@@ -93,10 +93,20 @@ jobs:
               exit 1
               ;;
           esac
-          # Verify password + alias work before we hand it to Gradle
-          keytool -list -keystore android/app/crypto-p2p.jks \
-            -storepass "$ANDROID_KEYSTORE_PASSWORD" \
-            -alias "$ANDROID_KEY_ALIAS" >/dev/null
+          # Show all aliases in the keystore (helps diagnose alias mismatch)
+          echo "--- Aliases in keystore ---"
+          if ! keytool -list -keystore android/app/crypto-p2p.jks -storepass "$ANDROID_KEYSTORE_PASSWORD" 2>&1; then
+            echo "ERROR: Could not list keystore. The ANDROID_KEYSTORE_PASSWORD secret is wrong."
+            exit 1
+          fi
+          echo "--- Verifying alias '$ANDROID_KEY_ALIAS' ---"
+          if ! keytool -list -keystore android/app/crypto-p2p.jks \
+              -storepass "$ANDROID_KEYSTORE_PASSWORD" \
+              -alias "$ANDROID_KEY_ALIAS" 2>&1; then
+            echo "ERROR: Alias '$ANDROID_KEY_ALIAS' not found in keystore (see aliases above)."
+            echo "Update the ANDROID_KEY_ALIAS secret to match."
+            exit 1
+          fi
           echo "Keystore verified successfully."
 
       - name: Build signed APK
