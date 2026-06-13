@@ -1,9 +1,12 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, ArrowLeftRight, ShoppingBag, Handshake, PlusCircle, Info, BookOpen, FileText, Shield } from "lucide-react";
+import { Menu, ArrowLeftRight, ShoppingBag, Handshake, PlusCircle, Info, BookOpen, FileText, Shield, MessageCircle, Wallet } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useAccount } from "wagmi";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useGlobalUnreadCount } from "@/hooks/useGlobalUnreadCount";
+
+const TG_LINK = "https://t.me/Tobi3811";
 
 const PRIMARY = [
   { label: "P2P Marketplace", href: "/", icon: ArrowLeftRight },
