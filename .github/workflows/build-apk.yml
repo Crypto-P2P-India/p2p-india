@@ -63,9 +63,41 @@ jobs:
           fi
           npx cap sync android
 
-      - name: Decode keystore
+      - name: Decode and verify keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
         run: |
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/crypto-p2p.jks
+          set -e
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "ERROR: ANDROID_KEYSTORE_BASE64 secret is empty."
+            echo "Generate it locally with:  base64 -w 0 crypto-p2p.jks  (Linux)"
+            echo "                       or: base64 -i crypto-p2p.jks | tr -d '\\n'  (macOS)"
+            exit 1
+          fi
+          mkdir -p android/app
+          # Strip whitespace/newlines that often sneak in when pasting the secret
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | tr -d '[:space:]' | base64 -d > android/app/crypto-p2p.jks
+          ls -l android/app/crypto-p2p.jks
+          # Sanity-check magic bytes: a real JKS starts with FE ED FE ED, PKCS12 starts with 30 82
+          HEADER=$(xxd -p -l 4 android/app/crypto-p2p.jks)
+          echo "Keystore header bytes: $HEADER"
+          case "$HEADER" in
+            feedfeed*) echo "Detected JKS keystore." ;;
+            3082*)     echo "Detected PKCS12 keystore." ;;
+            *)
+              echo "ERROR: Decoded file is not a valid JKS/PKCS12 keystore."
+              echo "Re-encode your .jks file with no line wrapping and update the ANDROID_KEYSTORE_BASE64 secret:"
+              echo "  base64 -w 0 crypto-p2p.jks | pbcopy   # or > keystore.b64"
+              exit 1
+              ;;
+          esac
+          # Verify password + alias work before we hand it to Gradle
+          keytool -list -keystore android/app/crypto-p2p.jks \
+            -storepass "$ANDROID_KEYSTORE_PASSWORD" \
+            -alias "$ANDROID_KEY_ALIAS" >/dev/null
+          echo "Keystore verified successfully."
 
       - name: Build signed APK
         working-directory: android
