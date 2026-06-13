@@ -395,7 +395,7 @@ function DealRow({ dealId, onResolve }: { dealId: number; onResolve: (id: number
             )}
             {!isDisputed && status !== 0 && status !== 1 && (
               <span className="text-xs text-muted-foreground">
-                {status === 5 ? "Resolved" : status >= 2 ? "Closed" : ""}
+                {status >= 2 ? "Closed" : ""}
               </span>
             )}
           </div>
@@ -454,7 +454,7 @@ function AdRow({ adId }: { adId: number }) {
 
   const ad = data as any;
   const active = Boolean(ad.active !== undefined ? ad.active : ad[9]);
-  const status = active ? 0 : 3;
+  const status: number = active ? 0 : 3;
   const NATIVE_BNB = "0x0000000000000000000000000000000000000000";
   const token = String(ad.token || ad[1]).toLowerCase() === NATIVE_BNB.toLowerCase() ? "BNB" : "USDT";
   const amount = formatUnits(ad.remainingAmount !== undefined ? ad.remainingAmount : ad[3], 18);
