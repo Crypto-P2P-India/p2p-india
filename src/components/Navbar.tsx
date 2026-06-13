@@ -80,7 +80,9 @@ const Navbar = () => {
                 }}
               </ConnectButton.Custom>
             ) : (
-              <ConnectButton chainStatus="icon" accountStatus="avatar" showBalance={false} />
+              <div className="scale-90 origin-right">
+                <ConnectButton chainStatus="icon" accountStatus="avatar" showBalance={false} label="Connect" />
+              </div>
             )}
           </div>
         </div>
