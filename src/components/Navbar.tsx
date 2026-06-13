@@ -1,6 +1,8 @@
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { Link } from "react-router-dom";
 import ThemeToggle from "@/components/ThemeToggle";
+import ApkDownloadButton from "@/components/ApkDownloadButton";
+import { isNativeApp } from "@/lib/platform";
 
 const Navbar = () => {
   return (
