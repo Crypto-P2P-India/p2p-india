@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import ChatPanel from "@/components/ChatPanel";
 import { cleanupDealAttachments } from "@/lib/dealCleanup";
+import DeployContractCard from "@/components/DeployContractCard";
 
 const DEAL_STATUS_LABELS: Record<number, string> = {
   0: "Active",
@@ -123,21 +124,26 @@ const Admin = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <div className="flex flex-col items-center justify-center py-32">
-          <XCircle className="h-12 w-12 text-destructive mb-4" />
-          <p className="text-foreground font-semibold mb-1">Access Denied</p>
-          <p className="text-muted-foreground text-sm">
-            Only the contract owner can access this page.
-          </p>
-          <p className="text-muted-foreground text-xs mt-2">
-            Connected: {shortenAddress(address)}
-          </p>
-          <Link to="/">
-            <Button variant="outline" size="sm" className="mt-4 gap-2">
-              <ArrowLeft className="h-4 w-4" /> Back to Trading
-            </Button>
-          </Link>
-        </div>
+        <main className="mx-auto max-w-2xl px-4 py-8">
+          <div className="flex flex-col items-center text-center mb-6">
+            <XCircle className="h-12 w-12 text-destructive mb-4" />
+            <p className="text-foreground font-semibold mb-1">Not the current contract owner</p>
+            <p className="text-muted-foreground text-sm">
+              You can still deploy a new escrow contract below.
+            </p>
+            <p className="text-muted-foreground text-xs mt-2">
+              Connected: {shortenAddress(address)}
+            </p>
+          </div>
+          <DeployContractCard />
+          <div className="flex justify-center">
+            <Link to="/">
+              <Button variant="outline" size="sm" className="gap-2">
+                <ArrowLeft className="h-4 w-4" /> Back to Trading
+              </Button>
+            </Link>
+          </div>
+        </main>
       </div>
     );
   }
@@ -166,6 +172,8 @@ const Admin = () => {
             <RefreshCw className="h-4 w-4" /> Refresh
           </Button>
         </div>
+
+        <DeployContractCard />
 
         {/* Stats cards */}
         <div className="grid grid-cols-2 gap-4 mb-8 sm:grid-cols-4 animate-fade-up" style={{ animationDelay: "100ms" }}>
