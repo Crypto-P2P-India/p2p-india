@@ -1,4 +1,6 @@
 import { Link } from "react-router-dom";
+import { Download } from "lucide-react";
+import { APP_VERSION } from "@/lib/platform";
 
 const Footer = () => (
   <footer className="border-t border-border bg-surface-1 mt-12 safe-bottom">
@@ -10,9 +12,17 @@ const Footer = () => (
             <img src="/favicon.png" alt="Crypto P2P" className="h-6 w-6" />
             Crypto P2P
           </Link>
-          <p className="text-xs text-muted-foreground leading-relaxed max-w-xs">
+          <p className="text-xs text-muted-foreground leading-relaxed max-w-xs mb-4">
             Decentralised peer-to-peer crypto marketplace on BNB Smart Chain. Zero fees, smart contract escrow, no middlemen.
           </p>
+          <a
+            href="/downloads/crypto-p2p.apk"
+            download
+            className="inline-flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-xs font-bold text-primary hover:bg-primary/20 transition-colors"
+          >
+            <Download className="h-3.5 w-3.5" />
+            Download Android APK · v{APP_VERSION}
+          </a>
         </div>
 
         {/* Quick Links */}
