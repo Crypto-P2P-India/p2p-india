@@ -8,6 +8,7 @@
         "@capacitor/android": "^6.2.1",
         "@capacitor/cli": "^6.2.1",
         "@capacitor/core": "^6.2.1",
+        "@capacitor/splash-screen": "^6.0.4",
         "@hookform/resolvers": "^3.10.0",
         "@metamask/sdk": "^0.34.0",
         "@radix-ui/react-accordion": "^1.2.11",
@@ -110,6 +111,8 @@
     "@capacitor/cli": ["@capacitor/cli@6.2.1", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@capacitor/cli/-/cli-6.2.1.tgz", { "dependencies": { "@ionic/cli-framework-output": "^2.2.5", "@ionic/utils-fs": "^3.1.6", "@ionic/utils-subprocess": "2.1.11", "@ionic/utils-terminal": "^2.3.3", "commander": "^9.3.0", "debug": "^4.3.4", "env-paths": "^2.2.0", "kleur": "^4.1.4", "native-run": "^2.0.0", "open": "^8.4.0", "plist": "^3.0.5", "prompts": "^2.4.2", "rimraf": "^4.4.1", "semver": "^7.3.7", "tar": "^6.1.11", "tslib": "^2.4.0", "xml2js": "^0.5.0" }, "bin": { "cap": "bin/capacitor", "capacitor": "bin/capacitor" } }, "sha512-JKl0FpFge8PgQNInw12kcKieQ4BmOyazQ4JGJOfEpVXlgrX1yPhSZTPjngupzTCiK3I7q7iGG5kjun0fDqgSCA=="],
 
     "@capacitor/core": ["@capacitor/core@6.2.1", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@capacitor/core/-/core-6.2.1.tgz", { "dependencies": { "tslib": "^2.1.0" } }, "sha512-urZwxa7hVE/BnA18oCFAdizXPse6fCKanQyEqpmz6cBJ2vObwMpyJDG5jBeoSsgocS9+Ax+9vb4ducWJn0y2qQ=="],
+
+    "@capacitor/splash-screen": ["@capacitor/splash-screen@6.0.4", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@capacitor/splash-screen/-/splash-screen-6.0.4.tgz", { "peerDependencies": { "@capacitor/core": "^6.0.0" } }, "sha512-uJXR+28cdaie7zIIUBvgkWgHim6Gr1itJym9voIMTmrjXkOaPtejwxYJsdQWPJz9zgGnSbXuC1mNNibLgv3OpQ=="],
 
     "@coinbase/cdp-sdk": ["@coinbase/cdp-sdk@1.46.1", "", { "dependencies": { "@solana-program/system": "^0.10.0", "@solana-program/token": "^0.9.0", "@solana/kit": "^5.5.1", "abitype": "1.0.6", "axios": "1.13.6", "axios-retry": "^4.5.0", "jose": "^6.2.0", "md5": "^2.3.0", "uncrypto": "^0.1.3", "viem": "^2.47.0", "zod": "^3.25.76" } }, "sha512-//d0db/zbg/ahUqPtTvDBufRm0NXbjIvie56Fleg0IsA5v0qI0hGK0jXePWSy+Gv3txe9jVeEKtmiA1D85V0Vg=="],
 
