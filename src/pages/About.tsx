@@ -1,6 +1,7 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Shield, Zap, Users, Lock, ArrowLeftRight, Clock } from "lucide-react";
+import { P2P_CONTRACT_ADDRESS } from "@/config/wagmi";
 
 const FEATURES = [
   { icon: Lock, title: "Escrow Protection", desc: "Seller tokens are locked in an audited smart contract. Funds only release when both parties confirm the trade." },
@@ -69,12 +70,12 @@ const About = () => (
           All transfers are secured by our escrow contract deployed on BNB Smart Chain mainnet.
         </p>
         <a
-          href="https://bscscan.com/address/0xd79ef02e1F64EF4368b942020129bd0Bc7da0d95"
+          href={`https://bscscan.com/address/${P2P_CONTRACT_ADDRESS}`}
           target="_blank"
           rel="noopener noreferrer"
           className="text-xs text-primary hover:underline font-mono break-all"
         >
-          0xd79ef02e1F64EF4368b942020129bd0Bc7da0d95
+          {P2P_CONTRACT_ADDRESS}
         </a>
       </div>
 
