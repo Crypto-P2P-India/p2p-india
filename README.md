@@ -1,3 +1,3 @@
-# Welcome to your Lovable project
+# Welcome to Crypto p2p
 
 TODO: Document your project here
