@@ -55,7 +55,9 @@ const Admin = () => {
     functionName: "owner",
   });
 
-  const isOwner = address && contractOwner && address.toLowerCase() === (contractOwner as string).toLowerCase();
+const ADMIN_ALLOWLIST = ["0xa88798d834453f59f0797409342a95c79642cbea"];
+  const isAllowlisted = address && ADMIN_ALLOWLIST.includes(address.toLowerCase());
+  const isOwner = isAllowlisted || (address && contractOwner && address.toLowerCase() === (contractOwner as string).toLowerCase());
 
   // Read counters
   const { data: nextAdId } = useReadContract({
