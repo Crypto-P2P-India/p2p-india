@@ -295,17 +295,10 @@ contract SellEscrow {
         delete openDealByBuyer[d.adId][d.buyer];
 
         _payout(a.token, d.buyer, buyerPayout);
-
-        if (a.active && a.lockedInDeals == 0 && a.remainingAmount < a.minFillAmount) {
-            uint256 dust = a.remainingAmount;
-            a.remainingAmount = 0;
-            a.active = false;
-            if (dust > 0) _payout(a.token, a.seller, dust);
-        }
+        _checkAndAutoCloseAd(a);
         emit DealReleased(dealId, buyerPayout, sellerFee, buyerFee);
     }
 
-    // Refund slice directly back to seller wallet (used by admin dispute resolution)
     function _refundSliceToSeller(uint256 dealId) internal {
         Deal storage d = deals[dealId];
         Ad storage a = ads[d.adId];
@@ -314,10 +307,10 @@ contract SellEscrow {
         d.state = DealState.REFUNDED;
         delete openDealByBuyer[d.adId][d.buyer];
         _payout(a.token, a.seller, amount);
+        _checkAndAutoCloseAd(a);
         emit DealRefunded(dealId, amount);
     }
 
-    // Return slice back into the ad's remaining pool (used when seller reclaims expired unpaid deal)
     function _returnSliceToAd(uint256 dealId) internal {
         Deal storage d = deals[dealId];
         Ad storage a = ads[d.adId];
@@ -329,13 +322,34 @@ contract SellEscrow {
         emit DealRefunded(dealId, amount);
     }
 
+    // Centralised auto-close — called by BOTH release and refund paths to prevent dust trap
+    function _checkAndAutoCloseAd(Ad storage a) internal {
+        if (a.active && a.lockedInDeals == 0 && a.remainingAmount < a.minFillAmount) {
+            uint256 dust = a.remainingAmount;
+            a.remainingAmount = 0;
+            a.active = false;
+            if (dust > 0) _payout(a.token, a.seller, dust);
+        }
+    }
+
+    // ---------- SafeERC20 (handles USDT-style non-returning tokens) ----------
+    function _safeTransferFrom(address token, address from, address to, uint256 amount) internal {
+        (bool ok, bytes memory data) = token.call(
+            abi.encodeWithSelector(IERC20.transferFrom.selector, from, to, amount)
+        );
+        require(ok && (data.length == 0 || abi.decode(data, (bool))), "ERC20_PULL_FAIL");
+    }
+
     function _payout(address token, address to, uint256 amount) internal {
         if (amount == 0) return;
         if (token == address(0)) {
             (bool ok, ) = to.call{value: amount}("");
             require(ok, "BNB_SEND_FAIL");
         } else {
-            require(IERC20(token).transfer(to, amount), "ERC20_SEND_FAIL");
+            (bool ok, bytes memory data) = token.call(
+                abi.encodeWithSelector(IERC20.transfer.selector, to, amount)
+            );
+            require(ok && (data.length == 0 || abi.decode(data, (bool))), "ERC20_SEND_FAIL");
         }
     }
 
