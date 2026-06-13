@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useAccount, useChainId, usePublicClient, useWaitForTransactionReceipt, useSwitchChain, useWalletClient } from "wagmi";
 import { bsc } from "wagmi/chains";
-import { encodeDeployData, isAddress, parseGwei } from "viem";
+import { encodeDeployData, isAddress, parseGwei, type Abi } from "viem";
 import { Rocket, ExternalLink, Copy, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -45,7 +45,7 @@ export default function DeployContractCard() {
       }
 
       const deployData = encodeDeployData({
-        abi: SELL_ESCROW_ABI as any,
+        abi: SELL_ESCROW_ABI as Abi,
         bytecode: SELL_ESCROW_BYTECODE as `0x${string}`,
         args: [collector as `0x${string}`],
       });
@@ -66,7 +66,7 @@ export default function DeployContractCard() {
       }
 
       toast.info("Confirm the deployment in your wallet…");
-      const hash = await (walletClient as any).sendTransaction({
+      const hash = await walletClient.sendTransaction({
         account: address as `0x${string}`,
         chain: bsc,
         data: deployData,
@@ -74,8 +74,9 @@ export default function DeployContractCard() {
         gasPrice,
       });
       setTxHash(hash);
-    } catch (e: any) {
-      toast.error(e?.shortMessage || e?.message || "Deployment failed");
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Deployment failed";
+      toast.error(message);
     } finally {
       setIsPending(false);
     }
