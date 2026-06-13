@@ -1,5 +1,6 @@
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { Link } from "react-router-dom";
+import { Wallet } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import ApkDownloadButton from "@/components/ApkDownloadButton";
 import SideMenu from "@/components/SideMenu";
@@ -32,9 +33,55 @@ const Navbar = () => {
           <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             {!native && <ApkDownloadButton />}
             <ThemeToggle />
-            <div className="scale-[0.5] origin-right -mr-4">
+            {native ? (
+              <ConnectButton.Custom>
+                {({ account, chain, openAccountModal, openChainModal, openConnectModal, mounted }) => {
+                  const ready = mounted;
+                  const connected = ready && account && chain;
+                  return (
+                    <div
+                      {...(!ready && {
+                        "aria-hidden": true,
+                        style: { opacity: 0, pointerEvents: "none", userSelect: "none" },
+                      })}
+                    >
+                      {!connected ? (
+                        <button
+                          onClick={openConnectModal}
+                          aria-label="Connect Wallet"
+                          className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md shadow-primary/20 active:scale-95 transition-transform"
+                        >
+                          <Wallet className="h-5 w-5" />
+                        </button>
+                      ) : chain.unsupported ? (
+                        <button
+                          onClick={openChainModal}
+                          aria-label="Wrong network"
+                          className="flex h-10 w-10 items-center justify-center rounded-full bg-destructive text-destructive-foreground active:scale-95 transition-transform"
+                        >
+                          <Wallet className="h-5 w-5" />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={openAccountModal}
+                          aria-label="Account"
+                          className="flex h-10 items-center gap-1.5 rounded-full bg-card border border-border px-3 active:scale-95 transition-transform"
+                        >
+                          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-primary">
+                            <Wallet className="h-3.5 w-3.5" />
+                          </span>
+                          <span className="text-xs font-semibold text-foreground">
+                            {account.displayName}
+                          </span>
+                        </button>
+                      )}
+                    </div>
+                  );
+                }}
+              </ConnectButton.Custom>
+            ) : (
               <ConnectButton chainStatus="icon" accountStatus="avatar" showBalance={false} />
-            </div>
+            )}
           </div>
         </div>
       </nav>
