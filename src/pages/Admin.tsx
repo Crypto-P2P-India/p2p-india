@@ -104,8 +104,8 @@ const ADMIN_ALLOWLIST = ["0xa88798d834453f59f0797409342a95c79642cbea"];
     writeContract({
       address: P2P_CONTRACT_ADDRESS,
       abi: P2P_ESCROW_ABI,
-      functionName: "resolveDispute",
-      args: [BigInt(dealId), toSeller],
+      functionName: toSeller ? "adminRefundToSeller" : "adminReleaseToBuyer",
+      args: [BigInt(dealId)],
     } as any);
     toast.info(`Resolving deal #${dealId} — ${toSeller ? "releasing to seller" : "releasing to buyer"}…`);
   };
@@ -300,24 +300,40 @@ function DealRow({ dealId, onResolve }: { dealId: number; onResolve: (id: number
     args: [BigInt(dealId)],
   });
 
-  if (!data) return null;
-
   const deal = data as any;
-  const status = Number(deal.status);
-  const NATIVE_BNB = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
-  const token = String(deal.token).toLowerCase() === NATIVE_BNB.toLowerCase() ? "BNB" : "USDT";
-  const amount = formatUnits(deal.tokenAmount, 18);
-  const inr = formatUnits(deal.inrAmount, 2);
+  const adId = deal?.adId !== undefined ? deal.adId : deal?.[0];
+  const { data: adData } = useReadContract({
+    address: P2P_CONTRACT_ADDRESS,
+    abi: P2P_ESCROW_ABI,
+    functionName: "getAd",
+    args: adId !== undefined ? [BigInt(String(adId))] : undefined,
+    query: { enabled: adId !== undefined },
+  });
+
+  if (!data || !adData) return null;
+
+  const ad = adData as any;
+  const rawState = Number(deal.state !== undefined ? deal.state : deal[5]);
+  const status = rawState === 1 ? 0 : rawState === 2 ? 1 : rawState === 3 ? 2 : rawState === 5 ? 4 : 3;
+  const NATIVE_BNB = "0x0000000000000000000000000000000000000000";
+  const tokenAddress = String(ad.token || ad[1]);
+  const token = tokenAddress.toLowerCase() === NATIVE_BNB.toLowerCase() ? "BNB" : "USDT";
+  const rawAmount = deal.amount !== undefined ? deal.amount : deal[2];
+  const amount = formatUnits(rawAmount, 18);
+  const pricePerToken = ad.pricePerToken !== undefined ? ad.pricePerToken : ad[7];
+  const inr = formatUnits(BigInt(String(rawAmount)) * BigInt(String(pricePerToken)), 20);
   const isDisputed = status === 4;
-  const hasBuyerProof = deal.disputeProofBuyer && deal.disputeProofBuyer.length > 0;
-  const hasSellerProof = deal.disputeProofSeller && deal.disputeProofSeller.length > 0;
+  const buyer = String(deal.buyer || deal[1]);
+  const seller = String(ad.seller || ad[0]);
+  const hasBuyerProof = false;
+  const hasSellerProof = false;
 
   return (
     <>
       <TableRow className={isDisputed ? "bg-red-500/5" : ""}>
         <TableCell className="font-mono text-xs">#{dealId}</TableCell>
-        <TableCell className="font-mono text-xs">{shortenAddress(deal.buyer)}</TableCell>
-        <TableCell className="font-mono text-xs">{shortenAddress(deal.seller)}</TableCell>
+        <TableCell className="font-mono text-xs">{shortenAddress(buyer)}</TableCell>
+        <TableCell className="font-mono text-xs">{shortenAddress(seller)}</TableCell>
         <TableCell>{token}</TableCell>
         <TableCell className="tabular-nums">{parseFloat(amount).toFixed(4)}</TableCell>
         <TableCell className="tabular-nums">₹{parseFloat(inr).toFixed(2)}</TableCell>
@@ -437,17 +453,18 @@ function AdRow({ adId }: { adId: number }) {
   if (!data) return null;
 
   const ad = data as any;
-  const status = Number(ad.status);
-  const NATIVE_BNB = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
-  const token = String(ad.token).toLowerCase() === NATIVE_BNB.toLowerCase() ? "BNB" : "USDT";
-  const amount = formatUnits(ad.tokenAmount, 18);
-  const price = formatUnits(ad.pricePerToken, 2);
-  const timeoutMin = Number(ad.dealTimeout) / 60;
+  const active = Boolean(ad.active !== undefined ? ad.active : ad[9]);
+  const status = active ? 0 : 3;
+  const NATIVE_BNB = "0x0000000000000000000000000000000000000000";
+  const token = String(ad.token || ad[1]).toLowerCase() === NATIVE_BNB.toLowerCase() ? "BNB" : "USDT";
+  const amount = formatUnits(ad.remainingAmount !== undefined ? ad.remainingAmount : ad[3], 18);
+  const price = formatUnits(ad.pricePerToken !== undefined ? ad.pricePerToken : ad[7], 2);
+  const timeoutMin = 15;
 
   return (
     <TableRow>
       <TableCell className="font-mono text-xs">#{adId}</TableCell>
-      <TableCell className="font-mono text-xs">{shortenAddress(ad.seller)}</TableCell>
+      <TableCell className="font-mono text-xs">{shortenAddress(String(ad.seller || ad[0]))}</TableCell>
       <TableCell>{token}</TableCell>
       <TableCell className="tabular-nums">{parseFloat(amount).toFixed(4)}</TableCell>
       <TableCell className="tabular-nums">₹{price}</TableCell>
