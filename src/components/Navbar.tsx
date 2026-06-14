@@ -136,6 +136,7 @@ const Navbar = () => {
       </nav>
       {/* Spacer to offset fixed navbar height (including safe-area inset) */}
       <div aria-hidden className="h-14 sm:h-20" style={{ paddingTop: "env(safe-area-inset-top)" }} />
+      {native && <MobileWalletSheet open={walletSheetOpen} onOpenChange={setWalletSheetOpen} />}
     </>
   );
 };
