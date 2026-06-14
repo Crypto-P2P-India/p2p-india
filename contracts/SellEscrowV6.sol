@@ -268,7 +268,12 @@ contract SellEscrow {
             active: true,
             createdAt: uint64(block.timestamp)
         });
-        emit AdCreated(adId, msg.sender, token, amount, price, prepaidFee, expiresAt, payWindow);
+        _emitAdCreated(adId);
+    }
+
+    function _emitAdCreated(uint256 adId) internal {
+        Ad storage a = ads[adId];
+        emit AdCreated(adId, a.seller, a.token, a.totalAmount, a.pricePerToken, a.feeReserve, a.expiresAt, a.payWindow);
     }
 
     // ---------- Cancel Ad (seller) ----------
