@@ -1,5 +1,5 @@
 {
-  "version": "1.7",
+  "version": "1.8",
   "apkUrl": "/downloads/crypto-p2p.apk",
-  "notes": "Fix: wallet deep links (OKX/Trust/MetaMask) now open the installed app on Android."
+  "notes": "Permissions (camera, photos, notifications) now visible in App Info."
 }
