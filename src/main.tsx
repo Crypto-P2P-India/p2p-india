@@ -17,7 +17,28 @@ if (Capacitor.isNativePlatform()) {
     SplashScreen.hide().catch(() => undefined);
   }, 1500);
 
+  const walletNameFromScheme = (href: string): string | null => {
+    const scheme = href.split(":")[0].toLowerCase();
+    if (scheme.startsWith("okx")) return "OKX Wallet";
+    if (scheme.startsWith("metamask")) return "MetaMask";
+    if (scheme.startsWith("trust")) return "Trust Wallet";
+    if (scheme.startsWith("rainbow")) return "Rainbow";
+    if (scheme.startsWith("imtokenv2") || scheme.startsWith("imtoken")) return "imToken";
+    if (scheme.startsWith("tpoutside") || scheme.startsWith("tokenpocket")) return "TokenPocket";
+    if (scheme.startsWith("bitkeep")) return "Bitget Wallet";
+    if (scheme.startsWith("wc")) return "Wallet";
+    return null;
+  };
+
   const openNative = (href: string) => {
+    const walletName = walletNameFromScheme(href);
+    if (walletName) {
+      toast.loading(`Opening ${walletName}…`, {
+        id: "wallet-deeplink",
+        description: "Approve the connection request inside the wallet app.",
+        duration: 4000,
+      });
+    }
     try {
       const iframe = document.createElement("iframe");
       iframe.style.display = "none";
