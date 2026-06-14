@@ -18,6 +18,8 @@ export interface LiveAd {
   totalAmount: string;
   /** Amount currently locked in pending deals. */
   lockedAmount: string;
+  /** Minimum amount a buyer must take in a single deal. */
+  minFillAmount: string;
   pricePerToken: string;
   /** INR value of the currently-available amount. */
   inrTotal: string;
