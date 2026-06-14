@@ -41,11 +41,11 @@
     --sell: 0 72% 51%;
     --sell-foreground: 0 0% 100%;
 
-    --surface-1: 40 15% 97%;
-    --surface-2: 40 12% 93%;
-    --surface-3: 40 10% 89%;
+    --surface-1: 150 22% 97%;
+    --surface-2: 150 18% 92%;
+    --surface-3: 150 16% 88%;
 
-    --sidebar-background: 40 15% 96%;
+    --sidebar-background: 150 22% 96%;
     --sidebar-foreground: 220 15% 12%;
     --sidebar-primary: 160 100% 45%;
     --sidebar-primary-foreground: 220 15% 8%;
