@@ -38,11 +38,10 @@ export function useGlobalUnreadCount(userAddress: string | undefined) {
 
     fetchCount();
 
-    const channelName = `global-unread-${Date.now()}`;
-    const channel = supabase
-      .channel(channelName)
-      .on("postgres_changes", { event: "*", schema: "public", table: "deal_messages" }, () => fetchCount())
-      .subscribe();
+    const channelName = `global-unread-${Date.now()}-${Math.random()}`;
+    const channel = supabase.channel(channelName);
+    channel.on("postgres_changes", { event: "*", schema: "public", table: "deal_messages" }, () => fetchCount());
+    channel.subscribe();
 
     return () => { supabase.removeChannel(channel); };
   }, [userAddress]);
