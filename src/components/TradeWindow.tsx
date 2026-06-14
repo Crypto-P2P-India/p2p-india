@@ -47,7 +47,17 @@ const TradeWindow = ({ ad, userAddress, onClose }: TradeWindowProps) => {
   const [showChat, setShowChat] = useState(false);
   const [copied, setCopied] = useState(false);
   const [dealId, setDealId] = useState<number | null>(null);
+  const [buyAmount, setBuyAmount] = useState<string>(ad.tokenAmount);
   const isSeller = ad.seller.toLowerCase() === userAddress.toLowerCase();
+
+  const maxAmount = parseFloat(ad.tokenAmount) || 0;
+  const buyNum = parseFloat(buyAmount) || 0;
+  const priceNum = parseFloat(ad.pricePerToken) || 0;
+  const buyInrTotal = useMemo(() => (buyNum * priceNum).toFixed(2), [buyNum, priceNum]);
+  const amountValid = buyNum > 0 && buyNum <= maxAmount;
+  const payoutInr = step === "accept" ? buyInrTotal : ad.inrTotal;
+  const payoutAmount = step === "accept" ? buyAmount : ad.tokenAmount;
+  const timeoutMin = Math.round(ad.dealTimeout / 60);
 
   // Read nextDealId BEFORE accepting — this will be the dealId assigned
   const { data: nextDealId } = useReadContract({
