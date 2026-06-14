@@ -35,14 +35,13 @@ export function useUnreadCounts(dealIds: number[], userAddress: string) {
   useEffect(() => {
     if (!dealIds.length || !userAddress) return;
 
-    const channel = supabase
-      .channel("unread-counts")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "deal_messages" },
-        () => { fetchCounts(); }
-      )
-      .subscribe();
+    const channel = supabase.channel(`unread-counts-${Date.now()}-${Math.random()}`);
+    channel.on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "deal_messages" },
+      () => { fetchCounts(); }
+    );
+    channel.subscribe();
 
     return () => { supabase.removeChannel(channel); };
   }, [dealIds.join(","), userAddress, fetchCounts]);
