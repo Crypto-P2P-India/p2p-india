@@ -146,7 +146,7 @@ const TradeWindow = ({ ad, userAddress, onClose }: TradeWindowProps) => {
 
   const handleAcceptDeal = () => {
     if (!amountValid) {
-      toast.error(`Enter an amount between 0 and ${maxAmount} ${ad.tokenSymbol}`);
+      toast.error(`Enter a whole number between ${minAmount} and ${maxAmount} ${ad.tokenSymbol}`);
       return;
     }
     // Capture the nextDealId before sending the tx
@@ -157,7 +157,7 @@ const TradeWindow = ({ ad, userAddress, onClose }: TradeWindowProps) => {
       address: P2P_CONTRACT_ADDRESS,
       abi: P2P_ESCROW_ABI,
       functionName: "takeDeal",
-      args: [BigInt(ad.adId), parseUnits(buyAmount, 18)],
+      args: [BigInt(ad.adId), parseUnits(String(buyNumSafe), 18)],
     } as any);
   };
 
