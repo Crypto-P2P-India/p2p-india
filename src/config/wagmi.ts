@@ -8,12 +8,36 @@ import {
   phantomWallet,
   injectedWallet,
 } from "@rainbow-me/rainbowkit/wallets";
+import type { Wallet } from "@rainbow-me/rainbowkit";
 import { bsc } from "wagmi/chains";
 import { http } from "wagmi";
+
+const okxWalletWithNativeDeepLink = (options: Parameters<typeof okxWallet>[0]): Wallet => {
+  const wallet = okxWallet(options);
+  return {
+    ...wallet,
+    mobile: {
+      ...wallet.mobile,
+      getUri: (uri: string) => `okex://main/wc?uri=${encodeURIComponent(uri)}`,
+    },
+  };
+};
 
 export const config = getDefaultConfig({
   appName: "Crypto P2P",
   projectId: "28e26a9fa8f1bef0d253abc623eec65c",
+  walletConnectParameters: {
+    metadata: {
+      name: "Crypto P2P",
+      description: "Crypto P2P",
+      url: "https://crypto-p2p.store",
+      icons: ["https://crypto-p2p.store/favicon.png"],
+      redirect: {
+        native: "com.cryptop2p.chat://",
+        universal: "https://crypto-p2p.store",
+      },
+    },
+  },
   chains: [bsc],
   transports: {
     [bsc.id]: http("https://bsc-dataseed.binance.org"),
@@ -22,7 +46,7 @@ export const config = getDefaultConfig({
   wallets: [
     {
       groupName: "Popular",
-      wallets: [metaMaskWallet, okxWallet, trustWallet, coinbaseWallet, walletConnectWallet],
+      wallets: [metaMaskWallet, okxWalletWithNativeDeepLink, trustWallet, coinbaseWallet, walletConnectWallet],
     },
     {
       groupName: "More",
