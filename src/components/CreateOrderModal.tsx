@@ -50,6 +50,8 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
   const [amount, setAmount] = useState("");
   const [allowPartial, setAllowPartial] = useState(false);
   const [minFill, setMinFill] = useState("");
+  const [payWindowSec, setPayWindowSec] = useState<number>(15 * 60);
+  const [adDurationSec, setAdDurationSec] = useState<number>(60 * 60);
   const [step, setStep] = useState<Step>("form");
 
   // Payment fields
