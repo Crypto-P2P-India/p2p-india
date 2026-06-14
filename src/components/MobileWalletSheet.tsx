@@ -54,7 +54,8 @@ const MobileWalletSheet = ({ open, onOpenChange }: Props) => {
   const [connectingWallet, setConnectingWallet] = useState<string | null>(null);
 
   useEffect(() => {
-    const check = () => setHasInjected(typeof window !== "undefined" && !!(window as any).ethereum);
+    const check = () =>
+      setHasInjected(typeof window !== "undefined" && !!(window as Window & { ethereum?: unknown }).ethereum);
     check();
     const t = setTimeout(check, 400);
     return () => clearTimeout(t);
