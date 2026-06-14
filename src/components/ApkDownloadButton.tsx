@@ -73,7 +73,7 @@ const ApkDownloadButton = () => {
                   Crypto P2P India
                 </DialogTitle>
                 <DialogDescription className="text-xs text-muted-foreground">
-                  Android APK · v{APK_VERSION} · {APK_SIZE}
+                  Android APK{version && ` · v${version}`}{size && ` · ${size}`}
                 </DialogDescription>
               </DialogHeader>
             </div>
