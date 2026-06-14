@@ -1,5 +1,5 @@
 {
-  "version": "1.10",
+  "version": "1.11",
   "apkUrl": "/downloads/crypto-p2p.apk",
-  "notes": "Improved OKX wallet connection, runtime permissions, and splash screen timing."
+  "notes": "Marketplace in header, partial buy with seller minimum (whole numbers), clearer available amount & payment-window warning."
 }
