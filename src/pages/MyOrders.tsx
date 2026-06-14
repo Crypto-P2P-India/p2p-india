@@ -194,7 +194,7 @@ const MyOrders = () => {
           </div>
 
           {(deal.status === 0 || deal.status === 1) && (() => {
-            const fullWindow = deal.status === 1 ? 1800 : 900;
+            const fullWindow = deal.status === 1 ? 1800 : (deal.payWindow + deal.payDeadlineOffset);
             return (
               <div className="mt-3">
                 <div className="h-1.5 w-full rounded-full bg-surface-3 overflow-hidden">
