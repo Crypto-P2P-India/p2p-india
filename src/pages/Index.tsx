@@ -35,7 +35,7 @@ const Index = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [maxPrice, setMaxPrice] = useState("");
   const [minAmount, setMinAmount] = useState("");
-  const [expiredBannerDismissed, setExpiredBannerDismissed] = useState(false);
+  
 
   const { ads: liveAds, isLoading, refetch: refetchAds } = useContractAds();
 
