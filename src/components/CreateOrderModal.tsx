@@ -302,7 +302,7 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
       : (parseFloat(price) * parseFloat(amount)).toFixed(2)
     : "0.00";
   const isProcessing = step !== "form";
-  const canSubmit = !!price && !!amount && isPaymentValid() && !isProcessing && !exceedsBalance && (!isBNB || bnbPrice !== null);
+  const canSubmit = !!price && !!amount && isPaymentValid() && !isProcessing && !exceedsBalance && !minFillInvalid && !minTradeBelowDollar && (!isBNB || bnbPrice !== null);
 
   if (!open) return null;
 
