@@ -199,7 +199,7 @@ contract SellEscrow {
         uint32 adDuration,
         uint32 payWindow
     ) external payable nonReentrant returns (uint256 adId) {
-        AdInput calldata input = AdInput(amount, minFillAmount, pricePerToken, paymentMethod, adDuration, payWindow);
+        AdInput memory input = AdInput(amount, minFillAmount, pricePerToken, paymentMethod, adDuration, payWindow);
         _validateAdInput(input);
         require(msg.value == _quoteRequired(amount), "BAD_VALUE");
         adId = _createAd(address(0), input, _sellerFee(amount, sellerFeeBps));
@@ -215,7 +215,7 @@ contract SellEscrow {
         uint32 payWindow
     ) external nonReentrant returns (uint256 adId) {
         require(token != address(0), "BAD_TOKEN");
-        AdInput calldata input = AdInput(amount, minFillAmount, pricePerToken, paymentMethod, adDuration, payWindow);
+        AdInput memory input = AdInput(amount, minFillAmount, pricePerToken, paymentMethod, adDuration, payWindow);
         _validateAdInput(input);
         uint256 fee = _sellerFee(amount, sellerFeeBps);
         _pullExact(token, msg.sender, amount + fee);
