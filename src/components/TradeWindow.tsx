@@ -336,37 +336,40 @@ const TradeWindow = ({ ad, userAddress, onClose }: TradeWindowProps) => {
                   <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <label className="text-sm font-semibold text-foreground">How much {ad.tokenSymbol} to buy?</label>
-                      <span className="text-xs text-muted-foreground tabular-nums">Max: {ad.tokenAmount}</span>
+                      <span className="text-xs text-muted-foreground tabular-nums">
+                        Min: {minAmount} · Max: {maxAmount}
+                      </span>
                     </div>
                     <div className="relative">
                       <Input
                         type="number"
-                        inputMode="decimal"
-                        min="0"
+                        inputMode="numeric"
+                        min={minAmount}
                         max={maxAmount}
-                        step="any"
+                        step={1}
                         value={buyAmount}
-                        onChange={(e) => setBuyAmount(e.target.value)}
+                        onChange={(e) => {
+                          // Whole numbers only — strip anything else.
+                          const v = e.target.value.replace(/[^\d]/g, "");
+                          setBuyAmount(v);
+                        }}
+                        onKeyDown={(e) => {
+                          if (["e", "E", "+", "-", ".", ","].includes(e.key)) e.preventDefault();
+                        }}
                         className="bg-surface-2 border-input pr-16 text-base h-11"
-                        placeholder="0.00"
+                        placeholder={String(minAmount)}
                       />
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">
                         {ad.tokenSymbol}
                       </span>
                     </div>
-                    <div className="flex gap-2">
-                      {[25, 50, 75, 100].map((pct) => (
-                        <button
-                          key={pct}
-                          onClick={() => setBuyAmount((maxAmount * pct / 100).toString())}
-                          className="flex-1 rounded-md border border-border bg-surface-2 px-2 py-1.5 text-xs font-medium text-muted-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors"
-                        >
-                          {pct === 100 ? "MAX" : `${pct}%`}
-                        </button>
-                      ))}
-                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      Whole numbers only. Seller's minimum per trade is {minAmount} {ad.tokenSymbol}.
+                    </p>
                     {!amountValid && buyAmount !== "" && (
-                      <p className="text-xs text-sell">Enter an amount between 0 and {maxAmount} {ad.tokenSymbol}.</p>
+                      <p className="text-xs text-sell">
+                        Enter a whole number between {minAmount} and {maxAmount} {ad.tokenSymbol}.
+                      </p>
                     )}
                   </div>
                 )}
