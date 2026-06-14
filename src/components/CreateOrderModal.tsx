@@ -608,21 +608,102 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
               )}
             </div>
 
-            {/* INR Total */}
-            {price && amount && (
-              <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-center">
-                <span className="text-xs text-muted-foreground">Buyer will pay </span>
-                <span className="text-lg font-bold text-primary">₹{inrTotal}</span>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Deposit: {createRequiredFormatted} {crypto} including prepaid escrow fee
-                </p>
+            {/* Partial fills */}
+            {amount && amountNum > 0 && (
+              <div className="rounded-lg border border-border bg-surface-2 p-3 space-y-2">
+                <label className="flex items-center justify-between cursor-pointer">
+                  <div>
+                    <div className="text-sm font-medium text-foreground">Allow partial buys</div>
+                    <div className="text-[11px] text-muted-foreground">Let buyers take only a portion of this ad</div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={allowPartial}
+                    onChange={(e) => { setAllowPartial(e.target.checked); if (!e.target.checked) setMinFill(""); }}
+                    disabled={isProcessing}
+                    className="h-4 w-4 accent-primary"
+                  />
+                </label>
+                {allowPartial && (
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-1.5 block">Minimum buyer purchase ({crypto})</Label>
+                    <Input
+                      type="number"
+                      placeholder={isBNB ? "e.g. 0.01" : "e.g. 5"}
+                      value={minFill}
+                      onChange={(e) => setMinFill(e.target.value)}
+                      className={`bg-surface-2 border-input ${minFillInvalid ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                      disabled={isProcessing}
+                    />
+                    {minFillInvalid && (
+                      <p className="text-xs text-destructive mt-1">
+                        Must be greater than 0 and at most {amount} {crypto}.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* $1 minimum trade warning */}
+            {minTradeBelowDollar && (
+              <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">
+                Smallest deal must be at least $1 (~{minTradeTokens.toFixed(isBNB ? 6 : 2)} {crypto}).
+                {allowPartial ? " Increase the minimum buyer purchase." : " Increase the amount."}
+              </div>
+            )}
+
+            {/* Order Summary */}
+            {price && amount && pricePerTokenInr > 0 && (
+              <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-2">
+                <div className="text-xs font-semibold text-primary uppercase tracking-wide">Order Summary</div>
+
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Price per {crypto}</span>
+                  <span className="font-medium text-foreground tabular-nums">₹{pricePerTokenInr.toFixed(2)}</span>
+                </div>
+
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Buyer order range</span>
+                  <span className="font-medium text-foreground tabular-nums">
+                    ₹{minOrderInr.toFixed(2)}{minFillNum !== amountNum ? ` – ₹${maxOrderInr.toFixed(2)}` : ""}
+                  </span>
+                </div>
+
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Min buy</span>
+                  <span className="font-medium text-foreground tabular-nums">
+                    {minFillNum.toFixed(isBNB ? 6 : 2)} {crypto}
+                  </span>
+                </div>
+
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Max buy</span>
+                  <span className="font-medium text-foreground tabular-nums">
+                    {amountNum.toFixed(isBNB ? 6 : 2)} {crypto}
+                  </span>
+                </div>
+
+                <div className="border-t border-primary/15 my-1" />
+
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Seller fee (0.15%)</span>
+                  <span className="font-medium text-foreground tabular-nums">{parseFloat(sellerFeeFormatted).toFixed(6)} {crypto}</span>
+                </div>
+
+                <div className="flex justify-between text-sm pt-1">
+                  <span className="font-medium text-foreground">You deposit</span>
+                  <span className="font-bold text-primary tabular-nums">{parseFloat(createRequiredFormatted).toFixed(6)} {crypto}</span>
+                </div>
+
                 {isBNB && bnbPrice && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {amount} BNB × ${bnbPrice.toFixed(2)} × ₹{price} = ₹{inrTotal}
+                  <p className="text-[11px] text-muted-foreground pt-1">
+                    Rate: 1 BNB ≈ ${bnbPrice.toFixed(2)} · You set ₹{price}/USD
                   </p>
                 )}
               </div>
             )}
+
 
             {/* Status indicators */}
             {step === "approving" && (
