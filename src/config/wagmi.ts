@@ -32,7 +32,7 @@ export const config = getDefaultConfig({
 });
 
 // Contract address — replace after deploying
-export const P2P_CONTRACT_ADDRESS = "0xce12c1f2da124333f09f0a3e0c1f6d6fcce59127" as const;
+export const P2P_CONTRACT_ADDRESS = "0x9Efd9b8EaC96dbe58141cE30785501bDFD196642" as const;
 
 // BSC Mainnet USDT
 export const USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955" as const;
