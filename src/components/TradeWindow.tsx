@@ -303,30 +303,89 @@ const TradeWindow = ({ ad, userAddress, onClose }: TradeWindowProps) => {
             {/* Trade Summary */}
             <div className="rounded-lg border border-border bg-surface-1 p-4 space-y-3">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Token</span>
-                <span className="font-medium text-foreground">{ad.tokenAmount} {ad.tokenSymbol}</span>
+                <span className="text-muted-foreground">{step === "accept" ? "You buy" : "Token"}</span>
+                <span className="font-medium text-foreground tabular-nums">{payoutAmount} {ad.tokenSymbol}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Price</span>
-                <span className="font-medium text-foreground">₹{ad.pricePerToken} / {ad.tokenSymbol}</span>
+                <span className="font-medium text-foreground tabular-nums">₹{ad.pricePerToken} / {ad.tokenSymbol}</span>
               </div>
+              {step === "accept" && (
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Available</span>
+                  <span className="text-foreground tabular-nums">{ad.tokenAmount} {ad.tokenSymbol}</span>
+                </div>
+              )}
               <div className="h-px bg-border" />
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Total (INR)</span>
-                <span className="text-lg font-bold text-primary">₹{ad.inrTotal}</span>
+                <span className="text-muted-foreground">You pay</span>
+                <span className="text-lg font-bold text-primary tabular-nums">₹{payoutInr}</span>
               </div>
             </div>
 
             {/* Step-specific content */}
             {step === "accept" && (
               <div className="space-y-4">
+                {/* Partial buy input */}
+                {!isSeller && (
+                  <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-semibold text-foreground">How much {ad.tokenSymbol} to buy?</label>
+                      <span className="text-xs text-muted-foreground tabular-nums">Max: {ad.tokenAmount}</span>
+                    </div>
+                    <div className="relative">
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        min="0"
+                        max={maxAmount}
+                        step="any"
+                        value={buyAmount}
+                        onChange={(e) => setBuyAmount(e.target.value)}
+                        className="bg-surface-2 border-input pr-16 text-base h-11"
+                        placeholder="0.00"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">
+                        {ad.tokenSymbol}
+                      </span>
+                    </div>
+                    <div className="flex gap-2">
+                      {[25, 50, 75, 100].map((pct) => (
+                        <button
+                          key={pct}
+                          onClick={() => setBuyAmount((maxAmount * pct / 100).toString())}
+                          className="flex-1 rounded-md border border-border bg-surface-2 px-2 py-1.5 text-xs font-medium text-muted-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors"
+                        >
+                          {pct === 100 ? "MAX" : `${pct}%`}
+                        </button>
+                      ))}
+                    </div>
+                    {!amountValid && buyAmount !== "" && (
+                      <p className="text-xs text-sell">Enter an amount between 0 and {maxAmount} {ad.tokenSymbol}.</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Payment window warning */}
+                <div className="rounded-lg border border-sell/20 bg-sell/5 p-3 flex gap-2.5">
+                  <Timer className="h-4 w-4 text-sell shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold text-foreground">
+                      You'll have {timeoutMin} minute{timeoutMin > 1 ? "s" : ""} to pay
+                    </p>
+                    <p className="text-[11px] text-muted-foreground leading-snug">
+                      After accepting, escrow locks {ad.tokenSymbol} and a {timeoutMin}-min payment window starts. If you don't pay & confirm in time, the deal auto-cancels and tokens return to the seller.
+                    </p>
+                  </div>
+                </div>
+
                 <div className="rounded-lg border border-border bg-surface-1 p-4">
                   <p className="text-xs text-muted-foreground mb-1">Seller's address</p>
                   <p className="text-sm font-mono text-foreground break-all">{ad.seller}</p>
                 </div>
-                <Button variant="buy" className="w-full min-h-[48px]" size="lg" onClick={handleAcceptDeal} disabled={isProcessing}>
+                <Button variant="buy" className="w-full min-h-[48px]" size="lg" onClick={handleAcceptDeal} disabled={isProcessing || !amountValid}>
                   {acceptPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                  {acceptPending ? "Confirm in wallet…" : "Accept Deal — Lock Escrow"}
+                  {acceptPending ? "Confirm in wallet…" : `Accept Deal — Lock ${payoutAmount} ${ad.tokenSymbol}`}
                 </Button>
               </div>
             )}
