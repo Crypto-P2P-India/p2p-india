@@ -109,6 +109,22 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
     : price;
   const pricePerTokenWei = effectivePricePerToken ? parseUnits(effectivePricePerToken, 2) : BigInt(0);
 
+  // Min fill (partial buys)
+  const minFillNum = allowPartial && minFill ? parseFloat(minFill) : (amount ? parseFloat(amount) : 0);
+  const minFillWei = allowPartial && minFill ? parseUnits(minFill, 18) : tokenAmountWei;
+  const amountNum = amount ? parseFloat(amount) : 0;
+  const minFillInvalid = allowPartial && (!minFill || minFillNum <= 0 || minFillNum > amountNum);
+
+  // $1 minimum trade enforcement (token units)
+  const tokenUsdRate = isBNB ? (bnbPrice ?? 0) : 1; // USDT pegged to USD
+  const minTradeTokens = tokenUsdRate > 0 ? 1 / tokenUsdRate : 0;
+  const minTradeBelowDollar = !!amount && tokenUsdRate > 0 && minFillNum < minTradeTokens;
+
+  // INR values for buyer-visible range
+  const pricePerTokenInr = effectivePricePerToken ? parseFloat(effectivePricePerToken) : 0;
+  const minOrderInr = minFillNum * pricePerTokenInr;
+  const maxOrderInr = amountNum * pricePerTokenInr;
+
   // Balances
   const { data: bnbBalance } = useBalance({
     address,
@@ -129,6 +145,7 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
   const maxSellAmount = walletBalance > 0 ? walletBalance / 1.0015 : 0;
   const createRequiredFormatted = formatUnits(createRequiredWei, 18);
   const createRequiredAmount = parseFloat(formatUnits(createRequiredWei, 18));
+  const sellerFeeFormatted = formatUnits(sellerFeeWei, 18);
   const exceedsBalance = createRequiredAmount > walletBalance;
 
   // Allowance
