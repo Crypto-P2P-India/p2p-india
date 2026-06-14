@@ -267,29 +267,32 @@ const MyAds = () => {
                               {relatedDeal && (relatedDeal.status === 0 || relatedDeal.status === 1) && dealTimeLeft > 0 && (
                                 <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-mono ${dealTimeLeft < 120 ? "bg-sell/10 text-sell" : "bg-primary/10 text-primary"}`}>
                                   <Clock className="h-3 w-3" />
-                                  Deal: {formatTime(dealTimeLeft)}
+                                  {relatedDeal.status === 1 ? "Confirm" : "Pay"}: {formatTime(dealTimeLeft)}
                                 </span>
                               )}
                               {isDealTimedOut && (
                                 <span className="flex items-center gap-1 rounded-full bg-sell/10 px-2.5 py-1 text-xs font-semibold text-sell">
                                   <AlertTriangle className="h-3 w-3" />
-                                  Deal Expired
+                                  {relatedDeal?.status === 1 ? "Confirm Expired" : "Pay Expired"}
                                 </span>
                               )}
                             </div>
                           </div>
 
                           {/* Timer progress bar for active deals */}
-                          {relatedDeal && (relatedDeal.status === 0 || relatedDeal.status === 1) && dealTimeLeft > 0 && (
-                            <div className="mt-3">
-                              <div className="h-1.5 w-full rounded-full bg-surface-3 overflow-hidden">
-                                <div
-                                  className={`h-full rounded-full transition-all duration-1000 ${dealTimeLeft < 120 ? "bg-sell" : "bg-primary"}`}
-                                  style={{ width: `${Math.max(0, Math.min(100, (dealTimeLeft / 900) * 100))}%` }}
-                                />
+                          {relatedDeal && (relatedDeal.status === 0 || relatedDeal.status === 1) && dealTimeLeft > 0 && (() => {
+                            const fullWindow = relatedDeal.status === 1 ? 1800 : 900;
+                            return (
+                              <div className="mt-3">
+                                <div className="h-1.5 w-full rounded-full bg-surface-3 overflow-hidden">
+                                  <div
+                                    className={`h-full rounded-full transition-all duration-1000 ${dealTimeLeft < 120 ? "bg-sell" : "bg-primary"}`}
+                                    style={{ width: `${Math.max(0, Math.min(100, (dealTimeLeft / fullWindow) * 100))}%` }}
+                                  />
+                                </div>
                               </div>
-                            </div>
-                          )}
+                            );
+                          })()}
 
                           <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
                             <div>
