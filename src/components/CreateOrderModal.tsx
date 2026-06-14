@@ -668,6 +668,42 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
               </div>
             )}
 
+            {/* Pay window + Ad duration */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1.5 block">Buyer pay window</Label>
+                <div className="flex flex-wrap gap-1.5">
+                  {PAY_WINDOW_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setPayWindowSec(opt.value)}
+                      disabled={isProcessing}
+                      className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+                        payWindowSec === opt.value
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-surface-3 text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1.5 block">Ad expires after</Label>
+                <select
+                  value={adDurationSec}
+                  onChange={(e) => setAdDurationSec(Number(e.target.value))}
+                  disabled={isProcessing}
+                  className="w-full rounded-md border border-input bg-surface-2 px-3 py-2 text-sm text-foreground"
+                >
+                  {AD_DURATION_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
             {/* $1 minimum trade warning */}
             {minTradeBelowDollar && (
               <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">
