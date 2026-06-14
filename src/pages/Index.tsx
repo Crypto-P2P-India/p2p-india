@@ -222,6 +222,18 @@ const Index = () => {
           <p className="text-xs text-muted-foreground">
             Showing {filteredAds.length} ad{filteredAds.length !== 1 ? "s" : ""} · sorted low → high price
           </p>
+
+          {isConnected && ownAdsCount > 0 && (
+            <p className="text-xs text-muted-foreground">
+              You have <span className="font-semibold text-foreground">{ownAdsCount}</span> ad{ownAdsCount > 1 ? "s" : ""} of your own — hidden here.{" "}
+              <button
+                onClick={() => navigate("/my-ads")}
+                className="text-primary font-semibold hover:underline"
+              >
+                View in My Ads →
+              </button>
+            </p>
+          )}
         </div>
 
         {/* Connection prompt */}
