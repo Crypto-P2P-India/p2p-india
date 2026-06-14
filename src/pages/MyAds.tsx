@@ -94,30 +94,12 @@ const MyAds = () => {
   const dealTxMap = useDealTxHashes(relatedDealIds);
 
   const sortedAds = [...myAds].sort((a, b) => b.adId - a.adId);
-  const liveAds = sortedAds.filter((a) => {
-    if (a.status === 1) return true; // InDeal always live
-    if (a.status === 0 && now <= a.adExpiry) return true; // Live & not expired
-    return false;
-  });
-  const expiredAds = sortedAds.filter((a) => {
-    return a.status === 0 && now > a.adExpiry;
-  });
-  const historyAds = sortedAds.filter((a) => {
-    if (a.status === 2 || a.status === 3) return true; // Completed or Cancelled
-    return false;
-  });
+  const liveAds = sortedAds.filter((a) => a.status === 0 || a.status === 1);
+  const historyAds = sortedAds.filter((a) => a.status === 2 || a.status === 3);
 
-  const [adTab, setAdTab] = useState<"live" | "expired" | "history">("live");
+  const [adTab, setAdTab] = useState<"live" | "history">("live");
   const liveCount = liveAds.length;
-  const expiredCount = expiredAds.length;
   const historyCount = historyAds.length;
-
-  // Auto-switch to expired tab if user has expired ads and no live
-  useEffect(() => {
-    if (expiredCount > 0 && liveCount === 0 && adTab === "live") {
-      setAdTab("expired");
-    }
-  }, [expiredCount, liveCount]);
 
   const isProcessing = cancelPending || claimPending || sellerPending || disputePending || cancelDealPending;
 
