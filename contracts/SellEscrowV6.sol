@@ -436,42 +436,48 @@ contract SellEscrow {
 
     // ---------- Internal ----------
     function _releaseToBuyer(uint256 dealId) internal {
-        Deal storage d = deals[dealId];
-        Ad storage a = ads[d.adId];
-        uint256 amount = d.amount;
+        uint256 amount = deals[dealId].amount;
+        uint256 sellerFee = _takeSellerFee(ads[deals[dealId].adId], amount);
+        uint256 buyerFee = _buyerFee(ads[deals[dealId].adId], amount);
 
-        uint256 sellerFee = _sellerFee(amount, a.sellerFeeBpsSnapshot);
-        if (sellerFee > a.feeReserve) sellerFee = a.feeReserve;
-        a.feeReserve -= sellerFee;
-
-        uint256 buyerFee  = (amount * a.buyerFeeBpsSnapshot) / BPS_DENOM;
-        uint256 buyerPayout = amount - buyerFee;
-
-        a.lockedInDeals -= amount;
-        feeBalance[a.token] += sellerFee + buyerFee;
-        d.state = DealState.RELEASED;
-        delete openDealByBuyer[d.adId][d.buyer];
-
-        _payout(a.token, d.buyer, buyerPayout);
-        _checkAndAutoCloseAd(a);
-        emit DealReleased(dealId, buyerPayout, sellerFee, buyerFee);
+        _finalizeRelease(dealId, amount, sellerFee, buyerFee);
+        _payout(ads[deals[dealId].adId].token, deals[dealId].buyer, amount - buyerFee);
+        _checkAndAutoCloseAd(ads[deals[dealId].adId]);
+        emit DealReleased(dealId, amount - buyerFee, sellerFee, buyerFee);
     }
 
     function _refundSliceToSeller(uint256 dealId) internal {
+        uint256 amount = deals[dealId].amount;
+        uint256 sliceFee = _takeSellerFee(ads[deals[dealId].adId], amount);
+        _finalizeRefund(dealId, amount);
+        _payout(ads[deals[dealId].adId].token, ads[deals[dealId].adId].seller, amount + sliceFee);
+        _checkAndAutoCloseAd(ads[deals[dealId].adId]);
+        emit DealRefunded(dealId, amount);
+    }
+
+    function _takeSellerFee(Ad storage a, uint256 amount) internal returns (uint256 fee) {
+        fee = _sellerFee(amount, a.sellerFeeBpsSnapshot);
+        if (fee > a.feeReserve) fee = a.feeReserve;
+        a.feeReserve -= fee;
+    }
+
+    function _buyerFee(Ad storage a, uint256 amount) internal view returns (uint256) {
+        return (amount * a.buyerFeeBpsSnapshot) / BPS_DENOM;
+    }
+
+    function _finalizeRelease(uint256 dealId, uint256 amount, uint256 sellerFee, uint256 buyerFee) internal {
         Deal storage d = deals[dealId];
-        Ad storage a = ads[d.adId];
-        uint256 amount = d.amount;
+        ads[d.adId].lockedInDeals -= amount;
+        feeBalance[ads[d.adId].token] += sellerFee + buyerFee;
+        d.state = DealState.RELEASED;
+        delete openDealByBuyer[d.adId][d.buyer];
+    }
 
-        uint256 sliceFee = _sellerFee(amount, a.sellerFeeBpsSnapshot);
-        if (sliceFee > a.feeReserve) sliceFee = a.feeReserve;
-        a.feeReserve -= sliceFee;
-
-        a.lockedInDeals -= amount;
+    function _finalizeRefund(uint256 dealId, uint256 amount) internal {
+        Deal storage d = deals[dealId];
+        ads[d.adId].lockedInDeals -= amount;
         d.state = DealState.REFUNDED;
         delete openDealByBuyer[d.adId][d.buyer];
-        _payout(a.token, a.seller, amount + sliceFee);
-        _checkAndAutoCloseAd(a);
-        emit DealRefunded(dealId, amount);
     }
 
     function _returnSliceToAd(uint256 dealId) internal {
