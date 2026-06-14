@@ -14,6 +14,7 @@ import Navbar from "@/components/Navbar";
 import ChatPanel from "@/components/ChatPanel";
 import { cleanupDealAttachments } from "@/lib/dealCleanup";
 import DeployContractCard from "@/components/DeployContractCard";
+import { ADMIN_ALLOWLIST } from "@/lib/admin";
 
 const DEAL_STATUS_LABELS: Record<number, string> = {
   0: "Active",
