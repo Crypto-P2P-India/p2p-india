@@ -82,6 +82,7 @@ export function useContractAds() {
       const availableFormatted = formatUnits(available, 18);
       const totalFormatted = formatUnits(BigInt(String(totalAmountRaw || remaining)), 18);
       const lockedFormatted = formatUnits(locked, 18);
+      const minFillFormatted = formatUnits(BigInt(String(minFillRaw || 0)), 18);
       const priceFormatted = formatUnits(BigInt(String(pricePerToken)), 2);
       const rawInrTotal = available * BigInt(String(pricePerToken));
       const inrTotal = parseFloat(formatUnits(rawInrTotal, 20)).toFixed(2);
@@ -94,6 +95,7 @@ export function useContractAds() {
         tokenAmount: availableFormatted,
         totalAmount: totalFormatted,
         lockedAmount: lockedFormatted,
+        minFillAmount: minFillFormatted,
         pricePerToken: priceFormatted,
         inrTotal,
         dealTimeout: DEFAULT_DEAL_TIMEOUT,
