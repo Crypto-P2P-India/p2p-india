@@ -58,11 +58,19 @@ const Index = () => {
     );
   }, [liveAds, address, now]);
 
+  const ownAdsCount = useMemo(() => {
+    if (!address) return 0;
+    return liveAds.filter(
+      (ad) => ad.seller.toLowerCase() === address.toLowerCase() && ad.status !== 3 && ad.adExpiry >= now
+    ).length;
+  }, [liveAds, address, now]);
+
   const filteredAds = useMemo(() => {
     return liveAds
       .filter((ad) => {
-        if (ad.status !== 0) return false;
+        if (ad.status === 3) return false;
         if (ad.adExpiry < now) return false;
+        if (parseFloat(ad.tokenAmount) <= 0) return false;
         if (address && ad.seller.toLowerCase() === address.toLowerCase()) return false;
         const matchesCrypto = ad.tokenSymbol === crypto;
         const matchesSearch = !search || ad.seller.toLowerCase().includes(search.toLowerCase());
