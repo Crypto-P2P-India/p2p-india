@@ -208,10 +208,20 @@ const MobileWalletSheet = ({ open, onOpenChange }: Props) => {
             </div>
             {qrUri ? (
               <div className="flex flex-col items-center gap-3">
-                <div className="rounded-xl bg-white p-3">
-                  <QRCodeSVG value={qrUri} size={210} level="M" includeMargin />
+                <div className="rounded-xl border border-border p-2">
+                  <QRCodeSVG value={qrUri} size={210} level="M" includeMargin bgColor="#ffffff" fgColor="#000000" />
                 </div>
                 <p className="text-center text-xs text-muted-foreground">After scanning, approve in the wallet app and return here.</p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={startQrConnect}
+                  disabled={isPending || connectingWallet === "qr"}
+                  className="w-full gap-2"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Refresh QR
+                </Button>
               </div>
             ) : (
               <Button
