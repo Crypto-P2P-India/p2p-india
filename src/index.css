@@ -6,14 +6,14 @@
 
 @layer base {
   :root {
-    --background: 40 15% 94%;
-    --foreground: 220 15% 12%;
+    --background: 150 20% 94%;
+    --foreground: 160 20% 10%;
 
-    --card: 40 15% 97%;
-    --card-foreground: 220 15% 12%;
+    --card: 150 22% 97%;
+    --card-foreground: 160 20% 10%;
 
-    --popover: 40 15% 97%;
-    --popover-foreground: 220 15% 12%;
+    --popover: 150 22% 97%;
+    --popover-foreground: 160 20% 10%;
 
     --primary: 160 100% 45%;
     --primary-foreground: 220 15% 8%;
@@ -41,11 +41,11 @@
     --sell: 0 72% 51%;
     --sell-foreground: 0 0% 100%;
 
-    --surface-1: 40 15% 97%;
-    --surface-2: 40 12% 93%;
-    --surface-3: 40 10% 89%;
+    --surface-1: 150 22% 97%;
+    --surface-2: 150 18% 92%;
+    --surface-3: 150 16% 88%;
 
-    --sidebar-background: 40 15% 96%;
+    --sidebar-background: 150 22% 96%;
     --sidebar-foreground: 220 15% 12%;
     --sidebar-primary: 160 100% 45%;
     --sidebar-primary-foreground: 220 15% 8%;
@@ -56,14 +56,14 @@
   }
 
   .dark {
-    --background: 220 15% 8%;
-    --foreground: 0 0% 95%;
+    --background: 160 18% 7%;
+    --foreground: 150 10% 95%;
 
-    --card: 220 14% 11%;
-    --card-foreground: 0 0% 95%;
+    --card: 160 16% 10%;
+    --card-foreground: 150 10% 95%;
 
-    --popover: 220 14% 11%;
-    --popover-foreground: 0 0% 95%;
+    --popover: 160 16% 10%;
+    --popover-foreground: 150 10% 95%;
 
     --primary: 160 100% 50%;
     --primary-foreground: 220 15% 8%;
@@ -89,11 +89,11 @@
     --sell: 0 72% 51%;
     --sell-foreground: 0 0% 100%;
 
-    --surface-1: 220 14% 11%;
-    --surface-2: 220 13% 14%;
-    --surface-3: 220 13% 18%;
+    --surface-1: 160 16% 10%;
+    --surface-2: 160 14% 13%;
+    --surface-3: 160 14% 17%;
 
-    --sidebar-background: 220 14% 11%;
+    --sidebar-background: 160 16% 10%;
     --sidebar-foreground: 0 0% 95%;
     --sidebar-primary: 160 100% 50%;
     --sidebar-primary-foreground: 220 15% 8%;
