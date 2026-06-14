@@ -53,7 +53,7 @@ export const config = getDefaultConfig({
     },
     {
       groupName: "More",
-      wallets: [phantomWallet, injectedWallet],
+      wallets: [rabbyWallet, bitgetWallet, binanceWallet, phantomWallet, injectedWallet],
     },
   ],
 });
