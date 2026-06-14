@@ -164,19 +164,32 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
   const { writeContract: createAd, data: createTxHash, isPending: isCreating, reset: resetCreate, error: createError } = useWriteContract();
   const { isSuccess: createConfirmed } = useWaitForTransactionReceipt({ hash: createTxHash });
 
+  // Friendly error mapping
+  const friendlyError = (raw: string): string => {
+    const m = raw.toLowerCase();
+    if (m.includes("user rejected") || m.includes("user denied")) return "Transaction cancelled in wallet.";
+    if (m.includes("insufficient funds") || m.includes("insufficient")) return `Insufficient ${crypto} balance — you need ${createRequiredFormatted} ${crypto} (amount + 0.15% fee) plus gas.`;
+    if (m.includes("allowance")) return "USDT spending allowance too low. Please approve again.";
+    if (m.includes("nonce")) return "Wallet nonce out of sync. Reset your wallet's account activity and retry.";
+    if (m.includes("gas")) return "Gas estimation failed. Check your BNB balance for gas and retry.";
+    if (m.includes("chain")) return "Wrong network. Switch to BNB Smart Chain and retry.";
+    if (m.includes("ad_inactive")) return "This ad is no longer active.";
+    return raw.length > 140 ? raw.slice(0, 140) + "…" : raw;
+  };
+
   // Handle tx errors — reset step and show toast
   useEffect(() => {
     if (approveError && step === "approving") {
-      const msg = (approveError as any)?.shortMessage || approveError.message || "Approval failed";
-      toast.error(msg.includes("insufficient") ? "Insufficient USDT balance in your wallet" : msg);
+      const raw = (approveError as any)?.shortMessage || approveError.message || "Approval failed";
+      toast.error(friendlyError(raw));
       setStep("form");
     }
   }, [approveError]);
 
   useEffect(() => {
     if (createError && step === "posting") {
-      const msg = (createError as any)?.shortMessage || createError.message || "Transaction failed";
-      toast.error(msg.includes("insufficient") ? `Insufficient ${crypto} balance in your wallet` : msg);
+      const raw = (createError as any)?.shortMessage || createError.message || "Transaction failed";
+      toast.error(friendlyError(raw));
       setStep("form");
     }
   }, [createError]);
