@@ -580,6 +580,51 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
               )}
             </div>
 
+            {/* Partial fills */}
+            {amount && parseFloat(amount) > 0 && (
+              <div className="rounded-lg border border-border bg-surface-2 p-3 space-y-2">
+                <label className="flex items-center justify-between cursor-pointer">
+                  <div>
+                    <div className="text-sm font-medium text-foreground">Allow partial buys</div>
+                    <div className="text-[11px] text-muted-foreground">Let buyers take only a portion of this ad</div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={allowPartial}
+                    onChange={(e) => { setAllowPartial(e.target.checked); if (!e.target.checked) setMinFill(""); }}
+                    disabled={isProcessing}
+                    className="h-4 w-4 accent-primary"
+                  />
+                </label>
+                {allowPartial && (
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-1.5 block">Minimum buyer purchase ({crypto})</Label>
+                    <Input
+                      type="number"
+                      placeholder={isBNB ? "e.g. 0.01" : "e.g. 5"}
+                      value={minFill}
+                      onChange={(e) => setMinFill(e.target.value)}
+                      className={`bg-surface-2 border-input ${minFillInvalid ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                      disabled={isProcessing}
+                    />
+                    {minFillInvalid && (
+                      <p className="text-xs text-destructive mt-1">
+                        Must be greater than 0 and not more than {amount} {crypto}.
+                      </p>
+                    )}
+                    {!minFillInvalid && minFill && price && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Smallest deal ≈ ₹{(isBNB && bnbPrice
+                          ? parseFloat(minFill) * bnbPrice * parseFloat(price)
+                          : parseFloat(minFill) * parseFloat(price)).toFixed(2)}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+
             {/* INR Total */}
             {price && amount && (
               <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-center">
