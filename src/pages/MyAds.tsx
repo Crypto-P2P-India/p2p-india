@@ -179,11 +179,9 @@ const MyAds = () => {
                 <div className="space-y-3">
                   {currentAds.map((ad, i) => {
                     const st = STATUS_LABELS[ad.status] || STATUS_LABELS[0];
-                    const isExpired = ad.status === 0 && now > ad.adExpiry;
-                    const isLive = ad.status === 0 && !isExpired;
-                    const statusLabel = isExpired ? "Expired" : st.label;
-                    const statusColorClass = isExpired ? "text-muted-foreground" : st.color;
-                    const expiryDate = new Date(ad.adExpiry * 1000);
+                    const isLive = ad.status === 0;
+                    const statusLabel = st.label;
+                    const statusColorClass = st.color;
                     const relatedDeal = deals.find((d) => d.adId === ad.adId && (d.status === 0 || d.status === 1 || d.status === 4 || d.status === 5));
                     const completedDeal = deals.find((d) => d.adId === ad.adId);
                     const dealTimeLeft = relatedDeal ? relatedDeal.deadline - now : 0;
@@ -221,18 +219,6 @@ const MyAds = () => {
                               <span className={`text-xs font-semibold ${statusColorClass}`}>
                                 {statusLabel}
                               </span>
-                              {/* Ad expiry countdown */}
-                              {isLive && (() => {
-                                const adTimeLeft = ad.adExpiry - now;
-                                const h = Math.floor(adTimeLeft / 3600);
-                                const m = Math.floor((adTimeLeft % 3600) / 60);
-                                return (
-                                  <span className={`flex items-center gap-1 text-xs font-mono ${adTimeLeft < 1800 ? "text-sell" : "text-muted-foreground"}`}>
-                                    <Clock className="h-3 w-3" />
-                                    {h > 0 ? `${h}h ${m}m` : `${m}m`} left
-                                  </span>
-                                );
-                              })()}
                               {relatedDeal && (relatedDeal.status === 0 || relatedDeal.status === 1) && dealTimeLeft > 0 && (
                                 <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-mono ${dealTimeLeft < 120 ? "bg-sell/10 text-sell" : "bg-primary/10 text-primary"}`}>
                                   <Clock className="h-3 w-3" />
