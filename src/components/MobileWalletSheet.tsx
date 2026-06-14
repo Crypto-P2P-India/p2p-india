@@ -1,46 +1,43 @@
 import { useEffect, useState } from "react";
-import { useConnect } from "wagmi";
+import { useAccount, useConnect } from "wagmi";
 import { injected } from "wagmi/connectors";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Wallet, ExternalLink, QrCode, CheckCircle2 } from "lucide-react";
+import { Wallet, ExternalLink, CheckCircle2, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 
-const SITE = "crypto-p2p.store";
-const SITE_URL = `https://${SITE}`;
-
 type WalletApp = {
+  id: string;
   name: string;
   icon: string;
-  deepLink: string; // opens the wallet's in-app browser to SITE_URL
+  connectorNames: string[];
 };
 
 const WALLETS: WalletApp[] = [
   {
+    id: "metamask",
     name: "MetaMask",
     icon: "🦊",
-    deepLink: `https://metamask.app.link/dapp/${SITE}`,
+    connectorNames: ["MetaMask"],
   },
   {
-    name: "Trust Wallet",
-    icon: "🛡️",
-    deepLink: `https://link.trustwallet.com/open_url?coin_id=20000714&url=${encodeURIComponent(SITE_URL)}`,
-  },
-  {
+    id: "okx",
     name: "OKX Wallet",
     icon: "⚫",
-    deepLink: `okx://wallet/dapp/url?dappUrl=${encodeURIComponent(SITE_URL)}`,
+    connectorNames: ["OKX Wallet", "OKX"],
   },
   {
-    name: "Bitget Wallet",
-    icon: "🟦",
-    deepLink: `https://bkcode.vip?action=dapp&url=${encodeURIComponent(SITE_URL)}`,
+    id: "trust",
+    name: "Trust Wallet",
+    icon: "🛡️",
+    connectorNames: ["Trust Wallet", "Trust"],
   },
   {
+    id: "coinbase",
     name: "Coinbase Wallet",
     icon: "🔵",
-    deepLink: `https://go.cb-w.com/dapp?cb_url=${encodeURIComponent(SITE_URL)}`,
+    connectorNames: ["Coinbase Wallet", "Coinbase"],
   },
 ];
 
@@ -51,42 +48,71 @@ interface Props {
 
 const MobileWalletSheet = ({ open, onOpenChange }: Props) => {
   const { connectors, connect, isPending } = useConnect();
+  const { isConnected } = useAccount();
   const { openConnectModal } = useConnectModal();
   const [hasInjected, setHasInjected] = useState(false);
+  const [connectingWallet, setConnectingWallet] = useState<string | null>(null);
 
   useEffect(() => {
-    // Detect injected provider (we are inside a wallet's in-app browser)
     const check = () => setHasInjected(typeof window !== "undefined" && !!(window as any).ethereum);
     check();
     const t = setTimeout(check, 400);
     return () => clearTimeout(t);
   }, [open]);
 
+  useEffect(() => {
+    if (!open || !isConnected) return;
+    setConnectingWallet(null);
+    onOpenChange(false);
+  }, [isConnected, onOpenChange, open]);
+
   const connectInjected = () => {
     const inj = connectors.find((c) => c.id === "injected" || c.type === "injected");
-    if (inj) {
-      connect({ connector: inj });
-    } else {
-      connect({ connector: injected() });
-    }
-    onOpenChange(false);
+    setConnectingWallet("detected");
+    connect(
+      { connector: inj ?? injected() },
+      {
+        onSuccess: () => onOpenChange(false),
+        onError: (error) => {
+          setConnectingWallet(null);
+          toast.error("Wallet connection failed", { description: error.message });
+        },
+      }
+    );
   };
 
-  const openInWallet = (w: WalletApp) => {
+  const findWalletConnector = (w: WalletApp) =>
+    connectors.find((c) => w.connectorNames.some((name) => c.name.toLowerCase().includes(name.toLowerCase())));
+
+  const connectWalletApp = (w: WalletApp) => {
+    const connector = findWalletConnector(w);
+    if (!connector) {
+      toast.error(`${w.name} is not available`, {
+        description: "Use Other wallets to connect with WalletConnect.",
+      });
+      openConnectModal?.();
+      return;
+    }
+
+    setConnectingWallet(w.id);
     toast.loading(`Opening ${w.name}…`, {
-      id: "wallet-dapp",
-      description: "The wallet will open this app inside its built-in browser.",
+      id: "wallet-connect",
+      description: "Approve the connection inside your wallet app, then return here.",
       duration: 4000,
     });
-    try {
-      const iframe = document.createElement("iframe");
-      iframe.style.display = "none";
-      iframe.src = w.deepLink;
-      document.body.appendChild(iframe);
-      setTimeout(() => iframe.remove(), 1500);
-    } catch {
-      window.location.href = w.deepLink;
-    }
+    connect(
+      { connector },
+      {
+        onSuccess: () => {
+          toast.success("Wallet connected", { id: "wallet-connect" });
+          onOpenChange(false);
+        },
+        onError: (error) => {
+          setConnectingWallet(null);
+          toast.error("Wallet connection failed", { id: "wallet-connect", description: error.message });
+        },
+      }
+    );
   };
 
   const useWalletConnectFallback = () => {
@@ -109,7 +135,7 @@ const MobileWalletSheet = ({ open, onOpenChange }: Props) => {
           <SheetDescription>
             {hasInjected
               ? "Wallet detected. Tap connect to approve."
-              : "Open this app inside your wallet's built-in browser for the most reliable connection."}
+              : "Connect directly to the wallet app installed on this phone."}
           </SheetDescription>
         </SheetHeader>
 
@@ -117,28 +143,32 @@ const MobileWalletSheet = ({ open, onOpenChange }: Props) => {
           {hasInjected && (
             <Button
               onClick={connectInjected}
-              disabled={isPending}
+              disabled={isPending || connectingWallet === "detected"}
               className="w-full h-14 text-base font-semibold gap-2"
             >
               <CheckCircle2 className="h-5 w-5" />
-              {isPending ? "Connecting…" : "Connect Detected Wallet"}
+              {connectingWallet === "detected" ? "Connecting…" : "Connect Detected Wallet"}
             </Button>
           )}
 
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 px-1">
-              Open in wallet browser (recommended)
+              Connect wallet app
             </p>
             <div className="space-y-2">
               {WALLETS.map((w) => (
                 <button
                   key={w.name}
-                  onClick={() => openInWallet(w)}
-                  className="w-full flex items-center justify-between gap-3 p-4 rounded-xl bg-card border border-border hover:bg-muted/60 active:scale-[0.98] transition-all"
+                  onClick={() => connectWalletApp(w)}
+                  disabled={isPending}
+                  className="w-full flex items-center justify-between gap-3 p-4 rounded-xl bg-card border border-border hover:bg-muted/60 active:scale-[0.98] transition-all disabled:opacity-60"
                 >
                   <div className="flex items-center gap-3">
                     <span className="text-2xl">{w.icon}</span>
-                    <span className="font-semibold text-foreground">{w.name}</span>
+                    <div className="text-left">
+                      <p className="font-semibold text-foreground">{w.name}</p>
+                      {connectingWallet === w.id && <p className="text-xs text-muted-foreground">Waiting for approval…</p>}
+                    </div>
                   </div>
                   <ExternalLink className="h-4 w-4 text-muted-foreground" />
                 </button>
@@ -155,20 +185,15 @@ const MobileWalletSheet = ({ open, onOpenChange }: Props) => {
               className="w-full flex items-center justify-between gap-3 p-4 rounded-xl bg-card border border-border hover:bg-muted/60 active:scale-[0.98] transition-all"
             >
               <div className="flex items-center gap-3">
-                <QrCode className="h-5 w-5 text-primary" />
+                <Smartphone className="h-5 w-5 text-primary" />
                 <div className="text-left">
-                  <p className="font-semibold text-foreground">WalletConnect</p>
-                  <p className="text-xs text-muted-foreground">Scan QR with another device</p>
+                  <p className="font-semibold text-foreground">Other wallets</p>
+                  <p className="text-xs text-muted-foreground">Use WalletConnect / full wallet list</p>
                 </div>
               </div>
               <ExternalLink className="h-4 w-4 text-muted-foreground" />
             </button>
           </div>
-
-          <p className="text-[11px] text-muted-foreground text-center px-2 pt-2">
-            Tip: Inside your wallet app, open the in-app browser and visit{" "}
-            <span className="font-mono text-foreground">{SITE}</span> — connection will be instant.
-          </p>
         </div>
       </SheetContent>
     </Sheet>
