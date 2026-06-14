@@ -99,10 +99,8 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
   const selectedToken = CRYPTOS.find((c) => c.symbol === crypto)!;
   const isBNB = crypto === "BNB";
   const tokenAmountWei = amount ? parseUnits(amount, 18) : BigInt(0);
-  const minFillWei = allowPartial && minFill ? parseUnits(minFill, 18) : tokenAmountWei;
   const sellerFeeWei = (tokenAmountWei * SELLER_FEE_BPS) / BPS_DENOM;
   const createRequiredWei = tokenAmountWei + sellerFeeWei;
-  const minFillInvalid = allowPartial && (!minFill || minFillWei <= BigInt(0) || minFillWei > tokenAmountWei);
 
   // For BNB: user enters INR per USD rate, we multiply by live BNB/USD price
   const { bnbPrice, isLoading: bnbPriceLoading } = useBnbPrice(isBNB && open);
@@ -110,6 +108,22 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
     ? (parseFloat(price) * bnbPrice).toFixed(2)
     : price;
   const pricePerTokenWei = effectivePricePerToken ? parseUnits(effectivePricePerToken, 2) : BigInt(0);
+
+  // Min fill (partial buys)
+  const minFillNum = allowPartial && minFill ? parseFloat(minFill) : (amount ? parseFloat(amount) : 0);
+  const minFillWei = allowPartial && minFill ? parseUnits(minFill, 18) : tokenAmountWei;
+  const amountNum = amount ? parseFloat(amount) : 0;
+  const minFillInvalid = allowPartial && (!minFill || minFillNum <= 0 || minFillNum > amountNum);
+
+  // $1 minimum trade enforcement (token units)
+  const tokenUsdRate = isBNB ? (bnbPrice ?? 0) : 1; // USDT pegged to USD
+  const minTradeTokens = tokenUsdRate > 0 ? 1 / tokenUsdRate : 0;
+  const minTradeBelowDollar = !!amount && tokenUsdRate > 0 && minFillNum < minTradeTokens;
+
+  // INR values for buyer-visible range
+  const pricePerTokenInr = effectivePricePerToken ? parseFloat(effectivePricePerToken) : 0;
+  const minOrderInr = minFillNum * pricePerTokenInr;
+  const maxOrderInr = amountNum * pricePerTokenInr;
 
   // Balances
   const { data: bnbBalance } = useBalance({
@@ -131,6 +145,7 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
   const maxSellAmount = walletBalance > 0 ? walletBalance / 1.0015 : 0;
   const createRequiredFormatted = formatUnits(createRequiredWei, 18);
   const createRequiredAmount = parseFloat(formatUnits(createRequiredWei, 18));
+  const sellerFeeFormatted = formatUnits(sellerFeeWei, 18);
   const exceedsBalance = createRequiredAmount > walletBalance;
 
   // Allowance
@@ -149,19 +164,32 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
   const { writeContract: createAd, data: createTxHash, isPending: isCreating, reset: resetCreate, error: createError } = useWriteContract();
   const { isSuccess: createConfirmed } = useWaitForTransactionReceipt({ hash: createTxHash });
 
+  // Friendly error mapping
+  const friendlyError = (raw: string): string => {
+    const m = raw.toLowerCase();
+    if (m.includes("user rejected") || m.includes("user denied")) return "Transaction cancelled in wallet.";
+    if (m.includes("insufficient funds") || m.includes("insufficient")) return `Insufficient ${crypto} balance — you need ${createRequiredFormatted} ${crypto} (amount + 0.15% fee) plus gas.`;
+    if (m.includes("allowance")) return "USDT spending allowance too low. Please approve again.";
+    if (m.includes("nonce")) return "Wallet nonce out of sync. Reset your wallet's account activity and retry.";
+    if (m.includes("gas")) return "Gas estimation failed. Check your BNB balance for gas and retry.";
+    if (m.includes("chain")) return "Wrong network. Switch to BNB Smart Chain and retry.";
+    if (m.includes("ad_inactive")) return "This ad is no longer active.";
+    return raw.length > 140 ? raw.slice(0, 140) + "…" : raw;
+  };
+
   // Handle tx errors — reset step and show toast
   useEffect(() => {
     if (approveError && step === "approving") {
-      const msg = (approveError as any)?.shortMessage || approveError.message || "Approval failed";
-      toast.error(msg.includes("insufficient") ? "Insufficient USDT balance in your wallet" : msg);
+      const raw = (approveError as any)?.shortMessage || approveError.message || "Approval failed";
+      toast.error(friendlyError(raw));
       setStep("form");
     }
   }, [approveError]);
 
   useEffect(() => {
     if (createError && step === "posting") {
-      const msg = (createError as any)?.shortMessage || createError.message || "Transaction failed";
-      toast.error(msg.includes("insufficient") ? `Insufficient ${crypto} balance in your wallet` : msg);
+      const raw = (createError as any)?.shortMessage || createError.message || "Transaction failed";
+      toast.error(friendlyError(raw));
       setStep("form");
     }
   }, [createError]);
@@ -274,7 +302,7 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
       : (parseFloat(price) * parseFloat(amount)).toFixed(2)
     : "0.00";
   const isProcessing = step !== "form";
-  const canSubmit = !!price && !!amount && isPaymentValid() && !isProcessing && !exceedsBalance && !minFillInvalid && (!isBNB || bnbPrice !== null);
+  const canSubmit = !!price && !!amount && isPaymentValid() && !isProcessing && !exceedsBalance && !minFillInvalid && !minTradeBelowDollar && (!isBNB || bnbPrice !== null);
 
   if (!open) return null;
 
@@ -581,7 +609,7 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
             </div>
 
             {/* Partial fills */}
-            {amount && parseFloat(amount) > 0 && (
+            {amount && amountNum > 0 && (
               <div className="rounded-lg border border-border bg-surface-2 p-3 space-y-2">
                 <label className="flex items-center justify-between cursor-pointer">
                   <div>
@@ -609,14 +637,7 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
                     />
                     {minFillInvalid && (
                       <p className="text-xs text-destructive mt-1">
-                        Must be greater than 0 and not more than {amount} {crypto}.
-                      </p>
-                    )}
-                    {!minFillInvalid && minFill && price && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Smallest deal ≈ ₹{(isBNB && bnbPrice
-                          ? parseFloat(minFill) * bnbPrice * parseFloat(price)
-                          : parseFloat(minFill) * parseFloat(price)).toFixed(2)}
+                        Must be greater than 0 and at most {amount} {crypto}.
                       </p>
                     )}
                   </div>
@@ -624,22 +645,65 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
               </div>
             )}
 
+            {/* $1 minimum trade warning */}
+            {minTradeBelowDollar && (
+              <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">
+                Smallest deal must be at least $1 (~{minTradeTokens.toFixed(isBNB ? 6 : 2)} {crypto}).
+                {allowPartial ? " Increase the minimum buyer purchase." : " Increase the amount."}
+              </div>
+            )}
 
-            {/* INR Total */}
-            {price && amount && (
-              <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-center">
-                <span className="text-xs text-muted-foreground">Buyer will pay </span>
-                <span className="text-lg font-bold text-primary">₹{inrTotal}</span>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Deposit: {createRequiredFormatted} {crypto} including prepaid escrow fee
-                </p>
+            {/* Order Summary */}
+            {price && amount && pricePerTokenInr > 0 && (
+              <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-2">
+                <div className="text-xs font-semibold text-primary uppercase tracking-wide">Order Summary</div>
+
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Price per {crypto}</span>
+                  <span className="font-medium text-foreground tabular-nums">₹{pricePerTokenInr.toFixed(2)}</span>
+                </div>
+
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Buyer order range</span>
+                  <span className="font-medium text-foreground tabular-nums">
+                    ₹{minOrderInr.toFixed(2)}{minFillNum !== amountNum ? ` – ₹${maxOrderInr.toFixed(2)}` : ""}
+                  </span>
+                </div>
+
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Min buy</span>
+                  <span className="font-medium text-foreground tabular-nums">
+                    {minFillNum.toFixed(isBNB ? 6 : 2)} {crypto}
+                  </span>
+                </div>
+
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Max buy</span>
+                  <span className="font-medium text-foreground tabular-nums">
+                    {amountNum.toFixed(isBNB ? 6 : 2)} {crypto}
+                  </span>
+                </div>
+
+                <div className="border-t border-primary/15 my-1" />
+
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Seller fee (0.15%)</span>
+                  <span className="font-medium text-foreground tabular-nums">{parseFloat(sellerFeeFormatted).toFixed(6)} {crypto}</span>
+                </div>
+
+                <div className="flex justify-between text-sm pt-1">
+                  <span className="font-medium text-foreground">You deposit</span>
+                  <span className="font-bold text-primary tabular-nums">{parseFloat(createRequiredFormatted).toFixed(6)} {crypto}</span>
+                </div>
+
                 {isBNB && bnbPrice && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {amount} BNB × ${bnbPrice.toFixed(2)} × ₹{price} = ₹{inrTotal}
+                  <p className="text-[11px] text-muted-foreground pt-1">
+                    Rate: 1 BNB ≈ ${bnbPrice.toFixed(2)} · You set ₹{price}/USD
                   </p>
                 )}
               </div>
             )}
+
 
             {/* Status indicators */}
             {step === "approving" && (
