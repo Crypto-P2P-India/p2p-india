@@ -99,7 +99,7 @@ const MyAds = () => {
   const liveCount = liveAds.length;
   const historyCount = historyAds.length;
 
-  const isProcessing = cancelPending || claimPending || sellerPending || disputePending || cancelDealPending;
+  const isProcessing = cancelPending || sellerPending || disputePending || cancelDealPending;
 
   const handleCopy = (text: string, id: number) => {
     navigator.clipboard.writeText(text);
