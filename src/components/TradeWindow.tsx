@@ -88,9 +88,11 @@ const TradeWindow = ({ ad, userAddress, onClose }: TradeWindowProps) => {
   const { writeContract: cancelDeal, data: cancelHash, isPending: cancelPending } = useWriteContract();
   const { isSuccess: cancelConfirmed } = useWaitForTransactionReceipt({ hash: cancelHash });
 
-  // Countdown timer
+  // Countdown timer — only runs during the buyer's payment window.
+  // Once buyer marks "I've Paid" (step === "waiting"), the timer stops and
+  // the deal waits indefinitely for the seller to release funds.
   useEffect(() => {
-    if (step !== "pay" && step !== "waiting") return;
+    if (step !== "pay") return;
     if (timeLeft <= 0) {
       setStep("cancelled");
       return;
