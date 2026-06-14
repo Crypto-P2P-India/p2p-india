@@ -63,9 +63,7 @@ const MyAds = () => {
   const { writeContract: cancelAd, data: cancelHash, isPending: cancelPending } = useWriteContract();
   const { isSuccess: cancelConfirmed } = useWaitForTransactionReceipt({ hash: cancelHash });
 
-  // Claim expired
-  const { writeContract: claimExpired, data: claimHash, isPending: claimPending } = useWriteContract();
-  const { isSuccess: claimConfirmed } = useWaitForTransactionReceipt({ hash: claimHash });
+  // (Expired ad concept removed — SellEscrow contract has no time-based ad expiry.)
 
   // Seller confirm receipt
   const { writeContract: sellerConfirm, data: sellerHash, isPending: sellerPending } = useWriteContract();
