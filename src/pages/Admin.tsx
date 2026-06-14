@@ -14,6 +14,7 @@ import Navbar from "@/components/Navbar";
 import ChatPanel from "@/components/ChatPanel";
 import { cleanupDealAttachments } from "@/lib/dealCleanup";
 import DeployContractCard from "@/components/DeployContractCard";
+import { ADMIN_ALLOWLIST } from "@/lib/admin";
 
 const DEAL_STATUS_LABELS: Record<number, string> = {
   0: "Active",
@@ -55,8 +56,7 @@ const Admin = () => {
     functionName: "owner",
   });
 
-const ADMIN_ALLOWLIST = ["0xa88798d834453f59f0797409342a95c79642cbea"];
-  const isAllowlisted = address && ADMIN_ALLOWLIST.includes(address.toLowerCase());
+const isAllowlisted = address && ADMIN_ALLOWLIST.includes(address.toLowerCase());
   const isOwner = isAllowlisted || (address && contractOwner && address.toLowerCase() === (contractOwner as string).toLowerCase());
 
   // Read counters
@@ -405,7 +405,7 @@ function DealRow({ dealId, onResolve }: { dealId: number; onResolve: (id: number
         <TableRow>
           <TableCell colSpan={9} className="p-0">
             <div className="h-72 border-t border-border">
-              <ChatPanel dealId={dealId} userAddress={address} readOnly />
+              <ChatPanel dealId={dealId} userAddress={address} readOnly={!isDisputed} />
             </div>
           </TableCell>
         </TableRow>
