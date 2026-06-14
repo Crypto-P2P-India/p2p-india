@@ -212,6 +212,9 @@ const isAllowlisted = address && ADMIN_ALLOWLIST.includes(address.toLowerCase())
           </Card>
         </div>
 
+        {/* Fee balances + withdraw */}
+        <FeeBalances refreshKey={refreshKey} onAction={() => setRefreshKey((k) => k + 1)} />
+
         {/* Deal scanner */}
         <div className="animate-fade-up" style={{ animationDelay: "200ms" }}>
           <Card className="bg-card border-border">
