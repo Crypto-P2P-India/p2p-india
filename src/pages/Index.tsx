@@ -50,20 +50,12 @@ const Index = () => {
 
   const now = Date.now() / 1000;
 
-  // Check for user's expired unclaimed ads
-  const expiredUnclaimedAds = useMemo(() => {
-    if (!address) return [];
-    return liveAds.filter(
-      (ad) => ad.seller.toLowerCase() === address.toLowerCase() && ad.status === 0 && ad.adExpiry < now
-    );
-  }, [liveAds, address, now]);
-
   const ownAdsCount = useMemo(() => {
     if (!address) return 0;
     return liveAds.filter(
-      (ad) => ad.seller.toLowerCase() === address.toLowerCase() && ad.status !== 3 && ad.adExpiry >= now
+      (ad) => ad.seller.toLowerCase() === address.toLowerCase() && ad.status !== 3
     ).length;
-  }, [liveAds, address, now]);
+  }, [liveAds, address]);
 
   const filteredAds = useMemo(() => {
     return liveAds
