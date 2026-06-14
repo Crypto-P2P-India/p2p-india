@@ -58,11 +58,19 @@ const Index = () => {
     );
   }, [liveAds, address, now]);
 
+  const ownAdsCount = useMemo(() => {
+    if (!address) return 0;
+    return liveAds.filter(
+      (ad) => ad.seller.toLowerCase() === address.toLowerCase() && ad.status !== 3 && ad.adExpiry >= now
+    ).length;
+  }, [liveAds, address, now]);
+
   const filteredAds = useMemo(() => {
     return liveAds
       .filter((ad) => {
-        if (ad.status !== 0) return false;
+        if (ad.status === 3) return false;
         if (ad.adExpiry < now) return false;
+        if (parseFloat(ad.tokenAmount) <= 0) return false;
         if (address && ad.seller.toLowerCase() === address.toLowerCase()) return false;
         const matchesCrypto = ad.tokenSymbol === crypto;
         const matchesSearch = !search || ad.seller.toLowerCase().includes(search.toLowerCase());
@@ -214,6 +222,18 @@ const Index = () => {
           <p className="text-xs text-muted-foreground">
             Showing {filteredAds.length} ad{filteredAds.length !== 1 ? "s" : ""} · sorted low → high price
           </p>
+
+          {isConnected && ownAdsCount > 0 && (
+            <p className="text-xs text-muted-foreground">
+              You have <span className="font-semibold text-foreground">{ownAdsCount}</span> ad{ownAdsCount > 1 ? "s" : ""} of your own — hidden here.{" "}
+              <button
+                onClick={() => navigate("/my-ads")}
+                className="text-primary font-semibold hover:underline"
+              >
+                View in My Ads →
+              </button>
+            </p>
+          )}
         </div>
 
         {/* Connection prompt */}

@@ -7,6 +7,8 @@ interface OrderCardProps {
   seller: string;
   tokenSymbol: string;
   tokenAmount: string;
+  totalAmount?: string;
+  lockedAmount?: string;
   pricePerToken: string;
   inrTotal: string;
   dealTimeout: number;
@@ -37,6 +39,8 @@ const OrderCard = ({
   seller,
   tokenSymbol,
   tokenAmount,
+  totalAmount,
+  lockedAmount,
   pricePerToken,
   inrTotal,
   dealTimeout,
@@ -47,6 +51,9 @@ const OrderCard = ({
 }: OrderCardProps) => {
   const timeLeftStr = formatTimeLeft(adExpiry);
   const isBNB = tokenSymbol === "BNB";
+  const lockedNum = lockedAmount ? parseFloat(lockedAmount) : 0;
+  const totalNum = totalAmount ? parseFloat(totalAmount) : 0;
+  const showLocked = lockedNum > 0 && totalNum > 0;
   const { bnbPrice } = useBnbPrice(isBNB);
   // For BNB ads, derive the INR/USD rate from stored pricePerToken / bnbPrice
   const inrPerUsd = isBNB && bnbPrice ? (parseFloat(pricePerToken) / bnbPrice).toFixed(2) : null;
@@ -94,6 +101,11 @@ const OrderCard = ({
         <div>
           <span className="text-muted-foreground text-xs">Available</span>
           <p className="text-foreground font-medium tabular-nums">{tokenAmount} {tokenSymbol}</p>
+          {showLocked && (
+            <p className="text-[10px] text-muted-foreground mt-0.5 tabular-nums">
+              {lockedNum} locked · {totalNum} total
+            </p>
+          )}
         </div>
         <div>
           <span className="text-muted-foreground text-xs">Total (INR)</span>
