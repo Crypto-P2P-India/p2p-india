@@ -101,6 +101,11 @@ const OrderCard = ({
         <div>
           <span className="text-muted-foreground text-xs">Available</span>
           <p className="text-foreground font-medium tabular-nums">{tokenAmount} {tokenSymbol}</p>
+          {showLocked && (
+            <p className="text-[10px] text-muted-foreground mt-0.5 tabular-nums">
+              {lockedNum} locked · {totalNum} total
+            </p>
+          )}
         </div>
         <div>
           <span className="text-muted-foreground text-xs">Total (INR)</span>
