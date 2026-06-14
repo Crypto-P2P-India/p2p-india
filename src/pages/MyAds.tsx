@@ -384,6 +384,28 @@ const MyAds = () => {
                                     Dispute
                                   </Button>
                                 )}
+                                {/* Seller propose extension — when buyer hasn't paid, deal not timed out, no existing proposal */}
+                                {relatedDeal.status === 0 && !relatedDeal.buyerConfirmed && !isDealTimedOut && !relatedDeal.sellerExtensionUsed && relatedDeal.sellerProposedExtra === 0 && (
+                                  <>
+                                    <Button variant="outline" size="sm" disabled={isProcessing} onClick={() => proposeExt({ address: P2P_CONTRACT_ADDRESS, abi: P2P_ESCROW_ABI, functionName: "sellerProposeExtension", args: [BigInt(relatedDeal.dealId), 15 * 60] } as any)}>
+                                      {proposePending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Clock className="h-3 w-3 mr-1" />}
+                                      Offer +15m
+                                    </Button>
+                                    <Button variant="outline" size="sm" disabled={isProcessing} onClick={() => proposeExt({ address: P2P_CONTRACT_ADDRESS, abi: P2P_ESCROW_ABI, functionName: "sellerProposeExtension", args: [BigInt(relatedDeal.dealId), 30 * 60] } as any)}>
+                                      <Clock className="h-3 w-3 mr-1" />
+                                      Offer +30m
+                                    </Button>
+                                  </>
+                                )}
+
+                                {/* Cancel pending extension proposal */}
+                                {relatedDeal.sellerProposedExtra > 0 && !relatedDeal.sellerExtensionUsed && (
+                                  <Button variant="outline" size="sm" disabled={isProcessing} onClick={() => cancelProposal({ address: P2P_CONTRACT_ADDRESS, abi: P2P_ESCROW_ABI, functionName: "sellerCancelExtensionProposal", args: [BigInt(relatedDeal.dealId)] } as any)}>
+                                    {cancelPropPending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <XCircle className="h-3 w-3 mr-1" />}
+                                    Withdraw +{Math.round(relatedDeal.sellerProposedExtra / 60)}m offer
+                                  </Button>
+                                )}
+
                                 <Button variant="ghost" size="sm" className="text-muted-foreground ml-auto relative" onClick={() => setChatDealId(showChat ? null : relatedDeal.dealId)}>
                                   <MessageSquare className="h-3 w-3 mr-1" />
                                   {showChat ? "Hide Chat" : "Chat"}
@@ -394,6 +416,13 @@ const MyAds = () => {
                                   )}
                                 </Button>
                               </div>
+
+                              {/* Pending proposal banner */}
+                              {relatedDeal.sellerProposedExtra > 0 && !relatedDeal.sellerExtensionUsed && (
+                                <div className="rounded-md bg-primary/10 border border-primary/20 p-2 text-xs text-primary">
+                                  ⏳ Waiting for buyer to accept your +{Math.round(relatedDeal.sellerProposedExtra / 60)}m extension.
+                                </div>
+                              )}
                             </div>
                           )}
 
