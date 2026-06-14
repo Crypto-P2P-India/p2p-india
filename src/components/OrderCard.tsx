@@ -7,6 +7,8 @@ interface OrderCardProps {
   seller: string;
   tokenSymbol: string;
   tokenAmount: string;
+  totalAmount?: string;
+  lockedAmount?: string;
   pricePerToken: string;
   inrTotal: string;
   dealTimeout: number;
