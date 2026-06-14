@@ -12,7 +12,7 @@ export interface LiveAd {
   seller: string;
   token: string;
   tokenSymbol: string;
-  /** Amount currently available to buy (remaining minus locked). */
+  /** Unsold amount still available for new buyers. */
   tokenAmount: string;
   /** Total amount the seller originally posted. */
   totalAmount: string;
@@ -73,11 +73,13 @@ export function useContractAds() {
 
       const remaining = BigInt(String(remainingRaw));
       const locked = BigInt(String(lockedRaw || 0));
+      const minFill = BigInt(String(minFillRaw || 0));
       // Contract already decrements `remainingAmount` when a deal is taken,
       // so `remaining` IS the unsold amount still available for new buyers.
       const available = remaining;
 
-      const status = active ? (locked > 0n ? 1 : 0) : 3;
+      const hasSellableRemaining = available > 0n && (minFill === 0n || available >= minFill);
+      const status = active ? (hasSellableRemaining ? 0 : locked > 0n ? 1 : 0) : 3;
 
       const isBNB = String(tokenAddr).toLowerCase() === NATIVE_BNB.toLowerCase();
       const tokenSymbol = isBNB ? "BNB" : "USDT";
@@ -85,7 +87,7 @@ export function useContractAds() {
       const availableFormatted = formatUnits(available, 18);
       const totalFormatted = formatUnits(BigInt(String(totalAmountRaw || remaining)), 18);
       const lockedFormatted = formatUnits(locked, 18);
-      const minFillFormatted = formatUnits(BigInt(String(minFillRaw || 0)), 18);
+      const minFillFormatted = formatUnits(minFill, 18);
       const priceFormatted = formatUnits(BigInt(String(pricePerToken)), 2);
       const rawInrTotal = available * BigInt(String(pricePerToken));
       const inrTotal = parseFloat(formatUnits(rawInrTotal, 20)).toFixed(2);
