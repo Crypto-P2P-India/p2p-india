@@ -2,9 +2,9 @@ import { useEffect } from "react";
 
 export function useTheme() {
   useEffect(() => {
-    document.documentElement.classList.remove("dark");
-    try { localStorage.setItem("theme", "light"); } catch {}
+    document.documentElement.classList.add("dark");
+    try { localStorage.setItem("theme", "dark"); } catch {}
   }, []);
 
-  return { theme: "light" as const, toggle: () => {} };
+  return { theme: "dark" as const, toggle: () => {} };
 }
