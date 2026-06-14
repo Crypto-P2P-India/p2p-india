@@ -470,7 +470,7 @@ const MyAds = () => {
                             <DealTimeline events={dealTxMap[relatedDeal.dealId].events} />
                           )}
 
-                          {/* Actions for live/expired ads (no deal yet) */}
+                          {/* Actions for live ads */}
                           {ad.status === 0 && (() => {
                             const hasLocked = parseFloat(ad.lockedAmount) > 0;
                             return (
@@ -479,27 +479,16 @@ const MyAds = () => {
                                   <p className="text-xs text-muted-foreground">
                                     🔒 Cannot cancel while <span className="font-medium text-foreground">{ad.lockedAmount} {ad.tokenSymbol}</span> is locked in an active deal. Finish or resolve the deal first.
                                   </p>
-                                ) : !isExpired ? (
+                                ) : (
                                   <p className="text-xs text-muted-foreground">
                                     💡 Cancel to return <span className="font-medium text-foreground">{ad.tokenAmount} {ad.tokenSymbol}</span> to your wallet.
                                   </p>
-                                ) : (
-                                  <p className="text-xs text-sell">
-                                    ⏰ Ad expired. Claim to return <span className="font-medium">{ad.tokenAmount} {ad.tokenSymbol}</span> to your wallet.
-                                  </p>
                                 )}
                                 <div className="flex gap-2">
-                                  {!isExpired ? (
-                                    <Button variant="sell" size="sm" onClick={() => { setPendingAdId(ad.adId); cancelAd({ address: P2P_CONTRACT_ADDRESS, abi: P2P_ESCROW_ABI, functionName: "cancelAd", args: [BigInt(ad.adId)] } as any); }} disabled={hasLocked || (cancelPending && pendingAdId === ad.adId)}>
-                                      {cancelPending && pendingAdId === ad.adId ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <XCircle className="h-3 w-3 mr-1" />}
-                                      Cancel Ad &amp; Get Funds
-                                    </Button>
-                                  ) : (
-                                    <Button variant="outline" size="sm" className="text-primary border-primary/30 hover:bg-primary/10" onClick={() => { setPendingAdId(ad.adId); claimExpired({ address: P2P_CONTRACT_ADDRESS, abi: P2P_ESCROW_ABI, functionName: "cancelAd", args: [BigInt(ad.adId)] } as any); }} disabled={hasLocked || (claimPending && pendingAdId === ad.adId)}>
-                                      {claimPending && pendingAdId === ad.adId ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
-                                      Claim Funds Back
-                                    </Button>
-                                  )}
+                                  <Button variant="sell" size="sm" onClick={() => { setPendingAdId(ad.adId); cancelAd({ address: P2P_CONTRACT_ADDRESS, abi: P2P_ESCROW_ABI, functionName: "cancelAd", args: [BigInt(ad.adId)] } as any); }} disabled={hasLocked || (cancelPending && pendingAdId === ad.adId)}>
+                                    {cancelPending && pendingAdId === ad.adId ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <XCircle className="h-3 w-3 mr-1" />}
+                                    Cancel Ad &amp; Get Funds
+                                  </Button>
                                 </div>
                               </div>
                             );
