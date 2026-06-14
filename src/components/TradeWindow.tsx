@@ -25,6 +25,7 @@ interface TradeAd {
   inrTotal: string;
   dealTimeout: number;
   paymentInfo: string;
+  minFillAmount?: string;
 }
 
 interface TradeWindowProps {
@@ -47,16 +48,20 @@ const TradeWindow = ({ ad, userAddress, onClose }: TradeWindowProps) => {
   const [showChat, setShowChat] = useState(false);
   const [copied, setCopied] = useState(false);
   const [dealId, setDealId] = useState<number | null>(null);
-  const [buyAmount, setBuyAmount] = useState<string>(ad.tokenAmount);
+  // Integer-only buy amount. Default to seller's minimum (or 1).
+  const minAmount = Math.max(1, Math.floor(parseFloat(ad.minFillAmount || "1") || 1));
+  const maxAmount = Math.floor(parseFloat(ad.tokenAmount) || 0);
+  const [buyAmount, setBuyAmount] = useState<string>(String(Math.min(minAmount, maxAmount || minAmount)));
   const isSeller = ad.seller.toLowerCase() === userAddress.toLowerCase();
 
-  const maxAmount = parseFloat(ad.tokenAmount) || 0;
-  const buyNum = parseFloat(buyAmount) || 0;
+  const buyNum = parseInt(buyAmount, 10);
+  const buyNumSafe = Number.isFinite(buyNum) ? buyNum : 0;
   const priceNum = parseFloat(ad.pricePerToken) || 0;
-  const buyInrTotal = useMemo(() => (buyNum * priceNum).toFixed(2), [buyNum, priceNum]);
-  const amountValid = buyNum > 0 && buyNum <= maxAmount;
+  const buyInrTotal = useMemo(() => (buyNumSafe * priceNum).toFixed(2), [buyNumSafe, priceNum]);
+  const amountValid =
+    Number.isInteger(buyNumSafe) && buyNumSafe >= minAmount && buyNumSafe <= maxAmount;
   const payoutInr = step === "accept" ? buyInrTotal : ad.inrTotal;
-  const payoutAmount = step === "accept" ? buyAmount : ad.tokenAmount;
+  const payoutAmount = step === "accept" ? String(buyNumSafe || minAmount) : ad.tokenAmount;
   const timeoutMin = Math.round(ad.dealTimeout / 60);
 
   // Read nextDealId BEFORE accepting — this will be the dealId assigned
@@ -141,7 +146,7 @@ const TradeWindow = ({ ad, userAddress, onClose }: TradeWindowProps) => {
 
   const handleAcceptDeal = () => {
     if (!amountValid) {
-      toast.error(`Enter an amount between 0 and ${maxAmount} ${ad.tokenSymbol}`);
+      toast.error(`Enter a whole number between ${minAmount} and ${maxAmount} ${ad.tokenSymbol}`);
       return;
     }
     // Capture the nextDealId before sending the tx
@@ -152,7 +157,7 @@ const TradeWindow = ({ ad, userAddress, onClose }: TradeWindowProps) => {
       address: P2P_CONTRACT_ADDRESS,
       abi: P2P_ESCROW_ABI,
       functionName: "takeDeal",
-      args: [BigInt(ad.adId), parseUnits(buyAmount, 18)],
+      args: [BigInt(ad.adId), parseUnits(String(buyNumSafe), 18)],
     } as any);
   };
 
@@ -331,37 +336,40 @@ const TradeWindow = ({ ad, userAddress, onClose }: TradeWindowProps) => {
                   <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <label className="text-sm font-semibold text-foreground">How much {ad.tokenSymbol} to buy?</label>
-                      <span className="text-xs text-muted-foreground tabular-nums">Max: {ad.tokenAmount}</span>
+                      <span className="text-xs text-muted-foreground tabular-nums">
+                        Min: {minAmount} · Max: {maxAmount}
+                      </span>
                     </div>
                     <div className="relative">
                       <Input
                         type="number"
-                        inputMode="decimal"
-                        min="0"
+                        inputMode="numeric"
+                        min={minAmount}
                         max={maxAmount}
-                        step="any"
+                        step={1}
                         value={buyAmount}
-                        onChange={(e) => setBuyAmount(e.target.value)}
+                        onChange={(e) => {
+                          // Whole numbers only — strip anything else.
+                          const v = e.target.value.replace(/[^\d]/g, "");
+                          setBuyAmount(v);
+                        }}
+                        onKeyDown={(e) => {
+                          if (["e", "E", "+", "-", ".", ","].includes(e.key)) e.preventDefault();
+                        }}
                         className="bg-surface-2 border-input pr-16 text-base h-11"
-                        placeholder="0.00"
+                        placeholder={String(minAmount)}
                       />
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">
                         {ad.tokenSymbol}
                       </span>
                     </div>
-                    <div className="flex gap-2">
-                      {[25, 50, 75, 100].map((pct) => (
-                        <button
-                          key={pct}
-                          onClick={() => setBuyAmount((maxAmount * pct / 100).toString())}
-                          className="flex-1 rounded-md border border-border bg-surface-2 px-2 py-1.5 text-xs font-medium text-muted-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors"
-                        >
-                          {pct === 100 ? "MAX" : `${pct}%`}
-                        </button>
-                      ))}
-                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      Whole numbers only. Seller's minimum per trade is {minAmount} {ad.tokenSymbol}.
+                    </p>
                     {!amountValid && buyAmount !== "" && (
-                      <p className="text-xs text-sell">Enter an amount between 0 and {maxAmount} {ad.tokenSymbol}.</p>
+                      <p className="text-xs text-sell">
+                        Enter a whole number between {minAmount} and {maxAmount} {ad.tokenSymbol}.
+                      </p>
                     )}
                   </div>
                 )}

@@ -18,6 +18,8 @@ export interface LiveAd {
   totalAmount: string;
   /** Amount currently locked in pending deals. */
   lockedAmount: string;
+  /** Minimum amount a buyer must take in a single deal. */
+  minFillAmount: string;
   pricePerToken: string;
   /** INR value of the currently-available amount. */
   inrTotal: string;
@@ -62,6 +64,7 @@ export function useContractAds() {
       const totalAmountRaw = ad.totalAmount !== undefined ? ad.totalAmount : ad[2];
       const remainingRaw = ad.remainingAmount !== undefined ? ad.remainingAmount : ad[3];
       const lockedRaw = ad.lockedInDeals !== undefined ? ad.lockedInDeals : ad[4];
+      const minFillRaw = ad.minFillAmount !== undefined ? ad.minFillAmount : ad[6];
       const pricePerToken = ad.pricePerToken !== undefined ? ad.pricePerToken : ad[7];
       const paymentInfo = ad.paymentMethod !== undefined ? ad.paymentMethod : ad[8];
       const active = ad.active !== undefined ? ad.active : ad[9];
@@ -81,6 +84,7 @@ export function useContractAds() {
       const availableFormatted = formatUnits(available, 18);
       const totalFormatted = formatUnits(BigInt(String(totalAmountRaw || remaining)), 18);
       const lockedFormatted = formatUnits(locked, 18);
+      const minFillFormatted = formatUnits(BigInt(String(minFillRaw || 0)), 18);
       const priceFormatted = formatUnits(BigInt(String(pricePerToken)), 2);
       const rawInrTotal = available * BigInt(String(pricePerToken));
       const inrTotal = parseFloat(formatUnits(rawInrTotal, 20)).toFixed(2);
@@ -93,6 +97,7 @@ export function useContractAds() {
         tokenAmount: availableFormatted,
         totalAmount: totalFormatted,
         lockedAmount: lockedFormatted,
+        minFillAmount: minFillFormatted,
         pricePerToken: priceFormatted,
         inrTotal,
         dealTimeout: DEFAULT_DEAL_TIMEOUT,
