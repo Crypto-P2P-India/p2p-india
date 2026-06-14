@@ -426,10 +426,11 @@ function AdTable({ adCount, refreshKey }: { adCount: number; refreshKey: number 
             <TableHead>ID</TableHead>
             <TableHead>Seller</TableHead>
             <TableHead>Token</TableHead>
-            <TableHead>Amount</TableHead>
+            <TableHead>Remaining / Total</TableHead>
+            <TableHead>Locked</TableHead>
             <TableHead>Price/Token (INR)</TableHead>
-            <TableHead>Timeout</TableHead>
             <TableHead>Status</TableHead>
+            <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -450,25 +451,35 @@ function AdRow({ adId }: { adId: number }) {
     args: [BigInt(adId)],
   });
 
+  const { writeContract: closeAd, data: closeHash, isPending: closePending } = useWriteContract();
+  const { isSuccess: closeConfirmed } = useWaitForTransactionReceipt({ hash: closeHash });
+
+  useEffect(() => {
+    if (closeConfirmed) toast.success(`Ad #${adId} force-closed.`);
+  }, [closeConfirmed, adId]);
+
   if (!data) return null;
 
   const ad = data as any;
   const active = Boolean(ad.active !== undefined ? ad.active : ad[9]);
-  const status: number = active ? 0 : 3;
+  const lockedRaw = ad.lockedInDeals !== undefined ? ad.lockedInDeals : ad[4];
+  const lockedBig = BigInt(String(lockedRaw || 0));
+  const status: number = active ? (lockedBig > 0n ? 1 : 0) : 3;
   const NATIVE_BNB = "0x0000000000000000000000000000000000000000";
   const token = String(ad.token || ad[1]).toLowerCase() === NATIVE_BNB.toLowerCase() ? "BNB" : "USDT";
-  const amount = formatUnits(ad.remainingAmount !== undefined ? ad.remainingAmount : ad[3], 18);
+  const remaining = formatUnits(ad.remainingAmount !== undefined ? ad.remainingAmount : ad[3], 18);
+  const total = formatUnits(ad.totalAmount !== undefined ? ad.totalAmount : ad[2], 18);
+  const locked = formatUnits(lockedBig, 18);
   const price = formatUnits(ad.pricePerToken !== undefined ? ad.pricePerToken : ad[7], 2);
-  const timeoutMin = 15;
 
   return (
     <TableRow>
       <TableCell className="font-mono text-xs">#{adId}</TableCell>
       <TableCell className="font-mono text-xs">{shortenAddress(String(ad.seller || ad[0]))}</TableCell>
       <TableCell>{token}</TableCell>
-      <TableCell className="tabular-nums">{parseFloat(amount).toFixed(4)}</TableCell>
+      <TableCell className="tabular-nums text-xs">{parseFloat(remaining).toFixed(4)} / {parseFloat(total).toFixed(4)}</TableCell>
+      <TableCell className="tabular-nums text-xs">{parseFloat(locked).toFixed(4)}</TableCell>
       <TableCell className="tabular-nums">₹{price}</TableCell>
-      <TableCell>{timeoutMin}m</TableCell>
       <TableCell>
         <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
           status === 0 ? "bg-green-500/20 text-green-400" :
@@ -479,7 +490,103 @@ function AdRow({ adId }: { adId: number }) {
           {AD_STATUS_LABELS[status] || "Unknown"}
         </span>
       </TableCell>
+      <TableCell>
+        {active && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs px-2 border-red-500/40 text-red-400 hover:bg-red-500/10"
+            disabled={closePending || lockedBig > 0n}
+            title={lockedBig > 0n ? "Cannot close: funds are locked in an active deal" : "Force-close ad and refund seller"}
+            onClick={() => closeAd({ address: P2P_CONTRACT_ADDRESS, abi: P2P_ESCROW_ABI, functionName: "adminCloseAd", args: [BigInt(adId)] } as any)}
+          >
+            {closePending ? "Closing…" : "Close Ad"}
+          </Button>
+        )}
+      </TableCell>
     </TableRow>
+  );
+}
+
+// ── Fee Balance / Withdraw ──
+function FeeBalances({ refreshKey, onAction }: { refreshKey: number; onAction: () => void }) {
+  const NATIVE_BNB = "0x0000000000000000000000000000000000000000";
+
+  const { data: bnbBal } = useReadContract({
+    address: P2P_CONTRACT_ADDRESS,
+    abi: P2P_ESCROW_ABI,
+    functionName: "feeBalance",
+    args: [NATIVE_BNB as `0x${string}`],
+    scopeKey: `fee-bnb-${refreshKey}`,
+  });
+  const { data: usdtBal } = useReadContract({
+    address: P2P_CONTRACT_ADDRESS,
+    abi: P2P_ESCROW_ABI,
+    functionName: "feeBalance",
+    args: [USDT_ADDRESS as `0x${string}`],
+    scopeKey: `fee-usdt-${refreshKey}`,
+  });
+
+  const { writeContract, data: txHash, isPending } = useWriteContract();
+  const { isSuccess } = useWaitForTransactionReceipt({ hash: txHash });
+
+  useEffect(() => {
+    if (isSuccess) {
+      toast.success("Fees withdrawn to fee collector.");
+      onAction();
+    }
+  }, [isSuccess, onAction]);
+
+  const bnbAmt = bnbBal ? parseFloat(formatUnits(bnbBal as bigint, 18)) : 0;
+  const usdtAmt = usdtBal ? parseFloat(formatUnits(usdtBal as bigint, 18)) : 0;
+
+  const withdraw = (token: string) => {
+    writeContract({
+      address: P2P_CONTRACT_ADDRESS,
+      abi: P2P_ESCROW_ABI,
+      functionName: "withdrawFees",
+      args: [token as `0x${string}`],
+    } as any);
+  };
+
+  return (
+    <Card className="bg-card border-border mb-6 animate-fade-up" style={{ animationDelay: "150ms" }}>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">Fee Balances</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="flex items-center justify-between rounded-lg border border-border bg-surface-2 p-3">
+            <div>
+              <p className="text-xs text-muted-foreground">BNB Fees</p>
+              <p className="text-lg font-bold text-foreground tabular-nums">{bnbAmt.toFixed(6)} BNB</p>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={isPending || bnbAmt <= 0}
+              onClick={() => withdraw(NATIVE_BNB)}
+            >
+              Withdraw
+            </Button>
+          </div>
+          <div className="flex items-center justify-between rounded-lg border border-border bg-surface-2 p-3">
+            <div>
+              <p className="text-xs text-muted-foreground">USDT Fees</p>
+              <p className="text-lg font-bold text-foreground tabular-nums">{usdtAmt.toFixed(4)} USDT</p>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={isPending || usdtAmt <= 0}
+              onClick={() => withdraw(USDT_ADDRESS)}
+            >
+              Withdraw
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
