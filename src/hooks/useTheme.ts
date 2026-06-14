@@ -1,10 +1,28 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+
+type Theme = "light" | "dark";
+
+function getInitialTheme(): Theme {
+  if (typeof window === "undefined") return "dark";
+  const stored = localStorage.getItem("theme") as Theme | null;
+  if (stored === "light" || stored === "dark") return stored;
+  return "dark"; // default to dark (Binance-style)
+}
 
 export function useTheme() {
-  useEffect(() => {
-    document.documentElement.classList.remove("dark");
-    try { localStorage.setItem("theme", "light"); } catch {}
-  }, []);
+  const [theme, setThemeState] = useState<Theme>(getInitialTheme);
 
-  return { theme: "light" as const, toggle: () => {} };
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === "dark") {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
+    }
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+
+  const toggle = () => setThemeState((t) => (t === "dark" ? "light" : "dark"));
+
+  return { theme, toggle };
 }
