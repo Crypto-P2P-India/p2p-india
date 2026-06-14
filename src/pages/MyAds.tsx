@@ -157,14 +157,6 @@ const MyAds = () => {
                 {adTab === "live" && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />}
               </button>
               <button
-                onClick={() => setAdTab("expired")}
-                className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${adTab === "expired" ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-              >
-                Expired
-                {expiredCount > 0 && <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-xs tabular-nums ${adTab === "expired" ? "bg-sell/15 text-sell" : "bg-surface-3 text-muted-foreground"}`}>{expiredCount}</span>}
-                {adTab === "expired" && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-sell rounded-full" />}
-              </button>
-              <button
                 onClick={() => setAdTab("history")}
                 className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${adTab === "history" ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
               >
@@ -174,27 +166,12 @@ const MyAds = () => {
               </button>
             </div>
 
-            {/* Expired ads banner */}
-            {adTab !== "expired" && expiredCount > 0 && (
-              <div className="mb-4 rounded-lg border border-sell/30 bg-sell/5 p-3 flex items-center justify-between animate-fade-up">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-sell shrink-0" />
-                  <span className="text-sm text-foreground">
-                    You have <span className="font-bold text-sell">{expiredCount}</span> expired ad{expiredCount > 1 ? "s" : ""} with unclaimed funds
-                  </span>
-                </div>
-                <Button variant="outline" size="sm" className="text-sell border-sell/30 hover:bg-sell/10 shrink-0" onClick={() => setAdTab("expired")}>
-                  Claim Funds
-                </Button>
-              </div>
-            )}
-
             {(() => {
-              const currentAds = adTab === "live" ? liveAds : adTab === "expired" ? expiredAds : historyAds;
+              const currentAds = adTab === "live" ? liveAds : historyAds;
               if (currentAds.length === 0) {
                 return (
                   <div className="rounded-lg border border-border bg-card p-8 text-center text-muted-foreground text-sm">
-                    {adTab === "live" ? "No live ads. Check Expired or History tabs." : adTab === "expired" ? "No expired ads with unclaimed funds." : "No completed or cancelled ads yet."}
+                    {adTab === "live" ? "No live ads. Check History tab." : "No completed or cancelled ads yet."}
                   </div>
                 );
               }
