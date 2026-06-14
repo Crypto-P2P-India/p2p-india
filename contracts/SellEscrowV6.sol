@@ -116,17 +116,26 @@ contract SellEscrow {
         address disputeRaisedBy;
     }
 
+    struct AdInput {
+        uint256 amount;
+        uint256 minFillAmount;
+        uint256 pricePerToken;
+        string paymentMethod;
+        uint32 adDuration;
+        uint32 payWindow;
+    }
+
     // ---------- Storage ----------
     uint256 public nextAdId   = 1;
     uint256 public nextDealId = 1;
 
-    mapping(uint256 => Ad)   public ads;
-    mapping(uint256 => Deal) public deals;
+    mapping(uint256 => Ad)   private ads;
+    mapping(uint256 => Deal) private deals;
     mapping(address => uint256) public feeBalance;
     mapping(uint256 => mapping(address => uint256)) public openDealByBuyer;
 
     // ---------- Events ----------
-    event AdCreated(uint256 indexed adId, address indexed seller, address token, uint256 amount, uint256 price, uint256 prepaidFee, uint64 expiresAt, uint32 payWindow);
+    event AdCreated(uint256 indexed adId, address indexed seller, address indexed token);
     event AdCancelled(uint256 indexed adId, uint256 refunded, uint256 feeRefunded);
     event AdClosedByAdmin(uint256 indexed adId);
     event DealCreated(uint256 indexed dealId, uint256 indexed adId, address indexed buyer, uint256 amount);
