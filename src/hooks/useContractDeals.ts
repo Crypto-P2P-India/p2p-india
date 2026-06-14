@@ -95,7 +95,8 @@ export function useContractDeals() {
       const rawStatus = rawState === 1 ? 0 : rawState === 2 ? 1 : rawState === 3 ? 2 : rawState === 5 ? 4 : 3;
       const rawBuyerConfirmed = rawState === 2 || rawState === 3 || rawState === 5;
       const rawSellerConfirmed = rawState === 3;
-      const rawDeadline = BigInt(String(rawCreatedAt || 0)) + BigInt(PAY_WINDOW);
+
+      if (rawId === undefined || rawTokenAmount === undefined) continue;
 
       const createdAtNum = Number(String(rawCreatedAt || 0));
       const paidAtNum = Number(String(rawPaidAt || 0));
