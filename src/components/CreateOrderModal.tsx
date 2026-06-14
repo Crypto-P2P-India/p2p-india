@@ -18,8 +18,18 @@ interface CreateOrderModalProps {
 }
 
 const NATIVE_BNB = "0x0000000000000000000000000000000000000000";
-const SELLER_FEE_BPS = 15n;
-const BPS_DENOM = 10000n;
+
+const PAY_WINDOW_OPTIONS = [
+  { label: "15 min", value: 15 * 60 },
+  { label: "30 min", value: 30 * 60 },
+] as const;
+const AD_DURATION_OPTIONS = [
+  { label: "30 min", value: 30 * 60 },
+  { label: "1 hour", value: 60 * 60 },
+  { label: "6 hours", value: 6 * 60 * 60 },
+  { label: "24 hours", value: 24 * 60 * 60 },
+  { label: "72 hours", value: 72 * 60 * 60 },
+] as const;
 
 const CRYPTOS = [
   { symbol: "USDT", address: USDT_ADDRESS },
