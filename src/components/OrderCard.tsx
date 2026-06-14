@@ -39,6 +39,8 @@ const OrderCard = ({
   seller,
   tokenSymbol,
   tokenAmount,
+  totalAmount,
+  lockedAmount,
   pricePerToken,
   inrTotal,
   dealTimeout,
@@ -49,6 +51,9 @@ const OrderCard = ({
 }: OrderCardProps) => {
   const timeLeftStr = formatTimeLeft(adExpiry);
   const isBNB = tokenSymbol === "BNB";
+  const lockedNum = lockedAmount ? parseFloat(lockedAmount) : 0;
+  const totalNum = totalAmount ? parseFloat(totalAmount) : 0;
+  const showLocked = lockedNum > 0 && totalNum > 0;
   const { bnbPrice } = useBnbPrice(isBNB);
   // For BNB ads, derive the INR/USD rate from stored pricePerToken / bnbPrice
   const inrPerUsd = isBNB && bnbPrice ? (parseFloat(pricePerToken) / bnbPrice).toFixed(2) : null;
