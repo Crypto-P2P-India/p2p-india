@@ -16,12 +16,6 @@ pragma solidity ^0.8.20;
  *  + Anti-grief: max 1 open deal per (buyer, ad)
  */
 
-interface IERC20 {
-    function transfer(address to, uint256 amount) external returns (bool);
-    function transferFrom(address from, address to, uint256 amount) external returns (bool);
-    function balanceOf(address account) external view returns (uint256);
-}
-
 contract SellEscrow {
     // ---------- Ownership (2-step) ----------
     address public owner;
@@ -47,6 +41,12 @@ contract SellEscrow {
     uint16 public constant SELLER_FEE_BPS = 15; // 0.15% (prepaid by seller upfront)
     uint16 public constant BUYER_FEE_BPS  = 10; // 0.10% (deducted from buyer payout)
     uint16 public constant BPS_DENOM      = 10000;
+
+    // ERC20 selectors kept inside this contract so Remix shows only SellEscrow,
+    // avoiding accidental deployment of an interface/abstract item.
+    bytes4 private constant ERC20_TRANSFER_SELECTOR = 0xa9059cbb;
+    bytes4 private constant ERC20_TRANSFER_FROM_SELECTOR = 0x23b872dd;
+    bytes4 private constant ERC20_BALANCE_OF_SELECTOR = 0x70a08231;
 
     // ---------- Timers ----------
     uint32 public constant PAY_WINDOW     = 15 minutes;
@@ -156,9 +156,9 @@ contract SellEscrow {
         uint256 fee = _sellerFee(amount);
         uint256 required = amount + fee;
 
-        uint256 before = IERC20(token).balanceOf(address(this));
+        uint256 before = _tokenBalance(token, address(this));
         _safeTransferFrom(token, msg.sender, address(this), required);
-        uint256 received = IERC20(token).balanceOf(address(this)) - before;
+        uint256 received = _tokenBalance(token, address(this)) - before;
         // Reject fee-on-transfer / deflationary tokens — funds would otherwise get stuck
         require(received >= required, "FEE_ON_TRANSFER_TOKEN");
 
@@ -362,9 +362,17 @@ contract SellEscrow {
     }
 
     // ---------- SafeERC20 (USDT-style non-returning tokens) ----------
+    function _tokenBalance(address token, address account) internal view returns (uint256) {
+        (bool ok, bytes memory data) = token.staticcall(
+            abi.encodeWithSelector(ERC20_BALANCE_OF_SELECTOR, account)
+        );
+        require(ok && data.length >= 32, "ERC20_BALANCE_FAIL");
+        return abi.decode(data, (uint256));
+    }
+
     function _safeTransferFrom(address token, address from, address to, uint256 amount) internal {
         (bool ok, bytes memory data) = token.call(
-            abi.encodeWithSelector(IERC20.transferFrom.selector, from, to, amount)
+            abi.encodeWithSelector(ERC20_TRANSFER_FROM_SELECTOR, from, to, amount)
         );
         require(ok && (data.length == 0 || abi.decode(data, (bool))), "ERC20_PULL_FAIL");
     }
@@ -376,7 +384,7 @@ contract SellEscrow {
             require(ok, "BNB_SEND_FAIL");
         } else {
             (bool ok, bytes memory data) = token.call(
-                abi.encodeWithSelector(IERC20.transfer.selector, to, amount)
+                abi.encodeWithSelector(ERC20_TRANSFER_SELECTOR, to, amount)
             );
             require(ok && (data.length == 0 || abi.decode(data, (bool))), "ERC20_SEND_FAIL");
         }
