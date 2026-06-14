@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Download, Smartphone, ShieldCheck, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,14 +10,34 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-// Direct APK download URL. Replace this with your hosted APK link
-// (e.g. your own server, GitHub Releases, Google Drive direct link, etc.).
 const APK_URL = "/downloads/crypto-p2p.apk";
-const APK_VERSION = "1.5";
-const APK_SIZE = "~12 MB";
+const VERSION_URL = "/app-version.json";
+
+const formatBytes = (b: number) => {
+  if (!b) return "";
+  const mb = b / (1024 * 1024);
+  return `${mb.toFixed(1)} MB`;
+};
 
 const ApkDownloadButton = () => {
   const [open, setOpen] = useState(false);
+  const [version, setVersion] = useState<string>("…");
+  const [size, setSize] = useState<string>("…");
+
+  useEffect(() => {
+    fetch(`${VERSION_URL}?t=${Date.now()}`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => d?.version && setVersion(d.version))
+      .catch(() => setVersion(""));
+
+    fetch(APK_URL, { method: "HEAD", cache: "no-store" })
+      .then((r) => {
+        const len = r.headers.get("content-length");
+        if (len) setSize(formatBytes(parseInt(len, 10)));
+      })
+      .catch(() => setSize(""));
+  }, []);
+
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -53,7 +73,7 @@ const ApkDownloadButton = () => {
                   Crypto P2P India
                 </DialogTitle>
                 <DialogDescription className="text-xs text-muted-foreground">
-                  Android APK · v{APK_VERSION} · {APK_SIZE}
+                  Android APK{version && ` · v${version}`}{size && ` · ${size}`}
                 </DialogDescription>
               </DialogHeader>
             </div>
