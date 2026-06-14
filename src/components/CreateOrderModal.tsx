@@ -18,8 +18,18 @@ interface CreateOrderModalProps {
 }
 
 const NATIVE_BNB = "0x0000000000000000000000000000000000000000";
-const SELLER_FEE_BPS = 15n;
-const BPS_DENOM = 10000n;
+
+const PAY_WINDOW_OPTIONS = [
+  { label: "15 min", value: 15 * 60 },
+  { label: "30 min", value: 30 * 60 },
+] as const;
+const AD_DURATION_OPTIONS = [
+  { label: "30 min", value: 30 * 60 },
+  { label: "1 hour", value: 60 * 60 },
+  { label: "6 hours", value: 6 * 60 * 60 },
+  { label: "24 hours", value: 24 * 60 * 60 },
+  { label: "72 hours", value: 72 * 60 * 60 },
+] as const;
 
 const CRYPTOS = [
   { symbol: "USDT", address: USDT_ADDRESS },
@@ -40,6 +50,8 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
   const [amount, setAmount] = useState("");
   const [allowPartial, setAllowPartial] = useState(false);
   const [minFill, setMinFill] = useState("");
+  const [payWindowSec, setPayWindowSec] = useState<number>(15 * 60);
+  const [adDurationSec, setAdDurationSec] = useState<number>(60 * 60);
   const [step, setStep] = useState<Step>("form");
 
   // Payment fields
@@ -99,8 +111,17 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
   const selectedToken = CRYPTOS.find((c) => c.symbol === crypto)!;
   const isBNB = crypto === "BNB";
   const tokenAmountWei = amount ? parseUnits(amount, 18) : BigInt(0);
-  const sellerFeeWei = (tokenAmountWei * SELLER_FEE_BPS) / BPS_DENOM;
-  const createRequiredWei = tokenAmountWei + sellerFeeWei;
+
+  // Quote exact cost (amount + seller fee snapshot) from contract.
+  const { data: quoteData } = useReadContract({
+    address: P2P_CONTRACT_ADDRESS,
+    abi: P2P_ESCROW_ABI,
+    functionName: "quoteCreateCost",
+    args: [tokenAmountWei],
+    query: { enabled: !!amount && tokenAmountWei > 0n && open },
+  });
+  const [createRequiredWei, prepaidFeeWei] = (quoteData as readonly [bigint, bigint] | undefined) ?? [tokenAmountWei, 0n];
+  const sellerFeeWei = prepaidFeeWei;
 
   // For BNB: user enters INR per USD rate, we multiply by live BNB/USD price
   const { bnbPrice, isLoading: bnbPriceLoading } = useBnbPrice(isBNB && open);
@@ -254,14 +275,16 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
 
   const submitCreateAd = () => {
     const paymentStr = buildPaymentInfo();
+    const adDur = BigInt(adDurationSec);
+    const payWin = BigInt(payWindowSec);
     try {
       createAd({
         address: P2P_CONTRACT_ADDRESS,
         abi: P2P_ESCROW_ABI,
         functionName: isBNB ? "createSellAdNative" : "createSellAdToken",
         args: isBNB
-          ? [tokenAmountWei, minFillWei, pricePerTokenWei, paymentStr]
-          : [selectedToken.address as `0x${string}`, tokenAmountWei, minFillWei, pricePerTokenWei, paymentStr],
+          ? [tokenAmountWei, minFillWei, pricePerTokenWei, paymentStr, Number(adDur), Number(payWin)]
+          : [selectedToken.address as `0x${string}`, tokenAmountWei, minFillWei, pricePerTokenWei, paymentStr, Number(adDur), Number(payWin)],
         value: isBNB ? createRequiredWei : BigInt(0),
       } as any);
     } catch (e: any) {
@@ -644,6 +667,42 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
                 )}
               </div>
             )}
+
+            {/* Pay window + Ad duration */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1.5 block">Buyer pay window</Label>
+                <div className="flex flex-wrap gap-1.5">
+                  {PAY_WINDOW_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setPayWindowSec(opt.value)}
+                      disabled={isProcessing}
+                      className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+                        payWindowSec === opt.value
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-surface-3 text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1.5 block">Ad expires after</Label>
+                <select
+                  value={adDurationSec}
+                  onChange={(e) => setAdDurationSec(Number(e.target.value))}
+                  disabled={isProcessing}
+                  className="w-full rounded-md border border-input bg-surface-2 px-3 py-2 text-sm text-foreground"
+                >
+                  {AD_DURATION_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
 
             {/* $1 minimum trade warning */}
             {minTradeBelowDollar && (

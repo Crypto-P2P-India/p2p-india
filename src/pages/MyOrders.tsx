@@ -69,10 +69,20 @@ const MyOrders = () => {
   const { writeContract: cancelDeal, data: cancelHash, isPending: cancelPending } = useWriteContract();
   const { isSuccess: cancelDone } = useWaitForTransactionReceipt({ hash: cancelHash });
 
+  // Buyer extends own pay window
+  const { writeContract: extendPay, data: extendHash, isPending: extendPending } = useWriteContract();
+  const { isSuccess: extendDone } = useWaitForTransactionReceipt({ hash: extendHash });
+
+  // Buyer accepts seller's extension proposal
+  const { writeContract: acceptExt, data: acceptHash, isPending: acceptPending } = useWriteContract();
+  const { isSuccess: acceptDone } = useWaitForTransactionReceipt({ hash: acceptHash });
+
   useEffect(() => { if (payConfirmed) { toast.success("Payment confirmed on-chain!"); playSuccessChime(); setPendingDealId(null); refetchAds(); refetchDeals(); } }, [payConfirmed]);
   useEffect(() => { if (sellerDone) { toast.success("Tokens released! Trade completed."); playSuccessChime(); setPendingDealId(null); refetchAds(); refetchDeals(); if (pendingDealId) cleanupDealAttachments(pendingDealId); } }, [sellerDone]);
   useEffect(() => { if (disputeDone) { toast.info("Dispute raised. Admin will review."); playAlertChime(); setPendingDealId(null); refetchAds(); refetchDeals(); } }, [disputeDone]);
   useEffect(() => { if (cancelDone) { toast.success("Deal cancelled. Funds returned."); playAlertChime(); setPendingDealId(null); refetchAds(); refetchDeals(); if (pendingDealId) cleanupDealAttachments(pendingDealId); } }, [cancelDone]);
+  useEffect(() => { if (extendDone) { toast.success("Pay window extended!"); playSuccessChime(); refetchDeals(); } }, [extendDone]);
+  useEffect(() => { if (acceptDone) { toast.success("Extension accepted — deadline pushed."); playSuccessChime(); refetchDeals(); } }, [acceptDone]);
 
   // Only show deals where user is the BUYER (accepted deals)
   const myDeals = address
@@ -137,7 +147,7 @@ const MyOrders = () => {
     setTimeout(() => setCopied(null), 2000);
   };
 
-  const isProcessing = payPending || sellerPending || disputePending || cancelPending;
+  const isProcessing = payPending || sellerPending || disputePending || cancelPending || extendPending || acceptPending;
 
   const renderDealCard = (deal: typeof myDeals[0], i: number) => {
     const ds = DEAL_STATUS[deal.status] || DEAL_STATUS[0];
@@ -184,7 +194,7 @@ const MyOrders = () => {
           </div>
 
           {(deal.status === 0 || deal.status === 1) && (() => {
-            const fullWindow = deal.status === 1 ? 1800 : 900;
+            const fullWindow = deal.status === 1 ? 1800 : (deal.payWindow + deal.payDeadlineOffset);
             return (
               <div className="mt-3">
                 <div className="h-1.5 w-full rounded-full bg-surface-3 overflow-hidden">
@@ -258,6 +268,20 @@ const MyOrders = () => {
             </div>
           )}
 
+          {/* Seller proposed an extension — buyer can accept */}
+          {isBuyer && deal.status === 0 && !deal.sellerExtensionUsed && deal.sellerProposedExtra > 0 && !isTimedOut && (
+            <div className="mt-3 rounded-lg border border-primary/30 bg-primary/10 p-3 flex items-center justify-between gap-3">
+              <p className="text-sm text-foreground">
+                Seller offered <span className="font-semibold">+{Math.round(deal.sellerProposedExtra / 60)} min</span> on the pay window.
+              </p>
+              <Button variant="buy" size="sm" disabled={isProcessing} onClick={() => acceptExt({ address: P2P_CONTRACT_ADDRESS, abi: P2P_ESCROW_ABI, functionName: "buyerAcceptExtension", args: [BigInt(deal.dealId)] } as any)}>
+                {acceptPending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <CheckCircle2 className="h-3 w-3 mr-1" />}
+                Accept
+              </Button>
+            </div>
+          )}
+
+
           <DealOutcome status={deal.status} isBuyer={isBuyer} buyerConfirmed={deal.buyerConfirmed} sellerConfirmed={deal.sellerConfirmed} tokenAmount={deal.tokenAmount} tokenSymbol={deal.tokenSymbol} inrAmount={deal.inrAmount} buyer={deal.buyer} seller={deal.seller} dealId={deal.dealId} txHash={dealTxMap[deal.dealId]?.completed || dealTxMap[deal.dealId]?.cancelled || dealTxMap[deal.dealId]?.resolved || dealTxMap[deal.dealId]?.created} resolvedRecipient={dealTxMap[deal.dealId]?.resolvedRecipient} />
 
           <DealTimeline events={dealTxMap[deal.dealId]?.events || []} />
@@ -276,6 +300,14 @@ const MyOrders = () => {
               <Button variant="buy" size="sm" disabled={isProcessing} onClick={() => { setPendingDealId(deal.dealId); confirmPayment({ address: P2P_CONTRACT_ADDRESS, abi: P2P_ESCROW_ABI, functionName: "markPaid", args: [BigInt(deal.dealId)] } as any); }}>
                 {payPending && pendingDealId === deal.dealId ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
                 I've Paid — Confirm
+              </Button>
+            )}
+
+            {/* Buyer self-extension (one-time, +5m) */}
+            {!isTimedOut && isBuyer && deal.status === 0 && !deal.buyerConfirmed && !deal.buyerExtensionUsed && (
+              <Button variant="outline" size="sm" disabled={isProcessing} onClick={() => extendPay({ address: P2P_CONTRACT_ADDRESS, abi: P2P_ESCROW_ABI, functionName: "buyerExtendPayWindow", args: [BigInt(deal.dealId)] } as any)}>
+                {extendPending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Clock className="h-3 w-3 mr-1" />}
+                Need more time
               </Button>
             )}
 

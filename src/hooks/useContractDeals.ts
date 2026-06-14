@@ -1,13 +1,12 @@
 import { useReadContract, useReadContracts } from "wagmi";
 import { formatUnits } from "viem";
-import { P2P_CONTRACT_ADDRESS, USDT_ADDRESS } from "@/config/wagmi";
+import { P2P_CONTRACT_ADDRESS } from "@/config/wagmi";
 import { P2P_ESCROW_ABI } from "@/config/abi";
 
 const NATIVE_BNB = "0x0000000000000000000000000000000000000000";
-const PAY_WINDOW = 15 * 60;
 // Seller has CONFIRM_WINDOW after buyer marks paid before buyer can dispute.
-// Matches `CONFIRM_WINDOW` constant in SellEscrow.sol (30 minutes).
 const CONFIRM_WINDOW = 30 * 60;
+const DEFAULT_PAY_WINDOW = 15 * 60;
 
 export interface LiveDeal {
   dealId: number;
@@ -27,6 +26,17 @@ export interface LiveDeal {
   buyerConfirmed: boolean;
   sellerConfirmed: boolean;
   status: number;
+  /** Ad's base pay window in seconds. */
+  payWindow: number;
+  /** Extra seconds added via buyer self-extension or accepted seller proposal. */
+  payDeadlineOffset: number;
+  /** Whether buyer has already used their one self-extension. */
+  buyerExtensionUsed: boolean;
+  /** Seller's pending extension proposal in seconds (0 = none). */
+  sellerProposedExtra: number;
+  /** Whether seller's proposed extension has already been used/accepted. */
+  sellerExtensionUsed: boolean;
+  disputeRaisedBy: string;
 }
 
 export function useContractDeals() {
@@ -53,7 +63,7 @@ export function useContractDeals() {
 
   const dealAdIds = dealsData
     ?.filter((res) => res.status === "success" && res.result)
-    .map((res) => Number(((res.result as any).adId ?? (res.result as any)[0]) || 0))
+    .map((res) => Number((res.result as any).adId || 0))
     .filter((id, index, arr) => id > 0 && arr.indexOf(id) === index) || [];
 
   const dealAdCalls = dealAdIds.map((id) => ({
@@ -79,55 +89,68 @@ export function useContractDeals() {
     for (const [index, res] of dealsData.entries()) {
       if (res.status !== "success" || !res.result) continue;
       const d = res.result as any;
-      const rawId = d.id !== undefined ? d.id : index + 1;
-      const rawAdId = d.adId !== undefined ? d.adId : d[0];
-      const rawBuyer = d.buyer || d[1];
-      const rawTokenAmount = d.amount !== undefined ? d.amount : d[2];
-      const rawCreatedAt = d.createdAt !== undefined ? d.createdAt : d[3];
-      const rawPaidAt = d.paidAt !== undefined ? d.paidAt : d[4];
-      const rawState = Number(d.state !== undefined ? d.state : d[5]);
-      const ad = adsById.get(Number(rawAdId));
+      const dealId = index + 1;
+      const adId = Number(d.adId);
+      const ad = adsById.get(adId);
       if (!ad) continue;
-      const rawSeller = ad.seller || ad[0];
-      const tokenAddr = String(ad.token || ad[1]);
-      const pricePerToken = ad.pricePerToken !== undefined ? ad.pricePerToken : ad[7];
-      const isBNB = tokenAddr.toLowerCase() === NATIVE_BNB.toLowerCase();
-      const rawStatus = rawState === 1 ? 0 : rawState === 2 ? 1 : rawState === 3 ? 2 : rawState === 5 ? 4 : 3;
-      const rawBuyerConfirmed = rawState === 2 || rawState === 3 || rawState === 5;
-      const rawSellerConfirmed = rawState === 3;
 
-      if (rawId === undefined || rawTokenAmount === undefined) continue;
+      const buyer = String(d.buyer);
+      const seller = String(ad.seller);
+      const tokenAddr = String(ad.token);
+      const amountRaw = BigInt(String(d.amount ?? 0));
+      const pricePerToken = BigInt(String(ad.pricePerToken ?? 0));
+      const state = Number(d.state ?? 0);
+      const createdAt = Number(d.createdAt ?? 0);
+      const paidAt = Number(d.paidAt ?? 0);
+      const payDeadlineOffset = Number(d.payDeadlineOffset ?? 0);
+      const buyerExtensionUsed = Boolean(d.buyerExtensionUsed);
+      const sellerProposedExtra = Number(d.sellerProposedExtra ?? 0);
+      const sellerExtensionUsed = Boolean(d.sellerExtensionUsed);
+      const disputeRaisedBy = String(d.disputeRaisedBy ?? "0x0000000000000000000000000000000000000000");
+      const payWindow = Number(ad.payWindow ?? DEFAULT_PAY_WINDOW);
 
-      const createdAtNum = Number(String(rawCreatedAt || 0));
-      const paidAtNum = Number(String(rawPaidAt || 0));
-      // Active deadline depends on state:
-      //  - LOCKED (state=1, status 0): buyer's pay window from createdAt.
-      //  - PAID   (state=2, status 1): seller's confirm window from paidAt.
+      // Map contract DealState → app status
+      // 0=NONE, 1=LOCKED→0 active, 2=PAID→1, 3=RELEASED→2, 4=REFUNDED→3, 5=DISPUTED→4, 6=RESOLVED→5
+      const status =
+        state === 1 ? 0 :
+        state === 2 ? 1 :
+        state === 3 ? 2 :
+        state === 4 ? 3 :
+        state === 5 ? 4 :
+        state === 6 ? 5 : 0;
+
+      const buyerConfirmed = state === 2 || state === 3 || state === 5 || state === 6;
+      const sellerConfirmed = state === 3;
+
       const activeDeadline =
-        rawState === 2 && paidAtNum > 0
-          ? paidAtNum + CONFIRM_WINDOW
-          : createdAtNum + PAY_WINDOW;
+        state === 2 && paidAt > 0
+          ? paidAt + CONFIRM_WINDOW
+          : createdAt + payWindow + payDeadlineOffset;
 
-      // inrAmount = tokenAmount * pricePerToken (no division in contract)
-      // tokenAmount has 18 decimals, pricePerToken has 2 decimals → total 20 decimals
-      const inrBigInt = BigInt(String(rawTokenAmount)) * BigInt(String(pricePerToken));
+      const inrBigInt = amountRaw * pricePerToken;
       const inrFormatted = parseFloat(formatUnits(inrBigInt, 20)).toFixed(2);
 
       deals.push({
-        dealId: Number(rawId),
-        adId: Number(rawAdId),
-        buyer: String(rawBuyer),
-        seller: String(rawSeller),
-        token: String(tokenAddr),
-        tokenSymbol: isBNB ? "BNB" : "USDT",
-        tokenAmount: formatUnits(BigInt(String(rawTokenAmount)), 18),
+        dealId,
+        adId,
+        buyer,
+        seller,
+        token: tokenAddr,
+        tokenSymbol: tokenAddr.toLowerCase() === NATIVE_BNB.toLowerCase() ? "BNB" : "USDT",
+        tokenAmount: formatUnits(amountRaw, 18),
         inrAmount: inrFormatted,
         deadline: activeDeadline,
-        paidAt: paidAtNum,
-        createdAt: createdAtNum,
-        buyerConfirmed: Boolean(rawBuyerConfirmed),
-        sellerConfirmed: Boolean(rawSellerConfirmed),
-        status: Number(rawStatus),
+        paidAt,
+        createdAt,
+        buyerConfirmed,
+        sellerConfirmed,
+        status,
+        payWindow,
+        payDeadlineOffset,
+        buyerExtensionUsed,
+        sellerProposedExtra,
+        sellerExtensionUsed,
+        disputeRaisedBy,
       });
     }
   }

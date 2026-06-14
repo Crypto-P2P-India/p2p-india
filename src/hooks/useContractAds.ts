@@ -4,8 +4,6 @@ import { P2P_CONTRACT_ADDRESS, USDT_ADDRESS } from "@/config/wagmi";
 import { P2P_ESCROW_ABI } from "@/config/abi";
 
 const NATIVE_BNB = "0x0000000000000000000000000000000000000000";
-const NO_AD_EXPIRY = 9_999_999_999;
-const DEFAULT_DEAL_TIMEOUT = 15 * 60;
 
 export interface LiveAd {
   adId: number;
@@ -23,10 +21,17 @@ export interface LiveAd {
   pricePerToken: string;
   /** INR value of the currently-available amount. */
   inrTotal: string;
+  /** Buyer's pay window in seconds (15m or 30m). */
   dealTimeout: number;
+  /** Ad expiry unix timestamp. */
   adExpiry: number;
+  /** Ad creation unix timestamp. */
+  createdAt: number;
   paymentInfo: string;
   status: number;
+  sellerFeeBps: number;
+  buyerFeeBps: number;
+  feeReserve: string;
 }
 
 export function useContractAds() {
@@ -52,6 +57,7 @@ export function useContractAds() {
   });
 
   const ads: LiveAd[] = [];
+  const nowSec = Math.floor(Date.now() / 1000);
 
   if (adsData) {
     for (const [index, res] of adsData.entries()) {
@@ -59,54 +65,58 @@ export function useContractAds() {
       const ad = res.result as any;
 
       const id = index + 1;
-      const seller = ad.seller || ad[0];
-      const tokenAddr = ad.token || ad[1];
-      const totalAmountRaw = ad.totalAmount !== undefined ? ad.totalAmount : ad[2];
-      const remainingRaw = ad.remainingAmount !== undefined ? ad.remainingAmount : ad[3];
-      const lockedRaw = ad.lockedInDeals !== undefined ? ad.lockedInDeals : ad[4];
-      const minFillRaw = ad.minFillAmount !== undefined ? ad.minFillAmount : ad[6];
-      const pricePerToken = ad.pricePerToken !== undefined ? ad.pricePerToken : ad[7];
-      const paymentInfo = ad.paymentMethod !== undefined ? ad.paymentMethod : ad[8];
-      const active = ad.active !== undefined ? ad.active : ad[9];
+      const seller = String(ad.seller);
+      const tokenAddr = String(ad.token);
+      const remaining = BigInt(String(ad.remainingAmount ?? 0));
+      const total = BigInt(String(ad.totalAmount ?? remaining));
+      const locked = BigInt(String(ad.lockedInDeals ?? 0));
+      const minFill = BigInt(String(ad.minFillAmount ?? 0));
+      const pricePerToken = BigInt(String(ad.pricePerToken ?? 0));
+      const paymentInfo = String(ad.paymentMethod ?? "");
+      const active = Boolean(ad.active);
+      const payWindow = Number(ad.payWindow ?? 900);
+      const expiresAt = Number(ad.expiresAt ?? 0);
+      const createdAt = Number(ad.createdAt ?? 0);
+      const sellerFeeBps = Number(ad.sellerFeeBpsSnapshot ?? 0);
+      const buyerFeeBps = Number(ad.buyerFeeBpsSnapshot ?? 0);
+      const feeReserve = BigInt(String(ad.feeReserve ?? 0));
 
-      if (remainingRaw === undefined) continue;
-
-      const remaining = BigInt(String(remainingRaw));
-      const locked = BigInt(String(lockedRaw || 0));
-      const minFill = BigInt(String(minFillRaw || 0));
-      // Contract already decrements `remainingAmount` when a deal is taken,
-      // so `remaining` IS the unsold amount still available for new buyers.
       const available = remaining;
-
       const hasSellableRemaining = available > 0n && (minFill === 0n || available >= minFill);
-      const status = active ? (hasSellableRemaining ? 0 : locked > 0n ? 1 : 0) : 3;
+      const isExpired = expiresAt > 0 && expiresAt < nowSec;
+      // Status: 0 live, 1 in-deal, 3 cancelled, 4 expired
+      const status = !active
+        ? 3
+        : isExpired
+        ? 4
+        : hasSellableRemaining
+        ? 0
+        : locked > 0n
+        ? 1
+        : 0;
 
-      const isBNB = String(tokenAddr).toLowerCase() === NATIVE_BNB.toLowerCase();
-      const tokenSymbol = isBNB ? "BNB" : "USDT";
-
-      const availableFormatted = formatUnits(available, 18);
-      const totalFormatted = formatUnits(BigInt(String(totalAmountRaw || remaining)), 18);
-      const lockedFormatted = formatUnits(locked, 18);
-      const minFillFormatted = formatUnits(minFill, 18);
-      const priceFormatted = formatUnits(BigInt(String(pricePerToken)), 2);
-      const rawInrTotal = available * BigInt(String(pricePerToken));
-      const inrTotal = parseFloat(formatUnits(rawInrTotal, 20)).toFixed(2);
+      const isBNB = tokenAddr.toLowerCase() === NATIVE_BNB.toLowerCase();
+      const rawInrTotal = available * pricePerToken;
 
       ads.push({
         adId: id,
-        seller: String(seller),
-        token: String(tokenAddr),
-        tokenSymbol,
-        tokenAmount: availableFormatted,
-        totalAmount: totalFormatted,
-        lockedAmount: lockedFormatted,
-        minFillAmount: minFillFormatted,
-        pricePerToken: priceFormatted,
-        inrTotal,
-        dealTimeout: DEFAULT_DEAL_TIMEOUT,
-        adExpiry: NO_AD_EXPIRY,
-        paymentInfo: String(paymentInfo),
-        status: Number(status),
+        seller,
+        token: tokenAddr,
+        tokenSymbol: isBNB ? "BNB" : "USDT",
+        tokenAmount: formatUnits(available, 18),
+        totalAmount: formatUnits(total, 18),
+        lockedAmount: formatUnits(locked, 18),
+        minFillAmount: formatUnits(minFill, 18),
+        pricePerToken: formatUnits(pricePerToken, 2),
+        inrTotal: parseFloat(formatUnits(rawInrTotal, 20)).toFixed(2),
+        dealTimeout: payWindow,
+        adExpiry: expiresAt || 9_999_999_999,
+        createdAt,
+        paymentInfo,
+        status,
+        sellerFeeBps,
+        buyerFeeBps,
+        feeReserve: formatUnits(feeReserve, 18),
       });
     }
   }

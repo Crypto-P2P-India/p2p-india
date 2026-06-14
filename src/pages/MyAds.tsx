@@ -77,11 +77,21 @@ const MyAds = () => {
   const { writeContract: cancelDeal, data: cancelDealHash, isPending: cancelDealPending } = useWriteContract();
   const { isSuccess: cancelDealDone } = useWaitForTransactionReceipt({ hash: cancelDealHash });
 
+  // Seller propose extension
+  const { writeContract: proposeExt, data: proposeHash, isPending: proposePending } = useWriteContract();
+  const { isSuccess: proposeDone } = useWaitForTransactionReceipt({ hash: proposeHash });
+
+  // Seller cancel extension proposal
+  const { writeContract: cancelProposal, data: cancelPropHash, isPending: cancelPropPending } = useWriteContract();
+  const { isSuccess: cancelPropDone } = useWaitForTransactionReceipt({ hash: cancelPropHash });
+
   useEffect(() => { if (cancelConfirmed) { toast.success("Ad cancelled. Funds returned."); setPendingAdId(null); refetchAds(); refetchDeals(); } }, [cancelConfirmed]);
-  
+
   useEffect(() => { if (sellerDone) { toast.success("Tokens released! Trade completed."); playSuccessChime(); refetchAds(); refetchDeals(); } }, [sellerDone]);
   useEffect(() => { if (disputeDone) { toast.info("Dispute raised. Admin will review."); playAlertChime(); refetchAds(); refetchDeals(); } }, [disputeDone]);
   useEffect(() => { if (cancelDealDone) { toast.success("Deal cancelled. Funds returned to your wallet."); playAlertChime(); refetchAds(); refetchDeals(); } }, [cancelDealDone]);
+  useEffect(() => { if (proposeDone) { toast.success("Extension proposed. Buyer can accept."); refetchDeals(); } }, [proposeDone]);
+  useEffect(() => { if (cancelPropDone) { toast.success("Extension proposal withdrawn."); refetchDeals(); } }, [cancelPropDone]);
 
   const myAds = address
     ? ads.filter((ad) => ad.seller.toLowerCase() === address.toLowerCase())
@@ -99,7 +109,7 @@ const MyAds = () => {
   const liveCount = liveAds.length;
   const historyCount = historyAds.length;
 
-  const isProcessing = cancelPending || sellerPending || disputePending || cancelDealPending;
+  const isProcessing = cancelPending || sellerPending || disputePending || cancelDealPending || proposePending || cancelPropPending;
 
   const handleCopy = (text: string, id: number) => {
     navigator.clipboard.writeText(text);
@@ -234,7 +244,7 @@ const MyAds = () => {
 
                           {/* Timer progress bar for active deals */}
                           {relatedDeal && (relatedDeal.status === 0 || relatedDeal.status === 1) && dealTimeLeft > 0 && (() => {
-                            const fullWindow = relatedDeal.status === 1 ? 1800 : 900;
+                            const fullWindow = relatedDeal.status === 1 ? 1800 : (relatedDeal.payWindow + relatedDeal.payDeadlineOffset);
                             return (
                               <div className="mt-3">
                                 <div className="h-1.5 w-full rounded-full bg-surface-3 overflow-hidden">
@@ -374,6 +384,28 @@ const MyAds = () => {
                                     Dispute
                                   </Button>
                                 )}
+                                {/* Seller propose extension — when buyer hasn't paid, deal not timed out, no existing proposal */}
+                                {relatedDeal.status === 0 && !relatedDeal.buyerConfirmed && !isDealTimedOut && !relatedDeal.sellerExtensionUsed && relatedDeal.sellerProposedExtra === 0 && (
+                                  <>
+                                    <Button variant="outline" size="sm" disabled={isProcessing} onClick={() => proposeExt({ address: P2P_CONTRACT_ADDRESS, abi: P2P_ESCROW_ABI, functionName: "sellerProposeExtension", args: [BigInt(relatedDeal.dealId), 15 * 60] } as any)}>
+                                      {proposePending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Clock className="h-3 w-3 mr-1" />}
+                                      Offer +15m
+                                    </Button>
+                                    <Button variant="outline" size="sm" disabled={isProcessing} onClick={() => proposeExt({ address: P2P_CONTRACT_ADDRESS, abi: P2P_ESCROW_ABI, functionName: "sellerProposeExtension", args: [BigInt(relatedDeal.dealId), 30 * 60] } as any)}>
+                                      <Clock className="h-3 w-3 mr-1" />
+                                      Offer +30m
+                                    </Button>
+                                  </>
+                                )}
+
+                                {/* Cancel pending extension proposal */}
+                                {relatedDeal.sellerProposedExtra > 0 && !relatedDeal.sellerExtensionUsed && (
+                                  <Button variant="outline" size="sm" disabled={isProcessing} onClick={() => cancelProposal({ address: P2P_CONTRACT_ADDRESS, abi: P2P_ESCROW_ABI, functionName: "sellerCancelExtensionProposal", args: [BigInt(relatedDeal.dealId)] } as any)}>
+                                    {cancelPropPending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <XCircle className="h-3 w-3 mr-1" />}
+                                    Withdraw +{Math.round(relatedDeal.sellerProposedExtra / 60)}m offer
+                                  </Button>
+                                )}
+
                                 <Button variant="ghost" size="sm" className="text-muted-foreground ml-auto relative" onClick={() => setChatDealId(showChat ? null : relatedDeal.dealId)}>
                                   <MessageSquare className="h-3 w-3 mr-1" />
                                   {showChat ? "Hide Chat" : "Chat"}
@@ -384,6 +416,13 @@ const MyAds = () => {
                                   )}
                                 </Button>
                               </div>
+
+                              {/* Pending proposal banner */}
+                              {relatedDeal.sellerProposedExtra > 0 && !relatedDeal.sellerExtensionUsed && (
+                                <div className="rounded-md bg-primary/10 border border-primary/20 p-2 text-xs text-primary">
+                                  ⏳ Waiting for buyer to accept your +{Math.round(relatedDeal.sellerProposedExtra / 60)}m extension.
+                                </div>
+                              )}
                             </div>
                           )}
 

@@ -6,13 +6,17 @@ interface DealTimelineProps {
 }
 
 const EVENT_STYLE: Record<string, { icon: typeof CheckCircle2; color: string }> = {
-  created:         { icon: Clock,          color: "text-primary" },
-  buyerConfirmed:  { icon: ArrowRight,     color: "text-buy" },
-  sellerConfirmed: { icon: CheckCircle2,   color: "text-buy" },
-  completed:       { icon: Shield,         color: "text-buy" },
-  cancelled:       { icon: XCircle,        color: "text-muted-foreground" },
-  disputed:        { icon: AlertTriangle,  color: "text-sell" },
-  resolved:        { icon: CheckCircle2,   color: "text-primary" },
+  created:            { icon: Clock,          color: "text-primary" },
+  buyerConfirmed:     { icon: ArrowRight,     color: "text-buy" },
+  sellerConfirmed:    { icon: CheckCircle2,   color: "text-buy" },
+  completed:          { icon: Shield,         color: "text-buy" },
+  cancelled:          { icon: XCircle,        color: "text-muted-foreground" },
+  disputed:           { icon: AlertTriangle,  color: "text-sell" },
+  resolved:           { icon: CheckCircle2,   color: "text-primary" },
+  buyerExtended:      { icon: Clock,          color: "text-primary" },
+  sellerProposed:     { icon: Clock,          color: "text-primary" },
+  buyerAccepted:      { icon: CheckCircle2,   color: "text-buy" },
+  sellerCancelledExt: { icon: XCircle,        color: "text-muted-foreground" },
 };
 
 const formatTs = (ts?: number) => {

@@ -35,6 +35,10 @@ const EVENT_DEFS = [
   { name: "disputed", label: "Dispute Raised", abi: parseAbiItem("event DisputeRaised(uint256 indexed dealId, address indexed by)") },
   { name: "resolved", label: "Admin Released", abi: parseAbiItem("event AdminReleased(uint256 indexed dealId)") },
   { name: "resolved", label: "Admin Refunded", abi: parseAbiItem("event AdminRefunded(uint256 indexed dealId)") },
+  { name: "buyerExtended", label: "Buyer Extended Pay Window", abi: parseAbiItem("event BuyerExtendedPayWindow(uint256 indexed dealId, uint32 addedSeconds)") },
+  { name: "sellerProposed", label: "Seller Proposed Extension", abi: parseAbiItem("event SellerProposedExtension(uint256 indexed dealId, uint32 extraSeconds)") },
+  { name: "buyerAccepted", label: "Buyer Accepted Extension", abi: parseAbiItem("event BuyerAcceptedExtension(uint256 indexed dealId, uint32 extraSeconds)") },
+  { name: "sellerCancelledExt", label: "Seller Withdrew Extension Offer", abi: parseAbiItem("event SellerCancelledExtension(uint256 indexed dealId)") },
 ] as const;
 
 export function useDealTxHashes(dealIds: number[]): DealTxMap {
@@ -66,17 +70,25 @@ export function useDealTxHashes(dealIds: number[]): DealTxMap {
         if (res.status !== "fulfilled") continue;
         const { name, label, logs } = res.value;
         for (const log of logs) {
-          const dealId = Number((log as any).args?.dealId);
+          const args = (log as any).args || {};
+          const dealId = Number(args.dealId);
           if (!dealIds.includes(dealId)) continue;
           if (!map[dealId]) map[dealId] = { events: [] };
           (map[dealId] as any)[name] = log.transactionHash;
           // Capture recipient for resolved disputes
-          if (name === "resolved" && (log as any).args?.recipient) {
-            map[dealId].resolvedRecipient = String((log as any).args.recipient);
+          if (name === "resolved" && args.recipient) {
+            map[dealId].resolvedRecipient = String(args.recipient);
+          }
+          // Build dynamic, human-readable label
+          let evtLabel: string = label;
+          const secs = Number(args.addedSeconds ?? args.extraSeconds ?? 0);
+          if (secs > 0) {
+            const mins = Math.round(secs / 60);
+            evtLabel = `${label} (+${mins}m)`;
           }
           map[dealId].events.push({
             name,
-            label,
+            label: evtLabel as string,
             txHash: log.transactionHash,
             blockNumber: log.blockNumber,
           });
