@@ -275,14 +275,16 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
 
   const submitCreateAd = () => {
     const paymentStr = buildPaymentInfo();
+    const adDur = BigInt(adDurationSec);
+    const payWin = BigInt(payWindowSec);
     try {
       createAd({
         address: P2P_CONTRACT_ADDRESS,
         abi: P2P_ESCROW_ABI,
         functionName: isBNB ? "createSellAdNative" : "createSellAdToken",
         args: isBNB
-          ? [tokenAmountWei, minFillWei, pricePerTokenWei, paymentStr]
-          : [selectedToken.address as `0x${string}`, tokenAmountWei, minFillWei, pricePerTokenWei, paymentStr],
+          ? [tokenAmountWei, minFillWei, pricePerTokenWei, paymentStr, Number(adDur), Number(payWin)]
+          : [selectedToken.address as `0x${string}`, tokenAmountWei, minFillWei, pricePerTokenWei, paymentStr, Number(adDur), Number(payWin)],
         value: isBNB ? createRequiredWei : BigInt(0),
       } as any);
     } catch (e: any) {
