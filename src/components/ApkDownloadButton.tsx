@@ -10,7 +10,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-const APK_URL = "/downloads/crypto-p2p.apk";
+const APK_BASE_URL = "/downloads/crypto-p2p.apk";
 const VERSION_URL = "/app-version.json";
 
 const formatBytes = (b: number) => {
