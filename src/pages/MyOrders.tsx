@@ -69,10 +69,20 @@ const MyOrders = () => {
   const { writeContract: cancelDeal, data: cancelHash, isPending: cancelPending } = useWriteContract();
   const { isSuccess: cancelDone } = useWaitForTransactionReceipt({ hash: cancelHash });
 
+  // Buyer extends own pay window
+  const { writeContract: extendPay, data: extendHash, isPending: extendPending } = useWriteContract();
+  const { isSuccess: extendDone } = useWaitForTransactionReceipt({ hash: extendHash });
+
+  // Buyer accepts seller's extension proposal
+  const { writeContract: acceptExt, data: acceptHash, isPending: acceptPending } = useWriteContract();
+  const { isSuccess: acceptDone } = useWaitForTransactionReceipt({ hash: acceptHash });
+
   useEffect(() => { if (payConfirmed) { toast.success("Payment confirmed on-chain!"); playSuccessChime(); setPendingDealId(null); refetchAds(); refetchDeals(); } }, [payConfirmed]);
   useEffect(() => { if (sellerDone) { toast.success("Tokens released! Trade completed."); playSuccessChime(); setPendingDealId(null); refetchAds(); refetchDeals(); if (pendingDealId) cleanupDealAttachments(pendingDealId); } }, [sellerDone]);
   useEffect(() => { if (disputeDone) { toast.info("Dispute raised. Admin will review."); playAlertChime(); setPendingDealId(null); refetchAds(); refetchDeals(); } }, [disputeDone]);
   useEffect(() => { if (cancelDone) { toast.success("Deal cancelled. Funds returned."); playAlertChime(); setPendingDealId(null); refetchAds(); refetchDeals(); if (pendingDealId) cleanupDealAttachments(pendingDealId); } }, [cancelDone]);
+  useEffect(() => { if (extendDone) { toast.success("Pay window extended!"); playSuccessChime(); refetchDeals(); } }, [extendDone]);
+  useEffect(() => { if (acceptDone) { toast.success("Extension accepted — deadline pushed."); playSuccessChime(); refetchDeals(); } }, [acceptDone]);
 
   // Only show deals where user is the BUYER (accepted deals)
   const myDeals = address
