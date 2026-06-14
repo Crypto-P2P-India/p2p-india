@@ -109,8 +109,17 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
   const selectedToken = CRYPTOS.find((c) => c.symbol === crypto)!;
   const isBNB = crypto === "BNB";
   const tokenAmountWei = amount ? parseUnits(amount, 18) : BigInt(0);
-  const sellerFeeWei = (tokenAmountWei * SELLER_FEE_BPS) / BPS_DENOM;
-  const createRequiredWei = tokenAmountWei + sellerFeeWei;
+
+  // Quote exact cost (amount + seller fee snapshot) from contract.
+  const { data: quoteData } = useReadContract({
+    address: P2P_CONTRACT_ADDRESS,
+    abi: P2P_ESCROW_ABI,
+    functionName: "quoteCreateCost",
+    args: [tokenAmountWei],
+    query: { enabled: !!amount && tokenAmountWei > 0n && open },
+  });
+  const [createRequiredWei, prepaidFeeWei] = (quoteData as readonly [bigint, bigint] | undefined) ?? [tokenAmountWei, 0n];
+  const sellerFeeWei = prepaidFeeWei;
 
   // For BNB: user enters INR per USD rate, we multiply by live BNB/USD price
   const { bnbPrice, isLoading: bnbPriceLoading } = useBnbPrice(isBNB && open);
