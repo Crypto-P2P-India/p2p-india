@@ -38,6 +38,8 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
   const [crypto, setCrypto] = useState("USDT");
   const [price, setPrice] = useState("");
   const [amount, setAmount] = useState("");
+  const [allowPartial, setAllowPartial] = useState(false);
+  const [minFill, setMinFill] = useState("");
   const [step, setStep] = useState<Step>("form");
 
   // Payment fields
