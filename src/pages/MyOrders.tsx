@@ -171,7 +171,7 @@ const MyOrders = () => {
               {(deal.status === 0 || deal.status === 1) && timeLeft > 0 && (
                 <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-mono ${timeLeft < 120 ? "bg-sell/10 text-sell" : "bg-primary/10 text-primary"}`}>
                   <Clock className="h-3 w-3" />
-                  {formatTime(timeLeft)}
+                  {deal.status === 1 ? "Seller confirm" : "Pay"}: {formatTime(timeLeft)}
                 </span>
               )}
               {isTimedOut && (
