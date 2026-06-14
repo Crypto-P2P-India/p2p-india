@@ -244,8 +244,18 @@ const MyAds = () => {
                                 #{ad.adId}
                               </div>
                               <div>
-                                <span className="font-medium text-foreground">{ad.tokenAmount} {ad.tokenSymbol}</span>
-                                <span className="text-muted-foreground text-sm ml-2">@ ₹{ad.pricePerToken}</span>
+                                <div>
+                                  <span className="font-medium text-foreground">{ad.tokenAmount} {ad.tokenSymbol}</span>
+                                  {parseFloat(ad.totalAmount) > parseFloat(ad.tokenAmount) && (
+                                    <span className="text-muted-foreground text-xs ml-1.5">of {ad.totalAmount}</span>
+                                  )}
+                                  <span className="text-muted-foreground text-sm ml-2">@ ₹{ad.pricePerToken}</span>
+                                </div>
+                                {parseFloat(ad.lockedAmount) > 0 && (
+                                  <span className="inline-flex items-center gap-1 mt-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+                                    🔒 {ad.lockedAmount} {ad.tokenSymbol} locked in deal
+                                  </span>
+                                )}
                               </div>
                             </div>
                             <div className="flex flex-col items-end gap-1">
