@@ -1,5 +1,5 @@
 {
-  "version": "1.6",
+  "version": "1.7",
   "apkUrl": "/downloads/crypto-p2p.apk",
-  "notes": "Cleaner Binance-style home, fixed header, in-app update banner."
+  "notes": "Fix: wallet deep links (OKX/Trust/MetaMask) now open the installed app on Android."
 }
