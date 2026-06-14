@@ -25,6 +25,7 @@ interface TradeAd {
   inrTotal: string;
   dealTimeout: number;
   paymentInfo: string;
+  minFillAmount?: string;
 }
 
 interface TradeWindowProps {
