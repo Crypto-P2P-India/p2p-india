@@ -147,7 +147,7 @@ const MyOrders = () => {
     setTimeout(() => setCopied(null), 2000);
   };
 
-  const isProcessing = payPending || sellerPending || disputePending || cancelPending;
+  const isProcessing = payPending || sellerPending || disputePending || cancelPending || extendPending || acceptPending;
 
   const renderDealCard = (deal: typeof myDeals[0], i: number) => {
     const ds = DEAL_STATUS[deal.status] || DEAL_STATUS[0];
