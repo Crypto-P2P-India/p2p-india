@@ -1,9 +1,11 @@
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { Link, useLocation } from "react-router-dom";
 import { Wallet, ShoppingBag, Handshake, Store } from "lucide-react";
+import { useState } from "react";
 import ThemeToggle from "@/components/ThemeToggle";
 import ApkDownloadButton from "@/components/ApkDownloadButton";
 import SideMenu from "@/components/SideMenu";
+import MobileWalletSheet from "@/components/MobileWalletSheet";
 import { isNativeApp } from "@/lib/platform";
 import { useAccount } from "wagmi";
 import { useGlobalUnreadCount } from "@/hooks/useGlobalUnreadCount";
@@ -13,6 +15,7 @@ const Navbar = () => {
   const { pathname } = useLocation();
   const { address } = useAccount();
   const unread = useGlobalUnreadCount(address);
+  const [walletSheetOpen, setWalletSheetOpen] = useState(false);
 
   const desktopLinks = [
     { label: "Marketplace", href: "/", icon: Store },
@@ -91,7 +94,7 @@ const Navbar = () => {
                     >
                       {!connected ? (
                         <button
-                          onClick={openConnectModal}
+                          onClick={() => setWalletSheetOpen(true)}
                           aria-label="Connect Wallet"
                           className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md shadow-primary/20 active:scale-95 transition-transform"
                         >
@@ -133,6 +136,7 @@ const Navbar = () => {
       </nav>
       {/* Spacer to offset fixed navbar height (including safe-area inset) */}
       <div aria-hidden className="h-14 sm:h-20" style={{ paddingTop: "env(safe-area-inset-top)" }} />
+      {native && <MobileWalletSheet open={walletSheetOpen} onOpenChange={setWalletSheetOpen} />}
     </>
   );
 };
