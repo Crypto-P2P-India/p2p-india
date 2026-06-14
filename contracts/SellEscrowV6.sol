@@ -197,11 +197,14 @@ contract SellEscrow {
         _validatePayWindow(payWindow);
 
         uint16 sBps = sellerFeeBps;
-        uint16 bBps = buyerFeeBps;
         uint256 fee = _sellerFee(amount, sBps);
         require(msg.value == amount + fee, "BAD_VALUE");
 
-        adId = _createAd(address(0), amount, fee, sBps, bBps, minFillAmount, pricePerToken, paymentMethod, adDuration, payWindow);
+        adId = _openAdId();
+        _storeAdCore(adId, address(0), amount, fee);
+        _storeAdRules(adId, minFillAmount, pricePerToken, paymentMethod);
+        _storeAdConfig(adId, sBps, buyerFeeBps, adDuration, payWindow);
+        _emitAdCreated(adId);
     }
 
     function createSellAdToken(
@@ -221,12 +224,15 @@ contract SellEscrow {
         _validatePayWindow(payWindow);
 
         uint16 sBps = sellerFeeBps;
-        uint16 bBps = buyerFeeBps;
         uint256 fee = _sellerFee(amount, sBps);
 
         _pullExact(token, msg.sender, amount + fee);
 
-        adId = _createAd(token, amount, fee, sBps, bBps, minFillAmount, pricePerToken, paymentMethod, adDuration, payWindow);
+        adId = _openAdId();
+        _storeAdCore(adId, token, amount, fee);
+        _storeAdRules(adId, minFillAmount, pricePerToken, paymentMethod);
+        _storeAdConfig(adId, sBps, buyerFeeBps, adDuration, payWindow);
+        _emitAdCreated(adId);
     }
 
     function _pullExact(address token, address from, uint256 required) internal {
@@ -236,39 +242,34 @@ contract SellEscrow {
         require(received >= required, "FEE_ON_TRANSFER_TOKEN");
     }
 
-
-    function _createAd(
-        address token,
-        uint256 amount,
-        uint256 prepaidFee,
-        uint16  sBps,
-        uint16  bBps,
-        uint256 minFill,
-        uint256 price,
-        string calldata pm,
-        uint32  adDuration,
-        uint32  payWindow
-    ) internal returns (uint256 adId) {
+    function _openAdId() internal returns (uint256 adId) {
         adId = nextAdId++;
-        uint64 expiresAt = uint64(block.timestamp + adDuration);
-        ads[adId] = Ad({
-            seller: msg.sender,
-            token: token,
-            totalAmount: amount,
-            remainingAmount: amount,
-            lockedInDeals: 0,
-            feeReserve: prepaidFee,
-            sellerFeeBpsSnapshot: sBps,
-            buyerFeeBpsSnapshot: bBps,
-            minFillAmount: minFill,
-            pricePerToken: price,
-            payWindow: payWindow,
-            expiresAt: expiresAt,
-            paymentMethod: pm,
-            active: true,
-            createdAt: uint64(block.timestamp)
-        });
-        _emitAdCreated(adId);
+    }
+
+    function _storeAdCore(uint256 adId, address token, uint256 amount, uint256 prepaidFee) internal {
+        Ad storage a = ads[adId];
+        a.seller = msg.sender;
+        a.token = token;
+        a.totalAmount = amount;
+        a.remainingAmount = amount;
+        a.feeReserve = prepaidFee;
+        a.active = true;
+        a.createdAt = uint64(block.timestamp);
+    }
+
+    function _storeAdRules(uint256 adId, uint256 minFill, uint256 price, string calldata pm) internal {
+        Ad storage a = ads[adId];
+        a.minFillAmount = minFill;
+        a.pricePerToken = price;
+        a.paymentMethod = pm;
+    }
+
+    function _storeAdConfig(uint256 adId, uint16 sBps, uint16 bBps, uint32 adDuration, uint32 payWindow) internal {
+        Ad storage a = ads[adId];
+        a.sellerFeeBpsSnapshot = sBps;
+        a.buyerFeeBpsSnapshot = bBps;
+        a.payWindow = payWindow;
+        a.expiresAt = uint64(block.timestamp + adDuration);
     }
 
     function _emitAdCreated(uint256 adId) internal {
