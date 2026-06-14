@@ -328,8 +328,9 @@ function DealRow({ dealId, onResolve }: { dealId: number; onResolve: (id: number
   const isDisputed = status === 4;
   const buyer = String(deal.buyer || deal[1]);
   const seller = String(ad.seller || ad[0]);
-  const hasBuyerProof = false;
-  const hasSellerProof = false;
+  const disputeRaisedBy = String(deal.disputeRaisedBy || deal[6] || "0x0000000000000000000000000000000000000000");
+  const raisedByBuyer = disputeRaisedBy.toLowerCase() === buyer.toLowerCase();
+  const raisedBySeller = disputeRaisedBy.toLowerCase() === seller.toLowerCase();
 
   return (
     <>
@@ -346,21 +347,17 @@ function DealRow({ dealId, onResolve }: { dealId: number; onResolve: (id: number
           </span>
         </TableCell>
         <TableCell>
-          <div className="flex gap-1">
-            {hasBuyerProof && (
-              <Badge variant="outline" className="text-[10px] px-1.5">
-                Buyer ✓
-              </Badge>
-            )}
-            {hasSellerProof && (
-              <Badge variant="outline" className="text-[10px] px-1.5">
-                Seller ✓
-              </Badge>
-            )}
-            {!hasBuyerProof && !hasSellerProof && (
-              <span className="text-xs text-muted-foreground">—</span>
-            )}
-          </div>
+          {isDisputed && raisedByBuyer ? (
+            <Badge variant="outline" className="text-[10px] px-1.5 border-red-500/40 text-red-400">
+              Raised by Buyer
+            </Badge>
+          ) : isDisputed && raisedBySeller ? (
+            <Badge variant="outline" className="text-[10px] px-1.5 border-red-500/40 text-red-400">
+              Raised by Seller
+            </Badge>
+          ) : (
+            <span className="text-xs text-muted-foreground">—</span>
+          )}
         </TableCell>
         <TableCell>
           <div className="flex gap-1.5 items-center">
