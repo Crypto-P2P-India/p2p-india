@@ -405,7 +405,7 @@ function DealRow({ dealId, onResolve }: { dealId: number; onResolve: (id: number
         <TableRow>
           <TableCell colSpan={9} className="p-0">
             <div className="h-72 border-t border-border">
-              <ChatPanel dealId={dealId} userAddress={address} readOnly />
+              <ChatPanel dealId={dealId} userAddress={address} readOnly={!isDisputed} />
             </div>
           </TableCell>
         </TableRow>
