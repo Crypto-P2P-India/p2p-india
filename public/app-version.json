@@ -1,5 +1,5 @@
 {
-  "version": "1.11",
-  "apkUrl": "/downloads/crypto-p2p.apk",
-  "notes": "Marketplace in header, partial buy with seller minimum (whole numbers), clearer available amount & payment-window warning."
+  "version": "1.12",
+  "apkUrl": "/downloads/crypto-p2p.apk?v=1.12",
+  "notes": "Cache-busted APK download, green-tinted theme, network guard and audit fixes."
 }
