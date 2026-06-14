@@ -232,8 +232,8 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
         abi: P2P_ESCROW_ABI,
         functionName: isBNB ? "createSellAdNative" : "createSellAdToken",
         args: isBNB
-          ? [tokenAmountWei, tokenAmountWei, pricePerTokenWei, paymentStr]
-          : [selectedToken.address as `0x${string}`, tokenAmountWei, tokenAmountWei, pricePerTokenWei, paymentStr],
+          ? [tokenAmountWei, minFillWei, pricePerTokenWei, paymentStr]
+          : [selectedToken.address as `0x${string}`, tokenAmountWei, minFillWei, pricePerTokenWei, paymentStr],
         value: isBNB ? createRequiredWei : BigInt(0),
       } as any);
     } catch (e: any) {
