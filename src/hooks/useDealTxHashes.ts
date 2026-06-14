@@ -80,7 +80,7 @@ export function useDealTxHashes(dealIds: number[]): DealTxMap {
             map[dealId].resolvedRecipient = String(args.recipient);
           }
           // Build dynamic, human-readable label
-          let evtLabel = label;
+          let evtLabel: string = label;
           const secs = Number(args.addedSeconds ?? args.extraSeconds ?? 0);
           if (secs > 0) {
             const mins = Math.round(secs / 60);
