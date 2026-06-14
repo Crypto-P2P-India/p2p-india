@@ -23,14 +23,22 @@ const ApkDownloadButton = () => {
   const [open, setOpen] = useState(false);
   const [version, setVersion] = useState<string>("…");
   const [size, setSize] = useState<string>("…");
+  const [apkUrl, setApkUrl] = useState<string>(`${APK_BASE_URL}?t=${Date.now()}`);
 
   useEffect(() => {
     fetch(`${VERSION_URL}?t=${Date.now()}`, { cache: "no-store" })
       .then((r) => r.json())
-      .then((d) => d?.version && setVersion(d.version))
+      .then((d) => {
+        if (d?.version) {
+          setVersion(d.version);
+          setApkUrl(d.apkUrl?.startsWith("/") || d.apkUrl?.startsWith("http")
+            ? `${d.apkUrl}${d.apkUrl.includes("?") ? "&" : "?"}t=${Date.now()}`
+            : `${APK_BASE_URL}?v=${d.version}&t=${Date.now()}`);
+        }
+      })
       .catch(() => setVersion(""));
 
-    fetch(APK_URL, { method: "HEAD", cache: "no-store" })
+    fetch(`${APK_BASE_URL}?t=${Date.now()}`, { method: "HEAD", cache: "no-store" })
       .then((r) => {
         const len = r.headers.get("content-length");
         if (len) setSize(formatBytes(parseInt(len, 10)));
