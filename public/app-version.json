@@ -1,5 +1,5 @@
 {
-  "version": "1.8",
+  "version": "1.9",
   "apkUrl": "/downloads/crypto-p2p.apk",
   "notes": "Permissions (camera, photos, notifications) now visible in App Info."
 }
