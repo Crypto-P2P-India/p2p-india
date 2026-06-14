@@ -1,57 +1,35 @@
-import { useEffect, useState } from "react";
-import { useAccount, useConnect } from "wagmi";
-import { injected } from "wagmi/connectors";
+import { useEffect, useMemo, useState } from "react";
+import { useAccount, useConnect, type Connector } from "wagmi";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Wallet, ExternalLink, CheckCircle2, Smartphone } from "lucide-react";
+import { Wallet, QrCode, CheckCircle2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-
-type WalletApp = {
-  id: string;
-  name: string;
-  icon: string;
-  connectorNames: string[];
-};
-
-const WALLETS: WalletApp[] = [
-  {
-    id: "metamask",
-    name: "MetaMask",
-    icon: "🦊",
-    connectorNames: ["MetaMask"],
-  },
-  {
-    id: "okx",
-    name: "OKX Wallet",
-    icon: "⚫",
-    connectorNames: ["OKX Wallet", "OKX"],
-  },
-  {
-    id: "trust",
-    name: "Trust Wallet",
-    icon: "🛡️",
-    connectorNames: ["Trust Wallet", "Trust"],
-  },
-  {
-    id: "coinbase",
-    name: "Coinbase Wallet",
-    icon: "🔵",
-    connectorNames: ["Coinbase Wallet", "Coinbase"],
-  },
-];
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
+// Map UI wallets to RainbowKit connector id substrings.
+// Each entry uses that wallet's own SDK / native deep-link under the hood.
+const WALLETS: { name: string; icon: string; match: RegExp; note: string }[] = [
+  { name: "MetaMask",        icon: "🦊", match: /metaMask|io\.metamask/i,         note: "MetaMask SDK" },
+  { name: "OKX Wallet",      icon: "⚫", match: /okx/i,                           note: "OKX deep-link" },
+  { name: "Trust Wallet",    icon: "🛡️", match: /trust/i,                         note: "WalletConnect v2" },
+  { name: "Coinbase Wallet", icon: "🔵", match: /coinbase/i,                      note: "Coinbase SDK" },
+  { name: "Rabby",           icon: "🐰", match: /rabby/i,                         note: "Rabby Mobile" },
+  { name: "Bitget Wallet",   icon: "🟦", match: /bitget|bitKeep/i,                note: "WalletConnect v2" },
+  { name: "Binance Wallet",  icon: "🟡", match: /binance/i,                       note: "Binance SDK" },
+  { name: "Phantom",         icon: "👻", match: /phantom/i,                       note: "Phantom" },
+];
+
 const MobileWalletSheet = ({ open, onOpenChange }: Props) => {
-  const { connectors, connect, isPending } = useConnect();
-  const { isConnected } = useAccount();
+  const { connectors, connectAsync, isPending } = useConnect();
   const { openConnectModal } = useConnectModal();
+  const { isConnected } = useAccount();
+  const [pendingName, setPendingName] = useState<string | null>(null);
   const [hasInjected, setHasInjected] = useState(false);
-  const [connectingWallet, setConnectingWallet] = useState<string | null>(null);
 
   useEffect(() => {
     const check = () =>
@@ -61,59 +39,48 @@ const MobileWalletSheet = ({ open, onOpenChange }: Props) => {
     return () => clearTimeout(t);
   }, [open]);
 
+  // Auto-close once wagmi confirms the connection.
   useEffect(() => {
-    if (!open || !isConnected) return;
-    setConnectingWallet(null);
-    onOpenChange(false);
-  }, [isConnected, onOpenChange, open]);
+    if (open && isConnected) {
+      setPendingName(null);
+      onOpenChange(false);
+    }
+  }, [isConnected, open, onOpenChange]);
 
-  const connectInjected = () => {
-    const inj = connectors.find((c) => c.id === "injected" || c.type === "injected");
-    setConnectingWallet("detected");
-    connect(
-      { connector: inj ?? injected() },
-      {
-        onSuccess: () => onOpenChange(false),
-        onError: (error) => {
-          setConnectingWallet(null);
-          toast.error("Wallet connection failed", { description: error.message });
-        },
-      }
-    );
-  };
+  const findConnector = (re: RegExp): Connector | undefined =>
+    connectors.find((c) => re.test(c.id) || re.test(c.name));
 
-  const findWalletConnector = (w: WalletApp) =>
-    connectors.find((c) => w.connectorNames.some((name) => c.name.toLowerCase().includes(name.toLowerCase())));
+  const items = useMemo(
+    () => WALLETS.map((w) => ({ ...w, connector: findConnector(w.match) })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [connectors]
+  );
 
-  const connectWalletApp = (w: WalletApp) => {
-    const connector = findWalletConnector(w);
+  const connectTo = async (name: string, connector?: Connector) => {
     if (!connector) {
-      toast.error(`${w.name} is not available`, {
-        description: "Use Other wallets to connect with WalletConnect.",
-      });
-      openConnectModal?.();
+      toast.error(`${name} not available`, { description: "Try WalletConnect below." });
       return;
     }
+    try {
+      setPendingName(name);
+      toast.loading(`Opening ${name}…`, {
+        id: "wc",
+        description: "Approve the connection in your wallet app.",
+        duration: 8000,
+      });
+      await connectAsync({ connector });
+      toast.success(`${name} connected`, { id: "wc" });
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Connection failed";
+      toast.error(`${name}: ${msg}`, { id: "wc" });
+    } finally {
+      setPendingName(null);
+    }
+  };
 
-    setConnectingWallet(w.id);
-    toast.loading(`Opening ${w.name}…`, {
-      id: "wallet-connect",
-      description: "Approve the connection inside your wallet app, then return here.",
-      duration: 4000,
-    });
-    connect(
-      { connector },
-      {
-        onSuccess: () => {
-          toast.success("Wallet connected", { id: "wallet-connect" });
-          onOpenChange(false);
-        },
-        onError: (error) => {
-          setConnectingWallet(null);
-          toast.error("Wallet connection failed", { id: "wallet-connect", description: error.message });
-        },
-      }
-    );
+  const connectInjected = () => {
+    const inj = findConnector(/injected/i);
+    void connectTo("Detected Wallet", inj);
   };
 
   const useWalletConnectFallback = () => {
@@ -135,8 +102,8 @@ const MobileWalletSheet = ({ open, onOpenChange }: Props) => {
           </SheetTitle>
           <SheetDescription>
             {hasInjected
-              ? "Wallet detected. Tap connect to approve."
-              : "Connect directly to the wallet app installed on this phone."}
+              ? "Wallet detected in this browser. Tap to connect."
+              : "Pick your wallet — it will open and ask you to approve."}
           </SheetDescription>
         </SheetHeader>
 
@@ -144,55 +111,60 @@ const MobileWalletSheet = ({ open, onOpenChange }: Props) => {
           {hasInjected && (
             <Button
               onClick={connectInjected}
-              disabled={isPending || connectingWallet === "detected"}
+              disabled={isPending}
               className="w-full h-14 text-base font-semibold gap-2"
             >
               <CheckCircle2 className="h-5 w-5" />
-              {connectingWallet === "detected" ? "Connecting…" : "Connect Detected Wallet"}
+              {pendingName === "Detected Wallet" ? "Waiting for approval…" : "Connect Detected Wallet"}
             </Button>
           )}
 
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 px-1">
-              Connect wallet app
+              Choose a wallet
             </p>
             <div className="space-y-2">
-              {WALLETS.map((w) => (
-                <button
-                  key={w.name}
-                  onClick={() => connectWalletApp(w)}
-                  disabled={isPending}
-                  className="w-full flex items-center justify-between gap-3 p-4 rounded-xl bg-card border border-border hover:bg-muted/60 active:scale-[0.98] transition-all disabled:opacity-60"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{w.icon}</span>
-                    <div className="text-left">
-                      <p className="font-semibold text-foreground">{w.name}</p>
-                      {connectingWallet === w.id && <p className="text-xs text-muted-foreground">Waiting for approval…</p>}
+              {items.map((w) => {
+                const busy = pendingName === w.name;
+                return (
+                  <button
+                    key={w.name}
+                    onClick={() => connectTo(w.name, w.connector)}
+                    disabled={isPending || !w.connector}
+                    className="w-full flex items-center justify-between gap-3 p-4 rounded-xl bg-card border border-border hover:bg-muted/60 active:scale-[0.98] transition-all disabled:opacity-50"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{w.icon}</span>
+                      <div className="text-left">
+                        <p className="font-semibold text-foreground">{w.name}</p>
+                        <p className="text-[11px] text-muted-foreground">{w.note}</p>
+                      </div>
                     </div>
-                  </div>
-                  <ExternalLink className="h-4 w-4 text-muted-foreground" />
-                </button>
-              ))}
+                    {busy ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    ) : (
+                      <span className="text-xs text-muted-foreground">
+                        {w.connector ? "Connect" : "N/A"}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
           <div className="pt-2 border-t border-border/50">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 px-1">
-              Other options
-            </p>
             <button
               onClick={useWalletConnectFallback}
               className="w-full flex items-center justify-between gap-3 p-4 rounded-xl bg-card border border-border hover:bg-muted/60 active:scale-[0.98] transition-all"
             >
               <div className="flex items-center gap-3">
-                <Smartphone className="h-5 w-5 text-primary" />
+                <QrCode className="h-5 w-5 text-primary" />
                 <div className="text-left">
-                  <p className="font-semibold text-foreground">Other wallets</p>
-                  <p className="text-xs text-muted-foreground">Use WalletConnect / full wallet list</p>
+                  <p className="font-semibold text-foreground">More wallets / QR</p>
+                  <p className="text-xs text-muted-foreground">WalletConnect v2 modal</p>
                 </div>
               </div>
-              <ExternalLink className="h-4 w-4 text-muted-foreground" />
             </button>
           </div>
         </div>

@@ -7,6 +7,9 @@ import {
   coinbaseWallet,
   phantomWallet,
   injectedWallet,
+  rabbyWallet,
+  bitgetWallet,
+  binanceWallet,
 } from "@rainbow-me/rainbowkit/wallets";
 import type { Wallet } from "@rainbow-me/rainbowkit";
 import { bsc } from "wagmi/chains";
@@ -50,7 +53,7 @@ export const config = getDefaultConfig({
     },
     {
       groupName: "More",
-      wallets: [phantomWallet, injectedWallet],
+      wallets: [rabbyWallet, bitgetWallet, binanceWallet, phantomWallet, injectedWallet],
     },
   ],
 });
