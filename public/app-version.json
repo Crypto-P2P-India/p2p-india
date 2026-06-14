@@ -1,5 +1,5 @@
 {
-  "version": "1.9",
+  "version": "1.10",
   "apkUrl": "/downloads/crypto-p2p.apk",
-  "notes": "Permissions (camera, photos, notifications) now visible in App Info."
+  "notes": "Improved OKX wallet connection, runtime permissions, and splash screen timing."
 }
