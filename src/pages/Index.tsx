@@ -270,16 +270,28 @@ const Index = () => {
               ))
             ) : (
               <div className="flex flex-col items-center justify-center rounded-lg border border-border bg-card py-16 text-center animate-fade-up">
-                <p className="text-muted-foreground text-sm mb-1">No live ads for {crypto}</p>
+                <p className="text-muted-foreground text-sm mb-1">
+                  {ownAdsCount > 0 && !maxPrice && !minAmount
+                    ? "Your own live ads are hidden here"
+                    : `No live ads for ${crypto}`}
+                </p>
                 <p className="text-xs text-muted-foreground mb-3">
-                  {maxPrice || minAmount ? "Try adjusting your filters." : "Be the first to post a sell ad and start trading."}
+                  {maxPrice || minAmount
+                    ? "Try adjusting your filters."
+                    : ownAdsCount > 0
+                      ? "Other buyers can still see and accept the remaining available amount."
+                      : "Be the first to post a sell ad and start trading."}
                 </p>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => { setMaxPrice(""); setMinAmount(""); setShowCreate(true); }}
+                  onClick={() => {
+                    setMaxPrice("");
+                    setMinAmount("");
+                    ownAdsCount > 0 ? navigate("/my-ads") : setShowCreate(true);
+                  }}
                 >
-                  {maxPrice || minAmount ? "Clear Filters" : "Create the first ad"}
+                  {maxPrice || minAmount ? "Clear Filters" : ownAdsCount > 0 ? "View My Ads" : "Create the first ad"}
                 </Button>
               </div>
             )}

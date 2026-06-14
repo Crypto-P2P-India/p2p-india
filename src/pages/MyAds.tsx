@@ -331,8 +331,8 @@ const MyAds = () => {
                           </div>
 
 
-                          {/* In Deal — full seller deal management */}
-                          {ad.status === 1 && relatedDeal && (
+                          {/* Active deal management */}
+                          {relatedDeal && (
                             <div className="mt-3 space-y-3">
                               <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-2">
                                 <div className="flex items-center justify-between">
