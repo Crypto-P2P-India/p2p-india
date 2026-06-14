@@ -112,31 +112,7 @@ const Index = () => {
           </p>
         </div>
 
-        {/* Expired funds alert */}
-        {isConnected && expiredUnclaimedAds.length > 0 && !expiredBannerDismissed && (
-          <div className="mb-6 rounded-lg border border-sell/30 bg-sell/5 p-4 animate-fade-up">
-            <div className="flex items-start gap-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sell/10">
-                <AlertTriangle className="h-5 w-5 text-sell" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-foreground">Unclaimed Expired Funds</p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  You have <span className="font-bold text-sell">{expiredUnclaimedAds.length}</span> expired ad{expiredUnclaimedAds.length > 1 ? "s" : ""} with locked funds.
-                  Claim them back from My Ads → Expired tab.
-                </p>
-                <div className="flex gap-2 mt-2.5">
-                  <Button size="sm" variant="sell" onClick={() => navigate("/my-ads")} className="text-xs">
-                    Go to My Ads
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => setExpiredBannerDismissed(true)} className="text-xs text-muted-foreground">
-                    Dismiss
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* (Expired ads banner removed — contract has no time-based ad expiry.) */}
 
         {/* Stats */}
         <div className="mb-8">
