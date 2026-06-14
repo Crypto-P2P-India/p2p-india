@@ -2,6 +2,7 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import { Capacitor } from "@capacitor/core";
+import { SplashScreen } from "@capacitor/splash-screen";
 
 // In Capacitor Android WebView, `window.open('okx://wc?uri=...')` and similar
 // wallet deep links are silently dropped. We override window.open AND
@@ -11,6 +12,10 @@ import { Capacitor } from "@capacitor/core";
 // preserved, so OKX / Trust / MetaMask actually receive the connection
 // request and prompt the user.
 if (Capacitor.isNativePlatform()) {
+  setTimeout(() => {
+    SplashScreen.hide().catch(() => undefined);
+  }, 1500);
+
   const openNative = (href: string) => {
     try {
       const iframe = document.createElement("iframe");
