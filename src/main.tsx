@@ -2,27 +2,31 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import { Capacitor } from "@capacitor/core";
-import { App as CapacitorApp } from "@capacitor/app";
 
 // In Capacitor Android WebView, `window.open('okx://wc?uri=...')` and similar
 // wallet deep links are silently dropped. We override window.open AND
-// window.location.href assignments so any non-http(s) scheme is dispatched
-// through Capacitor's native App.openUrl, which calls Android's
-// Intent.ACTION_VIEW with the FULL URI (including the WalletConnect `uri`
-// query param) preserved. This ensures OKX / Trust / MetaMask receive the
-// connection request and prompt the user — not just open blank.
+// anchor clicks so any non-http(s) scheme is dispatched via a hidden iframe
+// navigation — this reliably triggers Android's shouldOverrideUrlLoading
+// with the FULL URI (including the WalletConnect `uri` query param)
+// preserved, so OKX / Trust / MetaMask actually receive the connection
+// request and prompt the user.
 if (Capacitor.isNativePlatform()) {
   const openNative = (href: string) => {
-    // Fire-and-forget; Android intent dispatch is async.
-    CapacitorApp.openUrl({ url: href }).catch(() => {
-      // Last-ditch fallback
+    try {
+      const iframe = document.createElement("iframe");
+      iframe.style.display = "none";
+      iframe.src = href;
+      document.body.appendChild(iframe);
+      setTimeout(() => iframe.remove(), 1500);
+    } catch {
       try {
         window.location.href = href;
       } catch {
         /* ignore */
       }
-    });
+    }
   };
+
 
   const isCustomScheme = (href: string) =>
     !!href &&
