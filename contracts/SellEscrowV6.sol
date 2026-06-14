@@ -116,17 +116,26 @@ contract SellEscrow {
         address disputeRaisedBy;
     }
 
+    struct AdInput {
+        uint256 amount;
+        uint256 minFillAmount;
+        uint256 pricePerToken;
+        string paymentMethod;
+        uint32 adDuration;
+        uint32 payWindow;
+    }
+
     // ---------- Storage ----------
     uint256 public nextAdId   = 1;
     uint256 public nextDealId = 1;
 
-    mapping(uint256 => Ad)   public ads;
-    mapping(uint256 => Deal) public deals;
+    mapping(uint256 => Ad)   private ads;
+    mapping(uint256 => Deal) private deals;
     mapping(address => uint256) public feeBalance;
     mapping(uint256 => mapping(address => uint256)) public openDealByBuyer;
 
     // ---------- Events ----------
-    event AdCreated(uint256 indexed adId, address indexed seller, address token, uint256 amount, uint256 price, uint256 prepaidFee, uint64 expiresAt, uint32 payWindow);
+    event AdCreated(uint256 indexed adId, address indexed seller, address indexed token);
     event AdCancelled(uint256 indexed adId, uint256 refunded, uint256 feeRefunded);
     event AdClosedByAdmin(uint256 indexed adId);
     event DealCreated(uint256 indexed dealId, uint256 indexed adId, address indexed buyer, uint256 amount);
@@ -190,21 +199,10 @@ contract SellEscrow {
         uint32 adDuration,
         uint32 payWindow
     ) external payable nonReentrant returns (uint256 adId) {
-        require(amount > 0, "ZERO_AMOUNT");
-        require(minFillAmount > 0 && minFillAmount <= amount, "BAD_MIN");
-        require(pricePerToken > 0, "BAD_PRICE");
-        _validateAdDuration(adDuration);
-        _validatePayWindow(payWindow);
-
-        uint16 sBps = sellerFeeBps;
-        uint256 fee = _sellerFee(amount, sBps);
-        require(msg.value == amount + fee, "BAD_VALUE");
-
-        adId = _openAdId();
-        _storeAdCore(adId, address(0), amount, fee);
-        _storeAdRules(adId, minFillAmount, pricePerToken, paymentMethod);
-        _storeAdConfig(adId, sBps, buyerFeeBps, adDuration, payWindow);
-        _emitAdCreated(adId);
+        AdInput memory input = AdInput(amount, minFillAmount, pricePerToken, paymentMethod, adDuration, payWindow);
+        _validateAdInput(input);
+        require(msg.value == _quoteRequired(amount), "BAD_VALUE");
+        adId = _createAd(address(0), input, _sellerFee(amount, sellerFeeBps));
     }
 
     function createSellAdToken(
@@ -217,33 +215,37 @@ contract SellEscrow {
         uint32 payWindow
     ) external nonReentrant returns (uint256 adId) {
         require(token != address(0), "BAD_TOKEN");
-        require(amount > 0, "ZERO_AMOUNT");
-        require(minFillAmount > 0 && minFillAmount <= amount, "BAD_MIN");
-        require(pricePerToken > 0, "BAD_PRICE");
-        _validateAdDuration(adDuration);
-        _validatePayWindow(payWindow);
-
-        uint16 sBps = sellerFeeBps;
-        uint256 fee = _sellerFee(amount, sBps);
-
+        AdInput memory input = AdInput(amount, minFillAmount, pricePerToken, paymentMethod, adDuration, payWindow);
+        _validateAdInput(input);
+        uint256 fee = _sellerFee(amount, sellerFeeBps);
         _pullExact(token, msg.sender, amount + fee);
-
-        adId = _openAdId();
-        _storeAdCore(adId, token, amount, fee);
-        _storeAdRules(adId, minFillAmount, pricePerToken, paymentMethod);
-        _storeAdConfig(adId, sBps, buyerFeeBps, adDuration, payWindow);
-        _emitAdCreated(adId);
+        adId = _createAd(token, input, fee);
     }
 
     function _pullExact(address token, address from, uint256 required) internal {
         uint256 beforeBal = _tokenBalance(token, address(this));
         _safeTransferFrom(token, from, address(this), required);
-        uint256 received = _tokenBalance(token, address(this)) - beforeBal;
-        require(received >= required, "FEE_ON_TRANSFER_TOKEN");
+        require(_tokenBalance(token, address(this)) - beforeBal >= required, "FEE_ON_TRANSFER_TOKEN");
     }
 
-    function _openAdId() internal returns (uint256 adId) {
+    function _quoteRequired(uint256 amount) internal view returns (uint256) {
+        return amount + _sellerFee(amount, sellerFeeBps);
+    }
+
+    function _validateAdInput(AdInput memory input) internal pure {
+        require(input.amount > 0, "ZERO_AMOUNT");
+        require(input.minFillAmount > 0 && input.minFillAmount <= input.amount, "BAD_MIN");
+        require(input.pricePerToken > 0, "BAD_PRICE");
+        _validateAdDuration(input.adDuration);
+        _validatePayWindow(input.payWindow);
+    }
+
+    function _createAd(address token, AdInput memory input, uint256 prepaidFee) internal returns (uint256 adId) {
         adId = nextAdId++;
+        _storeAdCore(adId, token, input.amount, prepaidFee);
+        _storeAdRules(adId, input.minFillAmount, input.pricePerToken, input.paymentMethod);
+        _storeAdConfig(adId, input.adDuration, input.payWindow);
+        emit AdCreated(adId, msg.sender, token);
     }
 
     function _storeAdCore(uint256 adId, address token, uint256 amount, uint256 prepaidFee) internal {
@@ -257,24 +259,19 @@ contract SellEscrow {
         a.createdAt = uint64(block.timestamp);
     }
 
-    function _storeAdRules(uint256 adId, uint256 minFill, uint256 price, string calldata pm) internal {
+    function _storeAdRules(uint256 adId, uint256 minFill, uint256 price, string memory pm) internal {
         Ad storage a = ads[adId];
         a.minFillAmount = minFill;
         a.pricePerToken = price;
         a.paymentMethod = pm;
     }
 
-    function _storeAdConfig(uint256 adId, uint16 sBps, uint16 bBps, uint32 adDuration, uint32 payWindow) internal {
+    function _storeAdConfig(uint256 adId, uint32 adDuration, uint32 payWindow) internal {
         Ad storage a = ads[adId];
-        a.sellerFeeBpsSnapshot = sBps;
-        a.buyerFeeBpsSnapshot = bBps;
+        a.sellerFeeBpsSnapshot = sellerFeeBps;
+        a.buyerFeeBpsSnapshot = buyerFeeBps;
         a.payWindow = payWindow;
         a.expiresAt = uint64(block.timestamp + adDuration);
-    }
-
-    function _emitAdCreated(uint256 adId) internal {
-        Ad storage a = ads[adId];
-        emit AdCreated(adId, a.seller, a.token, a.totalAmount, a.pricePerToken, a.feeReserve, a.expiresAt, a.payWindow);
     }
 
     // ---------- Cancel Ad (seller) ----------
@@ -439,42 +436,48 @@ contract SellEscrow {
 
     // ---------- Internal ----------
     function _releaseToBuyer(uint256 dealId) internal {
-        Deal storage d = deals[dealId];
-        Ad storage a = ads[d.adId];
-        uint256 amount = d.amount;
+        uint256 amount = deals[dealId].amount;
+        uint256 sellerFee = _takeSellerFee(ads[deals[dealId].adId], amount);
+        uint256 buyerFee = _buyerFee(ads[deals[dealId].adId], amount);
 
-        uint256 sellerFee = _sellerFee(amount, a.sellerFeeBpsSnapshot);
-        if (sellerFee > a.feeReserve) sellerFee = a.feeReserve;
-        a.feeReserve -= sellerFee;
-
-        uint256 buyerFee  = (amount * a.buyerFeeBpsSnapshot) / BPS_DENOM;
-        uint256 buyerPayout = amount - buyerFee;
-
-        a.lockedInDeals -= amount;
-        feeBalance[a.token] += sellerFee + buyerFee;
-        d.state = DealState.RELEASED;
-        delete openDealByBuyer[d.adId][d.buyer];
-
-        _payout(a.token, d.buyer, buyerPayout);
-        _checkAndAutoCloseAd(a);
-        emit DealReleased(dealId, buyerPayout, sellerFee, buyerFee);
+        _finalizeRelease(dealId, amount, sellerFee, buyerFee);
+        _payout(ads[deals[dealId].adId].token, deals[dealId].buyer, amount - buyerFee);
+        _checkAndAutoCloseAd(ads[deals[dealId].adId]);
+        emit DealReleased(dealId, amount - buyerFee, sellerFee, buyerFee);
     }
 
     function _refundSliceToSeller(uint256 dealId) internal {
+        uint256 amount = deals[dealId].amount;
+        uint256 sliceFee = _takeSellerFee(ads[deals[dealId].adId], amount);
+        _finalizeRefund(dealId, amount);
+        _payout(ads[deals[dealId].adId].token, ads[deals[dealId].adId].seller, amount + sliceFee);
+        _checkAndAutoCloseAd(ads[deals[dealId].adId]);
+        emit DealRefunded(dealId, amount);
+    }
+
+    function _takeSellerFee(Ad storage a, uint256 amount) internal returns (uint256 fee) {
+        fee = _sellerFee(amount, a.sellerFeeBpsSnapshot);
+        if (fee > a.feeReserve) fee = a.feeReserve;
+        a.feeReserve -= fee;
+    }
+
+    function _buyerFee(Ad storage a, uint256 amount) internal view returns (uint256) {
+        return (amount * a.buyerFeeBpsSnapshot) / BPS_DENOM;
+    }
+
+    function _finalizeRelease(uint256 dealId, uint256 amount, uint256 sellerFee, uint256 buyerFee) internal {
         Deal storage d = deals[dealId];
-        Ad storage a = ads[d.adId];
-        uint256 amount = d.amount;
+        ads[d.adId].lockedInDeals -= amount;
+        feeBalance[ads[d.adId].token] += sellerFee + buyerFee;
+        d.state = DealState.RELEASED;
+        delete openDealByBuyer[d.adId][d.buyer];
+    }
 
-        uint256 sliceFee = _sellerFee(amount, a.sellerFeeBpsSnapshot);
-        if (sliceFee > a.feeReserve) sliceFee = a.feeReserve;
-        a.feeReserve -= sliceFee;
-
-        a.lockedInDeals -= amount;
+    function _finalizeRefund(uint256 dealId, uint256 amount) internal {
+        Deal storage d = deals[dealId];
+        ads[d.adId].lockedInDeals -= amount;
         d.state = DealState.REFUNDED;
         delete openDealByBuyer[d.adId][d.buyer];
-        _payout(a.token, a.seller, amount + sliceFee);
-        _checkAndAutoCloseAd(a);
-        emit DealRefunded(dealId, amount);
     }
 
     function _returnSliceToAd(uint256 dealId) internal {
