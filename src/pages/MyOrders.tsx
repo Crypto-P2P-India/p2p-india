@@ -268,6 +268,20 @@ const MyOrders = () => {
             </div>
           )}
 
+          {/* Seller proposed an extension — buyer can accept */}
+          {isBuyer && deal.status === 0 && !deal.sellerExtensionUsed && deal.sellerProposedExtra > 0 && !isTimedOut && (
+            <div className="mt-3 rounded-lg border border-primary/30 bg-primary/10 p-3 flex items-center justify-between gap-3">
+              <p className="text-sm text-foreground">
+                Seller offered <span className="font-semibold">+{Math.round(deal.sellerProposedExtra / 60)} min</span> on the pay window.
+              </p>
+              <Button variant="buy" size="sm" disabled={isProcessing} onClick={() => acceptExt({ address: P2P_CONTRACT_ADDRESS, abi: P2P_ESCROW_ABI, functionName: "buyerAcceptExtension", args: [BigInt(deal.dealId)] } as any)}>
+                {acceptPending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <CheckCircle2 className="h-3 w-3 mr-1" />}
+                Accept
+              </Button>
+            </div>
+          )}
+
+
           <DealOutcome status={deal.status} isBuyer={isBuyer} buyerConfirmed={deal.buyerConfirmed} sellerConfirmed={deal.sellerConfirmed} tokenAmount={deal.tokenAmount} tokenSymbol={deal.tokenSymbol} inrAmount={deal.inrAmount} buyer={deal.buyer} seller={deal.seller} dealId={deal.dealId} txHash={dealTxMap[deal.dealId]?.completed || dealTxMap[deal.dealId]?.cancelled || dealTxMap[deal.dealId]?.resolved || dealTxMap[deal.dealId]?.created} resolvedRecipient={dealTxMap[deal.dealId]?.resolvedRecipient} />
 
           <DealTimeline events={dealTxMap[deal.dealId]?.events || []} />
