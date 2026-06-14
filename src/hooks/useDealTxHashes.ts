@@ -35,6 +35,10 @@ const EVENT_DEFS = [
   { name: "disputed", label: "Dispute Raised", abi: parseAbiItem("event DisputeRaised(uint256 indexed dealId, address indexed by)") },
   { name: "resolved", label: "Admin Released", abi: parseAbiItem("event AdminReleased(uint256 indexed dealId)") },
   { name: "resolved", label: "Admin Refunded", abi: parseAbiItem("event AdminRefunded(uint256 indexed dealId)") },
+  { name: "buyerExtended", label: "Buyer Extended Pay Window", abi: parseAbiItem("event BuyerExtendedPayWindow(uint256 indexed dealId, uint32 addedSeconds)") },
+  { name: "sellerProposed", label: "Seller Proposed Extension", abi: parseAbiItem("event SellerProposedExtension(uint256 indexed dealId, uint32 extraSeconds)") },
+  { name: "buyerAccepted", label: "Buyer Accepted Extension", abi: parseAbiItem("event BuyerAcceptedExtension(uint256 indexed dealId, uint32 extraSeconds)") },
+  { name: "sellerCancelledExt", label: "Seller Withdrew Extension Offer", abi: parseAbiItem("event SellerCancelledExtension(uint256 indexed dealId)") },
 ] as const;
 
 export function useDealTxHashes(dealIds: number[]): DealTxMap {
