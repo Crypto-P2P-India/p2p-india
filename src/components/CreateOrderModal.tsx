@@ -246,6 +246,7 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
 
   const resetForm = () => {
     setPrice(""); setAmount("");
+    setAllowPartial(false); setMinFill("");
     setStep("form");
     setProfileLoaded(false);
     resetApprove(); resetCreate();
