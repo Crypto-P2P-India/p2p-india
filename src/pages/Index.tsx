@@ -61,7 +61,7 @@ const Index = () => {
     return liveAds
       .filter((ad) => {
         if (ad.status === 3) return false;
-        if (ad.adExpiry < now) return false;
+        
         if (parseFloat(ad.tokenAmount) <= 0) return false;
         if (address && ad.seller.toLowerCase() === address.toLowerCase()) return false;
         const matchesCrypto = ad.tokenSymbol === crypto;
