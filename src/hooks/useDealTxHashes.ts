@@ -88,7 +88,7 @@ export function useDealTxHashes(dealIds: number[]): DealTxMap {
           }
           map[dealId].events.push({
             name,
-            label: evtLabel,
+            label: evtLabel as string,
             txHash: log.transactionHash,
             blockNumber: log.blockNumber,
           });
