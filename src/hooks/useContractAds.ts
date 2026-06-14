@@ -62,6 +62,7 @@ export function useContractAds() {
       const totalAmountRaw = ad.totalAmount !== undefined ? ad.totalAmount : ad[2];
       const remainingRaw = ad.remainingAmount !== undefined ? ad.remainingAmount : ad[3];
       const lockedRaw = ad.lockedInDeals !== undefined ? ad.lockedInDeals : ad[4];
+      const minFillRaw = ad.minFillAmount !== undefined ? ad.minFillAmount : ad[6];
       const pricePerToken = ad.pricePerToken !== undefined ? ad.pricePerToken : ad[7];
       const paymentInfo = ad.paymentMethod !== undefined ? ad.paymentMethod : ad[8];
       const active = ad.active !== undefined ? ad.active : ad[9];
