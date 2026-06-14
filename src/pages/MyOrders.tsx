@@ -303,6 +303,14 @@ const MyOrders = () => {
               </Button>
             )}
 
+            {/* Buyer self-extension (one-time, +5m) */}
+            {!isTimedOut && isBuyer && deal.status === 0 && !deal.buyerConfirmed && !deal.buyerExtensionUsed && (
+              <Button variant="outline" size="sm" disabled={isProcessing} onClick={() => extendPay({ address: P2P_CONTRACT_ADDRESS, abi: P2P_ESCROW_ABI, functionName: "buyerExtendPayWindow", args: [BigInt(deal.dealId)] } as any)}>
+                {extendPending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Clock className="h-3 w-3 mr-1" />}
+                Need more time
+              </Button>
+            )}
+
             {/* Seller release — when buyer confirmed */}
             {!isBuyer && deal.buyerConfirmed && !deal.sellerConfirmed && (deal.status === 0 || deal.status === 1) && (
               <Button variant="buy" size="sm" disabled={isProcessing} onClick={() => { setPendingDealId(deal.dealId); sellerConfirm({ address: P2P_CONTRACT_ADDRESS, abi: P2P_ESCROW_ABI, functionName: "confirmReceived", args: [BigInt(deal.dealId)] } as any); }}>
