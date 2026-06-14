@@ -259,7 +259,7 @@ contract SellEscrow {
         a.createdAt = uint64(block.timestamp);
     }
 
-    function _storeAdRules(uint256 adId, uint256 minFill, uint256 price, string calldata pm) internal {
+    function _storeAdRules(uint256 adId, uint256 minFill, uint256 price, string memory pm) internal {
         Ad storage a = ads[adId];
         a.minFillAmount = minFill;
         a.pricePerToken = price;
