@@ -223,15 +223,19 @@ contract SellEscrow {
         uint16 sBps = sellerFeeBps;
         uint16 bBps = buyerFeeBps;
         uint256 fee = _sellerFee(amount, sBps);
-        uint256 required = amount + fee;
 
-        uint256 before = _tokenBalance(token, address(this));
-        _safeTransferFrom(token, msg.sender, address(this), required);
-        uint256 received = _tokenBalance(token, address(this)) - before;
-        require(received >= required, "FEE_ON_TRANSFER_TOKEN");
+        _pullExact(token, msg.sender, amount + fee);
 
         adId = _createAd(token, amount, fee, sBps, bBps, minFillAmount, pricePerToken, paymentMethod, adDuration, payWindow);
     }
+
+    function _pullExact(address token, address from, uint256 required) internal {
+        uint256 beforeBal = _tokenBalance(token, address(this));
+        _safeTransferFrom(token, from, address(this), required);
+        uint256 received = _tokenBalance(token, address(this)) - beforeBal;
+        require(received >= required, "FEE_ON_TRANSFER_TOKEN");
+    }
+
 
     function _createAd(
         address token,
