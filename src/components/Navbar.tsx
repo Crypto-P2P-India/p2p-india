@@ -1,6 +1,6 @@
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { Link, useLocation } from "react-router-dom";
-import { Wallet, ShoppingBag, Handshake } from "lucide-react";
+import { Wallet, ShoppingBag, Handshake, Store } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import ApkDownloadButton from "@/components/ApkDownloadButton";
 import SideMenu from "@/components/SideMenu";
@@ -15,6 +15,7 @@ const Navbar = () => {
   const unread = useGlobalUnreadCount(address);
 
   const desktopLinks = [
+    { label: "Marketplace", href: "/", icon: Store },
     { label: "My Ads", href: "/my-ads", icon: ShoppingBag },
     { label: "My Deals", href: "/my-orders", icon: Handshake, badge: true },
   ];
