@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { useAccount, useConnect } from "wagmi";
 import { injected } from "wagmi/connectors";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
+import { QRCodeSVG } from "qrcode.react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Wallet, ExternalLink, CheckCircle2, Smartphone } from "lucide-react";
+import { Wallet, ExternalLink, CheckCircle2, QrCode, Smartphone, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 type WalletApp = {
@@ -47,11 +48,12 @@ interface Props {
 }
 
 const MobileWalletSheet = ({ open, onOpenChange }: Props) => {
-  const { connectors, connect, isPending } = useConnect();
+  const { connectors, connect, connectAsync, isPending } = useConnect();
   const { isConnected } = useAccount();
   const { openConnectModal } = useConnectModal();
   const [hasInjected, setHasInjected] = useState(false);
   const [connectingWallet, setConnectingWallet] = useState<string | null>(null);
+  const [qrUri, setQrUri] = useState<string | null>(null);
 
   useEffect(() => {
     const check = () =>
@@ -64,8 +66,15 @@ const MobileWalletSheet = ({ open, onOpenChange }: Props) => {
   useEffect(() => {
     if (!open || !isConnected) return;
     setConnectingWallet(null);
+    setQrUri(null);
     onOpenChange(false);
   }, [isConnected, onOpenChange, open]);
+
+  useEffect(() => {
+    if (open) return;
+    setConnectingWallet(null);
+    setQrUri(null);
+  }, [open]);
 
   const connectInjected = () => {
     const inj = connectors.find((c) => c.id === "injected" || c.type === "injected");
@@ -84,6 +93,54 @@ const MobileWalletSheet = ({ open, onOpenChange }: Props) => {
 
   const findWalletConnector = (w: WalletApp) =>
     connectors.find((c) => w.connectorNames.some((name) => c.name.toLowerCase().includes(name.toLowerCase())));
+
+  const findQrConnector = () =>
+    connectors.find(
+      (c) =>
+        c.id === "walletConnect" &&
+        !(c as typeof c & { rkDetails?: { showQrModal?: boolean; isWalletConnectModalConnector?: boolean } }).rkDetails
+          ?.showQrModal &&
+        !(c as typeof c & { rkDetails?: { isWalletConnectModalConnector?: boolean } }).rkDetails?.isWalletConnectModalConnector
+    ) ?? connectors.find((c) => c.id === "walletConnect" || c.name.toLowerCase().includes("walletconnect"));
+
+  const startQrConnect = async () => {
+    const connector = findQrConnector();
+    if (!connector) {
+      toast.error("QR connection unavailable", { description: "Use Other wallets to open the full wallet list." });
+      openConnectModal?.();
+      return;
+    }
+
+    setQrUri(null);
+    setConnectingWallet("qr");
+    const handleMessage = (message: { type: string; data?: unknown }) => {
+      if (message.type === "display_uri" && typeof message.data === "string") {
+        setQrUri(message.data);
+        toast.success("QR ready", { id: "wallet-connect" });
+      }
+    };
+
+    connector.emitter.on("message", handleMessage);
+    toast.loading("Creating QR code…", {
+      id: "wallet-connect",
+      description: "Scan it with your wallet app to connect.",
+      duration: 4000,
+    });
+
+    try {
+      await connectAsync({ connector });
+      toast.success("Wallet connected", { id: "wallet-connect" });
+      onOpenChange(false);
+    } catch (error) {
+      setConnectingWallet(null);
+      toast.error("Wallet connection failed", {
+        id: "wallet-connect",
+        description: error instanceof Error ? error.message : "Please try again.",
+      });
+    } finally {
+      connector.emitter.off("message", handleMessage);
+    }
+  };
 
   const connectWalletApp = (w: WalletApp) => {
     const connector = findWalletConnector(w);
@@ -141,6 +198,43 @@ const MobileWalletSheet = ({ open, onOpenChange }: Props) => {
         </SheetHeader>
 
         <div className="p-5 space-y-4">
+          <div className="rounded-2xl border border-border bg-card p-4">
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <div>
+                <p className="font-semibold text-foreground">Scan QR to connect</p>
+                <p className="text-xs text-muted-foreground">Open any wallet app and scan this code.</p>
+              </div>
+              <QrCode className="h-5 w-5 text-primary" />
+            </div>
+            {qrUri ? (
+              <div className="flex flex-col items-center gap-3">
+                <div className="rounded-xl border border-border p-2">
+                  <QRCodeSVG value={qrUri} size={210} level="M" includeMargin bgColor="#ffffff" fgColor="#000000" />
+                </div>
+                <p className="text-center text-xs text-muted-foreground">After scanning, approve in the wallet app and return here.</p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={startQrConnect}
+                  disabled={isPending || connectingWallet === "qr"}
+                  className="w-full gap-2"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Refresh QR
+                </Button>
+              </div>
+            ) : (
+              <Button
+                onClick={startQrConnect}
+                disabled={isPending || connectingWallet === "qr"}
+                className="w-full h-14 text-base font-semibold gap-2"
+              >
+                {connectingWallet === "qr" ? <RefreshCw className="h-5 w-5 animate-spin" /> : <QrCode className="h-5 w-5" />}
+                {connectingWallet === "qr" ? "Preparing QR…" : "Show Wallet QR"}
+              </Button>
+            )}
+          </div>
+
           {hasInjected && (
             <Button
               onClick={connectInjected}
