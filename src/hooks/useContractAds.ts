@@ -73,8 +73,9 @@ export function useContractAds() {
 
       const remaining = BigInt(String(remainingRaw));
       const locked = BigInt(String(lockedRaw || 0));
-      // Available = unsold remaining minus what's currently locked in pending deals.
-      const available = remaining > locked ? remaining - locked : 0n;
+      // Contract already decrements `remainingAmount` when a deal is taken,
+      // so `remaining` IS the unsold amount still available for new buyers.
+      const available = remaining;
 
       const status = active ? (locked > 0n ? 1 : 0) : 3;
 
