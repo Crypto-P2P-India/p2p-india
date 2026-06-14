@@ -3,6 +3,7 @@ import App from "./App.tsx";
 import "./index.css";
 import { Capacitor } from "@capacitor/core";
 import { SplashScreen } from "@capacitor/splash-screen";
+import { toast } from "sonner";
 
 // In Capacitor Android WebView, `window.open('okx://wc?uri=...')` and similar
 // wallet deep links are silently dropped. We override window.open AND
