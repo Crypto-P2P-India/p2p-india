@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { X, Clock, Shield, CheckCircle2, AlertTriangle, Copy, MessageSquare, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { X, Clock, Shield, CheckCircle2, AlertTriangle, Copy, MessageSquare, Loader2, Timer } from "lucide-react";
 import { useWriteContract, useWaitForTransactionReceipt, useReadContract } from "wagmi";
 import { P2P_CONTRACT_ADDRESS } from "@/config/wagmi";
 import { P2P_ESCROW_ABI } from "@/config/abi";
