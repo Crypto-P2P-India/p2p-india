@@ -97,7 +97,15 @@ export function useContractDeals() {
       const rawSellerConfirmed = rawState === 3;
       const rawDeadline = BigInt(String(rawCreatedAt || 0)) + BigInt(PAY_WINDOW);
 
-      if (rawId === undefined || rawTokenAmount === undefined) continue;
+      const createdAtNum = Number(String(rawCreatedAt || 0));
+      const paidAtNum = Number(String(rawPaidAt || 0));
+      // Active deadline depends on state:
+      //  - LOCKED (state=1, status 0): buyer's pay window from createdAt.
+      //  - PAID   (state=2, status 1): seller's confirm window from paidAt.
+      const activeDeadline =
+        rawState === 2 && paidAtNum > 0
+          ? paidAtNum + CONFIRM_WINDOW
+          : createdAtNum + PAY_WINDOW;
 
       // inrAmount = tokenAmount * pricePerToken (no division in contract)
       // tokenAmount has 18 decimals, pricePerToken has 2 decimals → total 20 decimals
@@ -113,7 +121,9 @@ export function useContractDeals() {
         tokenSymbol: isBNB ? "BNB" : "USDT",
         tokenAmount: formatUnits(BigInt(String(rawTokenAmount)), 18),
         inrAmount: inrFormatted,
-        deadline: Number(rawDeadline),
+        deadline: activeDeadline,
+        paidAt: paidAtNum,
+        createdAt: createdAtNum,
         buyerConfirmed: Boolean(rawBuyerConfirmed),
         sellerConfirmed: Boolean(rawSellerConfirmed),
         status: Number(rawStatus),
