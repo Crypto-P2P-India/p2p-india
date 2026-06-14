@@ -48,16 +48,20 @@ const TradeWindow = ({ ad, userAddress, onClose }: TradeWindowProps) => {
   const [showChat, setShowChat] = useState(false);
   const [copied, setCopied] = useState(false);
   const [dealId, setDealId] = useState<number | null>(null);
-  const [buyAmount, setBuyAmount] = useState<string>(ad.tokenAmount);
+  // Integer-only buy amount. Default to seller's minimum (or 1).
+  const minAmount = Math.max(1, Math.floor(parseFloat(ad.minFillAmount || "1") || 1));
+  const maxAmount = Math.floor(parseFloat(ad.tokenAmount) || 0);
+  const [buyAmount, setBuyAmount] = useState<string>(String(Math.min(minAmount, maxAmount || minAmount)));
   const isSeller = ad.seller.toLowerCase() === userAddress.toLowerCase();
 
-  const maxAmount = parseFloat(ad.tokenAmount) || 0;
-  const buyNum = parseFloat(buyAmount) || 0;
+  const buyNum = parseInt(buyAmount, 10);
+  const buyNumSafe = Number.isFinite(buyNum) ? buyNum : 0;
   const priceNum = parseFloat(ad.pricePerToken) || 0;
-  const buyInrTotal = useMemo(() => (buyNum * priceNum).toFixed(2), [buyNum, priceNum]);
-  const amountValid = buyNum > 0 && buyNum <= maxAmount;
+  const buyInrTotal = useMemo(() => (buyNumSafe * priceNum).toFixed(2), [buyNumSafe, priceNum]);
+  const amountValid =
+    Number.isInteger(buyNumSafe) && buyNumSafe >= minAmount && buyNumSafe <= maxAmount;
   const payoutInr = step === "accept" ? buyInrTotal : ad.inrTotal;
-  const payoutAmount = step === "accept" ? buyAmount : ad.tokenAmount;
+  const payoutAmount = step === "accept" ? String(buyNumSafe || minAmount) : ad.tokenAmount;
   const timeoutMin = Math.round(ad.dealTimeout / 60);
 
   // Read nextDealId BEFORE accepting — this will be the dealId assigned
