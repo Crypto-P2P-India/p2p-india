@@ -77,7 +77,7 @@ const FAQS = [
   },
   {
     q: "How do I contact support?",
-    a: "You can reach our support team on Telegram at @Tobi3811. Use the support button in the bottom-right corner of the screen, or find the link in the footer and About page.",
+    a: "You can reach our support team on Telegram at @Xplorertobi38. Use the support button in the bottom-right corner of the screen, or find the link in the footer and About page.",
   },
 ];
 

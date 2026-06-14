@@ -6,7 +6,7 @@ import { useAccount } from "wagmi";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useGlobalUnreadCount } from "@/hooks/useGlobalUnreadCount";
 
-const TG_LINK = "https://t.me/Tobi3811";
+const TG_LINK = "https://t.me/Xplorertobi38";
 
 const PRIMARY = [
   { label: "P2P Marketplace", href: "/", icon: ArrowLeftRight },

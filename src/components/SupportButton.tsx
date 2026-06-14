@@ -1,7 +1,7 @@
 import { MessageCircle, X } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 
-const TG_LINK = "https://t.me/Tobi3811";
+const TG_LINK = "https://t.me/Xplorertobi38";
 
 const SupportButton = () => {
   const [open, setOpen] = useState(false);
