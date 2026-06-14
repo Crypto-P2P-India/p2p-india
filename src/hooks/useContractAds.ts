@@ -12,8 +12,14 @@ export interface LiveAd {
   seller: string;
   token: string;
   tokenSymbol: string;
+  /** Amount currently available to buy (remaining minus locked). */
   tokenAmount: string;
+  /** Total amount the seller originally posted. */
+  totalAmount: string;
+  /** Amount currently locked in pending deals. */
+  lockedAmount: string;
   pricePerToken: string;
+  /** INR value of the currently-available amount. */
   inrTotal: string;
   dealTimeout: number;
   adExpiry: number;
@@ -29,7 +35,6 @@ export function useContractAds() {
     query: { refetchInterval: 5000 },
   });
 
-  // nextAdId is the next ID to assign, so existing ads are 1..(nextAdId-1)
   const adCount = nextAdId ? Number(nextAdId) - 1 : 0;
 
   const adCalls = Array.from({ length: Math.max(0, adCount) }, (_, i) => ({
@@ -51,32 +56,43 @@ export function useContractAds() {
       if (res.status !== "success" || !res.result) continue;
       const ad = res.result as any;
 
-      const id = ad.id !== undefined ? ad.id : index + 1;
+      const id = index + 1;
       const seller = ad.seller || ad[0];
       const tokenAddr = ad.token || ad[1];
-      const tokenAmount = ad.remainingAmount !== undefined ? ad.remainingAmount : ad[3];
-      const lockedInDeals = ad.lockedInDeals !== undefined ? ad.lockedInDeals : ad[4];
+      const totalAmountRaw = ad.totalAmount !== undefined ? ad.totalAmount : ad[2];
+      const remainingRaw = ad.remainingAmount !== undefined ? ad.remainingAmount : ad[3];
+      const lockedRaw = ad.lockedInDeals !== undefined ? ad.lockedInDeals : ad[4];
       const pricePerToken = ad.pricePerToken !== undefined ? ad.pricePerToken : ad[7];
       const paymentInfo = ad.paymentMethod !== undefined ? ad.paymentMethod : ad[8];
       const active = ad.active !== undefined ? ad.active : ad[9];
-      const status = active ? (BigInt(String(lockedInDeals || 0)) > 0n ? 1 : 0) : 3;
 
-      if (id === undefined || tokenAmount === undefined) continue;
+      if (remainingRaw === undefined) continue;
+
+      const remaining = BigInt(String(remainingRaw));
+      const locked = BigInt(String(lockedRaw || 0));
+      // Available = unsold remaining minus what's currently locked in pending deals.
+      const available = remaining > locked ? remaining - locked : 0n;
+
+      const status = active ? (locked > 0n ? 1 : 0) : 3;
 
       const isBNB = String(tokenAddr).toLowerCase() === NATIVE_BNB.toLowerCase();
       const tokenSymbol = isBNB ? "BNB" : "USDT";
-      const amountFormatted = formatUnits(BigInt(String(tokenAmount)), 18);
+
+      const availableFormatted = formatUnits(available, 18);
+      const totalFormatted = formatUnits(BigInt(String(totalAmountRaw || remaining)), 18);
+      const lockedFormatted = formatUnits(locked, 18);
       const priceFormatted = formatUnits(BigInt(String(pricePerToken)), 2);
-      // inrTotal = tokenAmount * pricePerToken, both raw → combined 20 decimals
-      const rawInrTotal = BigInt(String(tokenAmount)) * BigInt(String(pricePerToken));
+      const rawInrTotal = available * BigInt(String(pricePerToken));
       const inrTotal = parseFloat(formatUnits(rawInrTotal, 20)).toFixed(2);
 
       ads.push({
-        adId: Number(id),
+        adId: id,
         seller: String(seller),
         token: String(tokenAddr),
         tokenSymbol,
-        tokenAmount: amountFormatted,
+        tokenAmount: availableFormatted,
+        totalAmount: totalFormatted,
+        lockedAmount: lockedFormatted,
         pricePerToken: priceFormatted,
         inrTotal,
         dealTimeout: DEFAULT_DEAL_TIMEOUT,
