@@ -78,7 +78,7 @@ const MyAds = () => {
   const { isSuccess: cancelDealDone } = useWaitForTransactionReceipt({ hash: cancelDealHash });
 
   useEffect(() => { if (cancelConfirmed) { toast.success("Ad cancelled. Funds returned."); setPendingAdId(null); refetchAds(); refetchDeals(); } }, [cancelConfirmed]);
-  useEffect(() => { if (claimConfirmed) { toast.success("Expired ad claimed. Funds returned."); setPendingAdId(null); refetchAds(); refetchDeals(); } }, [claimConfirmed]);
+  
   useEffect(() => { if (sellerDone) { toast.success("Tokens released! Trade completed."); playSuccessChime(); refetchAds(); refetchDeals(); } }, [sellerDone]);
   useEffect(() => { if (disputeDone) { toast.info("Dispute raised. Admin will review."); playAlertChime(); refetchAds(); refetchDeals(); } }, [disputeDone]);
   useEffect(() => { if (cancelDealDone) { toast.success("Deal cancelled. Funds returned to your wallet."); playAlertChime(); refetchAds(); refetchDeals(); } }, [cancelDealDone]);
