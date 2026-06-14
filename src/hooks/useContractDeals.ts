@@ -5,6 +5,9 @@ import { P2P_ESCROW_ABI } from "@/config/abi";
 
 const NATIVE_BNB = "0x0000000000000000000000000000000000000000";
 const PAY_WINDOW = 15 * 60;
+// Seller has CONFIRM_WINDOW after buyer marks paid before buyer can dispute.
+// Matches `CONFIRM_WINDOW` constant in SellEscrow.sol (30 minutes).
+const CONFIRM_WINDOW = 30 * 60;
 
 export interface LiveDeal {
   dealId: number;
@@ -15,7 +18,12 @@ export interface LiveDeal {
   tokenSymbol: string;
   tokenAmount: string;
   inrAmount: string;
+  /** Active countdown deadline: pay deadline before paid, confirm deadline after paid. */
   deadline: number;
+  /** When buyer marked paid (0 if not yet). */
+  paidAt: number;
+  /** When the deal was created on-chain. */
+  createdAt: number;
   buyerConfirmed: boolean;
   sellerConfirmed: boolean;
   status: number;
