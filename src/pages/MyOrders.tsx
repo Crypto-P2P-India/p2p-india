@@ -246,12 +246,12 @@ const MyOrders = () => {
           })()}
           {isTimedOut && !deal.buyerConfirmed && (
             <div className="mt-3 rounded-lg border border-sell/20 bg-sell/5 p-3">
-              <p className="text-sm font-medium text-sell">⏰ Deal expired — buyer didn't pay. Cancel to return funds to the seller.</p>
+              <p className="text-sm font-medium text-sell">⏰ Pay window expired — buyer didn't pay. Funds will be returned to the seller.</p>
             </div>
           )}
           {isTimedOut && deal.buyerConfirmed && !deal.sellerConfirmed && (
-            <div className="mt-3 rounded-lg border border-primary/20 bg-primary/5 p-3">
-              <p className="text-sm font-medium text-primary">⏰ Timer expired but you confirmed payment. Wait for seller to release, or raise a dispute.</p>
+            <div className="mt-3 rounded-lg border border-sell/20 bg-sell/5 p-3">
+              <p className="text-sm font-medium text-sell">⏰ Seller's 30-min confirm window expired. You can now raise a dispute for admin review.</p>
             </div>
           )}
 
