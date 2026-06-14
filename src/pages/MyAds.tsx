@@ -259,8 +259,8 @@ const MyAds = () => {
                               <p className="text-foreground text-xs">{formatTimeout(ad.dealTimeout)}</p>
                             </div>
                             <div>
-                              <span className="text-muted-foreground text-xs">{isExpired ? "Expired At" : "Expires"}</span>
-                              <p className="text-foreground text-xs">{expiryDate.toLocaleString()}</p>
+                              <span className="text-muted-foreground text-xs">Min Fill</span>
+                              <p className="text-foreground text-xs">{parseFloat(ad.minFillAmount).toFixed(4)} {ad.tokenSymbol}</p>
                             </div>
                             {(() => {
                               const parsed = parsePaymentInfo(ad.paymentInfo);
