@@ -244,7 +244,7 @@ const MyAds = () => {
 
                           {/* Timer progress bar for active deals */}
                           {relatedDeal && (relatedDeal.status === 0 || relatedDeal.status === 1) && dealTimeLeft > 0 && (() => {
-                            const fullWindow = relatedDeal.status === 1 ? 1800 : 900;
+                            const fullWindow = relatedDeal.status === 1 ? 1800 : (relatedDeal.payWindow + relatedDeal.payDeadlineOffset);
                             return (
                               <div className="mt-3">
                                 <div className="h-1.5 w-full rounded-full bg-surface-3 overflow-hidden">
