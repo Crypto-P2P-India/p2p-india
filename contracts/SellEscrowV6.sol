@@ -199,21 +199,10 @@ contract SellEscrow {
         uint32 adDuration,
         uint32 payWindow
     ) external payable nonReentrant returns (uint256 adId) {
-        require(amount > 0, "ZERO_AMOUNT");
-        require(minFillAmount > 0 && minFillAmount <= amount, "BAD_MIN");
-        require(pricePerToken > 0, "BAD_PRICE");
-        _validateAdDuration(adDuration);
-        _validatePayWindow(payWindow);
-
-        uint16 sBps = sellerFeeBps;
-        uint256 fee = _sellerFee(amount, sBps);
-        require(msg.value == amount + fee, "BAD_VALUE");
-
-        adId = _openAdId();
-        _storeAdCore(adId, address(0), amount, fee);
-        _storeAdRules(adId, minFillAmount, pricePerToken, paymentMethod);
-        _storeAdConfig(adId, sBps, buyerFeeBps, adDuration, payWindow);
-        _emitAdCreated(adId);
+        AdInput calldata input = AdInput(amount, minFillAmount, pricePerToken, paymentMethod, adDuration, payWindow);
+        _validateAdInput(input);
+        require(msg.value == _quoteRequired(amount), "BAD_VALUE");
+        adId = _createAd(address(0), input, _sellerFee(amount, sellerFeeBps));
     }
 
     function createSellAdToken(
@@ -226,22 +215,11 @@ contract SellEscrow {
         uint32 payWindow
     ) external nonReentrant returns (uint256 adId) {
         require(token != address(0), "BAD_TOKEN");
-        require(amount > 0, "ZERO_AMOUNT");
-        require(minFillAmount > 0 && minFillAmount <= amount, "BAD_MIN");
-        require(pricePerToken > 0, "BAD_PRICE");
-        _validateAdDuration(adDuration);
-        _validatePayWindow(payWindow);
-
-        uint16 sBps = sellerFeeBps;
-        uint256 fee = _sellerFee(amount, sBps);
-
+        AdInput calldata input = AdInput(amount, minFillAmount, pricePerToken, paymentMethod, adDuration, payWindow);
+        _validateAdInput(input);
+        uint256 fee = _sellerFee(amount, sellerFeeBps);
         _pullExact(token, msg.sender, amount + fee);
-
-        adId = _openAdId();
-        _storeAdCore(adId, token, amount, fee);
-        _storeAdRules(adId, minFillAmount, pricePerToken, paymentMethod);
-        _storeAdConfig(adId, sBps, buyerFeeBps, adDuration, payWindow);
-        _emitAdCreated(adId);
+        adId = _createAd(token, input, fee);
     }
 
     function _pullExact(address token, address from, uint256 required) internal {
