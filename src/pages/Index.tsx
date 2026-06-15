@@ -17,8 +17,9 @@ import BuyAdCard from "@/components/BuyAdCard";
 import StatsBar from "@/components/StatsBar";
 import CryptoFilter from "@/components/CryptoFilter";
 import TradeWindow from "@/components/TradeWindow";
+import BuyTradeWindow from "@/components/BuyTradeWindow";
 import { useContractAds, LiveAd } from "@/hooks/useContractAds";
-import { useBuyContractAds } from "@/hooks/useBuyContractAds";
+import { useBuyContractAds, LiveBuyAd } from "@/hooks/useBuyContractAds";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 
 const Index = () => {
