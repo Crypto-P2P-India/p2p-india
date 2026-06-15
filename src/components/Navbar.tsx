@@ -1,6 +1,6 @@
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { Link, useLocation } from "react-router-dom";
-import { Wallet, ShoppingBag, Handshake, Store } from "lucide-react";
+import { Wallet, ShoppingBag, Handshake, Store, User } from "lucide-react";
 import { useState } from "react";
 import ThemeToggle from "@/components/ThemeToggle";
 import ApkDownloadButton from "@/components/ApkDownloadButton";
