@@ -474,64 +474,110 @@ const MyAds = () => {
 
                           {/* Outcome for completed/cancelled ads */}
                           {(ad.status === 2 || ad.status === 3) && (() => {
-                            // Also check if there's a resolved deal for this ad
-                            const resolvedDeal = deals.find((d) => d.adId === ad.adId && d.status === 5);
-                            const displayDeal = resolvedDeal || completedDeal;
+                            // All deals that ever ran on this ad
+                            const adDeals = deals.filter((d) => d.adId === ad.adId);
+                            const completedDeals = adDeals.filter((d) => d.status === 2 || d.status === 5);
+                            const resolvedDeal = adDeals.find((d) => d.status === 5);
+
+                            const totalSoldTokens = completedDeals.reduce((s, d) => s + parseFloat(d.tokenAmount || "0"), 0);
+                            const totalSoldInr = completedDeals.reduce((s, d) => s + parseFloat(d.inrAmount || "0"), 0);
+                            const totalAdTokens = parseFloat(ad.totalAmount || "0");
+                            const cancelledTokens = Math.max(0, totalAdTokens - totalSoldTokens);
+                            const cancelledInr = cancelledTokens * parseFloat(ad.pricePerToken || "0");
+
                             const isAdCompleted = ad.status === 2;
-                            const isResolved = !!resolvedDeal;
+                            const hadPartial = !isAdCompleted && totalSoldTokens > 0;
+
+                            const headerLabel = resolvedDeal
+                              ? "Dispute Resolved by Admin"
+                              : isAdCompleted
+                              ? "Ad Fully Sold"
+                              : hadPartial
+                              ? "Ad Closed — Partially Sold"
+                              : "Ad Cancelled";
+
+                            const headerColor = isAdCompleted || hadPartial ? "text-buy" : "text-muted-foreground";
+                            const HeaderIcon = isAdCompleted || hadPartial ? CheckCircle2 : XCircle;
+                            const borderClass = (isAdCompleted || hadPartial) ? "border-buy/20 bg-buy/5" : "border-border bg-surface-1";
+
                             return (
-                              <div className={`mt-3 rounded-lg border p-3 space-y-2 ${isAdCompleted ? "border-buy/20 bg-buy/5" : "border-border bg-surface-1"}`}>
+                              <div className={`mt-3 rounded-lg border p-3 space-y-3 ${borderClass}`}>
                                 <div className="flex items-center gap-2">
-                                  {isAdCompleted ? <CheckCircle2 className="h-4 w-4 text-buy shrink-0" /> : <XCircle className="h-4 w-4 text-muted-foreground shrink-0" />}
-                                  <span className={`text-sm font-semibold ${isAdCompleted ? "text-buy" : "text-muted-foreground"}`}>
-                                    {isResolved ? "Dispute Resolved by Admin" : isAdCompleted ? "Deal Completed" : "Ad Cancelled"}
-                                  </span>
+                                  <HeaderIcon className={`h-4 w-4 shrink-0 ${headerColor}`} />
+                                  <span className={`text-sm font-semibold ${headerColor}`}>{headerLabel}</span>
                                 </div>
+
+                                {/* Summary line */}
                                 <div className="text-xs text-muted-foreground space-y-1">
-                                  {isResolved && resolvedDeal ? (
-                                    (() => {
-                                      const recipient = dealTxMap[resolvedDeal.dealId]?.resolvedRecipient;
-                                      const recipientIsBuyer = recipient?.toLowerCase() === resolvedDeal.buyer.toLowerCase();
-                                      const recipientIsSeller = recipient?.toLowerCase() === resolvedDeal.seller.toLowerCase();
-                                      const youReceived = recipientIsSeller; // seller is viewing MyAds
-                                      return (
-                                        <p>
-                                          Dispute on Deal #{resolvedDeal.dealId} resolved by admin.{" "}
-                                          {youReceived
-                                            ? <><span className="font-medium text-buy">You received</span> {ad.tokenAmount} {ad.tokenSymbol} back.</>
-                                            : recipientIsBuyer
-                                            ? <>Buyer <span className="font-mono text-foreground">{shortAddr(resolvedDeal.buyer)}</span> received {ad.tokenAmount} {ad.tokenSymbol}.</>
-                                            : <>Funds released from escrow.</>}
-                                        </p>
-                                      );
-                                    })()
-                                  ) : isAdCompleted && displayDeal ? (
-                                    <>
-                                      <p>Buyer <span className="font-mono text-foreground">{shortAddr(displayDeal.buyer)}</span> paid ₹{displayDeal.inrAmount}</p>
-                                      <p>You released <span className="font-medium text-foreground">{ad.tokenAmount} {ad.tokenSymbol}</span> to buyer</p>
-                                    </>
-                                  ) : isAdCompleted ? (
-                                    <p>Deal completed. {ad.tokenAmount} {ad.tokenSymbol} released to buyer.</p>
-                                  ) : (
-                                    <p>You cancelled this ad. <span className="font-medium text-foreground">{ad.tokenAmount} {ad.tokenSymbol}</span> returned to your wallet.</p>
+                                  {totalSoldTokens > 0 && (
+                                    <p>
+                                      ✅ Sold <span className="font-medium text-foreground">{totalSoldTokens.toFixed(4)} {ad.tokenSymbol}</span>
+                                      {" "}for <span className="font-medium text-foreground">₹{totalSoldInr.toFixed(2)}</span>
+                                      {" "}across {completedDeals.length} deal{completedDeals.length > 1 ? "s" : ""}
+                                    </p>
+                                  )}
+                                  {cancelledTokens > 0 && !isAdCompleted && (
+                                    <p>
+                                      ↩️ Returned <span className="font-medium text-foreground">{cancelledTokens.toFixed(4)} {ad.tokenSymbol}</span>
+                                      {" "}{cancelledInr > 0 && <>(₹{cancelledInr.toFixed(2)})</>} to your wallet
+                                    </p>
+                                  )}
+                                  {totalSoldTokens === 0 && !isAdCompleted && (
+                                    <p>You cancelled this ad. <span className="font-medium text-foreground">{ad.totalAmount} {ad.tokenSymbol}</span> returned to your wallet.</p>
                                   )}
                                 </div>
-                                {(() => { const txh = completedDeal ? (dealTxMap[completedDeal.dealId]?.completed || dealTxMap[completedDeal.dealId]?.cancelled || dealTxMap[completedDeal.dealId]?.resolved || dealTxMap[completedDeal.dealId]?.created) : undefined; return (
-                                  <a href={txh ? `https://bscscan.com/tx/${txh}` : BSCSCAN_CONTRACT} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors">
-                                    <ExternalLink className="h-3 w-3" /> {txh ? `View tx ${txh.slice(0, 10)}…` : "View on BscScan"}
-                                  </a>
-                                ); })()}
+
+                                {/* Per-deal TX list */}
+                                {completedDeals.length > 0 && (
+                                  <div className="space-y-1.5 pt-1 border-t border-border/40">
+                                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">Completed Trades</p>
+                                    {completedDeals.map((cd) => {
+                                      const txh = dealTxMap[cd.dealId]?.completed || dealTxMap[cd.dealId]?.resolved || dealTxMap[cd.dealId]?.created;
+                                      return (
+                                        <div key={cd.dealId} className="flex items-center justify-between gap-2 text-xs">
+                                          <span className="text-muted-foreground">
+                                            Deal #{cd.dealId} · <span className="text-foreground font-medium">{cd.tokenAmount} {cd.tokenSymbol}</span> · ₹{cd.inrAmount}
+                                          </span>
+                                          {txh ? (
+                                            <a
+                                              href={`https://bscscan.com/tx/${txh}`}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="inline-flex items-center gap-1 text-primary hover:text-primary/80 shrink-0"
+                                            >
+                                              <ExternalLink className="h-3 w-3" />
+                                              {txh.slice(0, 8)}…
+                                            </a>
+                                          ) : (
+                                            <span className="text-muted-foreground/60 shrink-0">tx pending…</span>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+
+                                {/* Ad-level cancel/contract link */}
+                                <a
+                                  href={BSCSCAN_CONTRACT}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors"
+                                >
+                                  <ExternalLink className="h-3 w-3" />
+                                  {cancelledTokens > 0 && !isAdCompleted ? "View contract on BscScan" : "View on BscScan"}
+                                </a>
                               </div>
                             );
                           })()}
 
-                          {/* Timeline for deals associated with this ad */}
-                          {completedDeal && dealTxMap[completedDeal.dealId]?.events?.length > 0 && (
-                            <DealTimeline events={dealTxMap[completedDeal.dealId].events} />
-                          )}
-                          {relatedDeal && !completedDeal && dealTxMap[relatedDeal.dealId]?.events?.length > 0 && (
-                            <DealTimeline events={dealTxMap[relatedDeal.dealId].events} />
-                          )}
+                          {/* Timeline for the most recent related deal */}
+                          {(() => {
+                            const adDeals = deals.filter((d) => d.adId === ad.adId);
+                            const latestDeal = adDeals.sort((a, b) => b.dealId - a.dealId)[0];
+                            const events = latestDeal ? dealTxMap[latestDeal.dealId]?.events : undefined;
+                            return events && events.length > 0 ? <DealTimeline events={events} /> : null;
+                          })()}
 
                           {/* Actions for live ads */}
                           {ad.status === 0 && (() => {
