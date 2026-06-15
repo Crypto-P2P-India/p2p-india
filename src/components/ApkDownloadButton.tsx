@@ -10,8 +10,10 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-const APK_BASE_URL = "/downloads/crypto-p2p.apk";
 const VERSION_URL = "/app-version.json";
+const DEFAULT_VERSION = "1.17";
+const defaultReleaseUrl = (version: string) =>
+  `https://github.com/Crypto-P2P-India/p2p-india/releases/download/v${version}/crypto-p2p-v${version}.apk`;
 
 const formatBytes = (b: number) => {
   if (!b) return "";
@@ -21,10 +23,10 @@ const formatBytes = (b: number) => {
 
 const ApkDownloadButton = () => {
   const [open, setOpen] = useState(false);
-  const [version, setVersion] = useState<string>("…");
+  const [version, setVersion] = useState<string>(DEFAULT_VERSION);
   const [size, setSize] = useState<string>("…");
-  const [apkUrl, setApkUrl] = useState<string>(`${APK_BASE_URL}?t=${Date.now()}`);
-  const [filename, setFilename] = useState<string>("crypto-p2p.apk");
+  const [apkUrl, setApkUrl] = useState<string>(defaultReleaseUrl(DEFAULT_VERSION));
+  const [filename, setFilename] = useState<string>(`crypto-p2p-v${DEFAULT_VERSION}.apk`);
 
   useEffect(() => {
     fetch(`${VERSION_URL}?t=${Date.now()}`, { cache: "no-store" })
@@ -32,21 +34,15 @@ const ApkDownloadButton = () => {
       .then((d) => {
         if (d?.version) {
           setVersion(d.version);
-          setApkUrl(d.apkUrl?.startsWith("/") || d.apkUrl?.startsWith("http")
-            ? `${d.apkUrl}${d.apkUrl.includes("?") ? "&" : "?"}t=${Date.now()}`
-            : `${APK_BASE_URL}?v=${d.version}&t=${Date.now()}`);
+          const releaseUrl = d.apkUrl?.startsWith("http")
+            ? d.apkUrl
+            : defaultReleaseUrl(d.version);
+          setApkUrl(`${releaseUrl}${releaseUrl.includes("?") ? "&" : "?"}t=${Date.now()}`);
           setFilename(d.filename || `crypto-p2p-v${d.version}.apk`);
         }
         if (d?.size) setSize(d.size);
       })
       .catch(() => setVersion(""));
-
-    fetch(`${APK_BASE_URL}?t=${Date.now()}`, { method: "HEAD", cache: "no-store" })
-      .then((r) => {
-        const len = r.headers.get("content-length");
-        if (len) setSize(formatBytes(parseInt(len, 10)));
-      })
-      .catch(() => {});
   }, []);
 
 
