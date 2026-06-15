@@ -56,6 +56,8 @@ const MyAds = () => {
   const [pendingAdId, setPendingAdId] = useState<number | null>(null);
   const [chatDealId, setChatDealId] = useState<number | null>(null);
   const [copied, setCopied] = useState<number | null>(null);
+  const [pendingReleaseDealId, setPendingReleaseDealId] = useState<number | null>(null);
+  const [pendingCancelDealId, setPendingCancelDealId] = useState<number | null>(null);
   const [now, setNow] = useState(Math.floor(Date.now() / 1000));
 
   useEffect(() => {
@@ -91,9 +93,31 @@ const MyAds = () => {
 
   useEffect(() => { if (cancelConfirmed) { toast.success("Ad cancelled. Funds returned."); setPendingAdId(null); refetchAds(); refetchDeals(); } }, [cancelConfirmed]);
 
-  useEffect(() => { if (sellerDone) { toast.success("Tokens released! Trade completed."); playSuccessChime(); refetchAds(); refetchDeals(); } }, [sellerDone]);
+  useEffect(() => {
+    if (sellerDone) {
+      toast.success("Tokens released! Trade completed.");
+      playSuccessChime();
+      refetchAds();
+      refetchDeals();
+      if (pendingReleaseDealId) {
+        cleanupDealAttachments(pendingReleaseDealId);
+        setPendingReleaseDealId(null);
+      }
+    }
+  }, [sellerDone]);
   useEffect(() => { if (disputeDone) { toast.info("Dispute raised. Admin will review."); playAlertChime(); refetchAds(); refetchDeals(); } }, [disputeDone]);
-  useEffect(() => { if (cancelDealDone) { toast.success("Deal cancelled. Funds returned to your wallet."); playAlertChime(); refetchAds(); refetchDeals(); } }, [cancelDealDone]);
+  useEffect(() => {
+    if (cancelDealDone) {
+      toast.success("Deal cancelled. Funds returned to your wallet.");
+      playAlertChime();
+      refetchAds();
+      refetchDeals();
+      if (pendingCancelDealId) {
+        cleanupDealAttachments(pendingCancelDealId);
+        setPendingCancelDealId(null);
+      }
+    }
+  }, [cancelDealDone]);
   useEffect(() => { if (proposeDone) { toast.success("Extension proposed. Buyer can accept."); refetchDeals(); } }, [proposeDone]);
   useEffect(() => { if (cancelPropDone) { toast.success("Extension proposal withdrawn."); refetchDeals(); } }, [cancelPropDone]);
 
@@ -400,6 +424,7 @@ const MyAds = () => {
                                 {/* Cancel only if timed out AND buyer hasn't confirmed */}
                                 {isDealTimedOut && !relatedDeal.buyerConfirmed && (
                                   <Button variant="sell" size="sm" disabled={isProcessing} onClick={() => {
+                                    setPendingCancelDealId(relatedDeal.dealId);
                                     cancelDeal({ address: P2P_CONTRACT_ADDRESS, abi: P2P_ESCROW_ABI, functionName: "sellerReclaimExpired", args: [BigInt(relatedDeal.dealId)] } as any);
                                   }}>
                                     {cancelDealPending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <AlertTriangle className="h-3 w-3 mr-1" />}
@@ -410,6 +435,7 @@ const MyAds = () => {
                                 {/* Release button when buyer confirmed */}
                                 {relatedDeal.buyerConfirmed && !relatedDeal.sellerConfirmed && (
                                   <Button variant="buy" size="sm" disabled={isProcessing} onClick={() => {
+                                    setPendingReleaseDealId(relatedDeal.dealId);
                                     sellerConfirm({ address: P2P_CONTRACT_ADDRESS, abi: P2P_ESCROW_ABI, functionName: "confirmReceived", args: [BigInt(relatedDeal.dealId)] } as any);
                                   }}>
                                     {sellerPending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <CheckCircle2 className="h-3 w-3 mr-1" />}
