@@ -25,15 +25,19 @@ import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 const Index = () => {
   const { address, isConnected } = useAccount();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"sell" | "buy">("sell"); // sell = sell-ads tab (buyers browsing), buy = buy-ads tab (sellers browsing)
+  const [mode, setMode] = useState<"sell" | "buy">("sell"); // sell = "Buy crypto" tab (browse sell ads), buy = "Sell crypto" tab (browse buy ads)
   const [crypto, setCrypto] = useState("USDT");
   const [search, setSearch] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [showCreateBuy, setShowCreateBuy] = useState(false);
 
-  // Listen for bottom nav create button — opens whichever tab is active
+  // CTA semantics: on "Buy crypto" tab user wants to BUY → opens Create Buy Ad.
+  // On "Sell crypto" tab user wants to SELL → opens Create Sell Ad.
+  const openCreate = () => (mode === "sell" ? setShowCreateBuy(true) : setShowCreate(true));
+
+  // Listen for bottom nav create button — opens the matching create modal
   useEffect(() => {
-    const handler = () => (mode === "sell" ? setShowCreate(true) : setShowCreateBuy(true));
+    const handler = () => openCreate();
     window.addEventListener("open-create-modal", handler);
     return () => window.removeEventListener("open-create-modal", handler);
   }, [mode]);
@@ -191,13 +195,13 @@ const Index = () => {
                 <SlidersHorizontal className="h-4 w-4" />
               </Button>
               <Button
-                onClick={() => (mode === "sell" ? setShowCreate(true) : setShowCreateBuy(true))}
+                onClick={openCreate}
                 className="gap-2 shrink-0"
                 disabled={!isConnected}
-                variant={mode === "buy" ? "sell" : "default"}
+                variant={mode === "sell" ? "default" : "sell"}
               >
                 <Plus className="h-4 w-4" />
-                <span className="hidden sm:inline">{mode === "sell" ? "Post Sell Ad" : "Post Buy Ad"}</span>
+                <span className="hidden sm:inline">{mode === "sell" ? "Post Buy Ad" : "Post Sell Ad"}</span>
               </Button>
             </div>
           </div>
@@ -291,10 +295,10 @@ const Index = () => {
                   {ownAdsCount > 0 && !maxPrice && !minAmount ? "Your own live ads are hidden here" : `No live ads for ${crypto}`}
                 </p>
                 <p className="text-xs text-muted-foreground mb-3">
-                  {maxPrice || minAmount ? "Try adjusting your filters." : ownAdsCount > 0 ? "Other buyers can still see and accept the remaining available amount." : "Be the first to post a sell ad and start trading."}
+                  {maxPrice || minAmount ? "Try adjusting your filters." : ownAdsCount > 0 ? "Other buyers can still see and accept the remaining available amount." : "No sellers right now — post a buy ad and let them come to you."}
                 </p>
-                <Button variant="outline" size="sm" onClick={() => { setMaxPrice(""); setMinAmount(""); ownAdsCount > 0 ? navigate("/my-ads") : setShowCreate(true); }}>
-                  {maxPrice || minAmount ? "Clear Filters" : ownAdsCount > 0 ? "View My Ads" : "Create the first ad"}
+                <Button variant="outline" size="sm" onClick={() => { setMaxPrice(""); setMinAmount(""); ownAdsCount > 0 ? navigate("/my-ads") : setShowCreateBuy(true); }}>
+                  {maxPrice || minAmount ? "Clear Filters" : ownAdsCount > 0 ? "View My Ads" : "Post a Buy Ad"}
                 </Button>
               </div>
             )}
@@ -318,10 +322,10 @@ const Index = () => {
                   {ownBuyAdsCount > 0 && !maxPrice && !minAmount ? "Your own buy ads are hidden here" : "No active buy ads right now"}
                 </p>
                 <p className="text-xs text-muted-foreground mb-3">
-                  {maxPrice || minAmount ? "Try adjusting your filters." : ownBuyAdsCount > 0 ? "Sellers will see your buy ad and accept it." : "Be the first to post a buy ad and let sellers come to you."}
+                  {maxPrice || minAmount ? "Try adjusting your filters." : ownBuyAdsCount > 0 ? "Buyers can still see your buy ads in the marketplace." : "No buyers right now — post a sell ad to list your USDT/BNB."}
                 </p>
-                <Button variant="outline" size="sm" onClick={() => { setMaxPrice(""); setMinAmount(""); ownBuyAdsCount > 0 ? navigate("/my-ads") : setShowCreateBuy(true); }}>
-                  {maxPrice || minAmount ? "Clear Filters" : ownBuyAdsCount > 0 ? "View My Ads" : "Create the first buy ad"}
+                <Button variant="outline" size="sm" onClick={() => { setMaxPrice(""); setMinAmount(""); ownBuyAdsCount > 0 ? navigate("/my-ads") : setShowCreate(true); }}>
+                  {maxPrice || minAmount ? "Clear Filters" : ownBuyAdsCount > 0 ? "View My Ads" : "Post a Sell Ad"}
                 </Button>
               </div>
             )}
