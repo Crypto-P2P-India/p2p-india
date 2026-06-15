@@ -76,6 +76,8 @@
 
     <!-- Allow resolving wallet app deep links on Android 11+ (package visibility) -->
     <queries>
+        <package android:name="com.okinc.okex.gp" />
+        <package android:name="com.okinc.okex" />
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="wc" />
