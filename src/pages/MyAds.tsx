@@ -16,6 +16,9 @@ import { toast } from "sonner";
 import { playSuccessChime, playAlertChime } from "@/lib/sounds";
 import { parsePaymentInfo } from "@/lib/parsePaymentInfo";
 import CreateOrderModal from "@/components/CreateOrderModal";
+import CreateBuyAdModal from "@/components/CreateBuyAdModal";
+import MyBuyAdsList from "@/components/MyBuyAdsList";
+import BuyDealsSection from "@/components/BuyDealsSection";
 import ChatPanel from "@/components/ChatPanel";
 import { useUnreadCounts } from "@/hooks/useUnreadCounts";
 
@@ -49,6 +52,7 @@ const MyAds = () => {
   const activeDealIds = deals.filter(d => d.status === 0 || d.status === 1 || d.status === 4).map(d => d.dealId);
   const unreadCounts = useUnreadCounts(activeDealIds, address || "");
   const [showCreate, setShowCreate] = useState(false);
+  const [showCreateBuy, setShowCreateBuy] = useState(false);
   const [pendingAdId, setPendingAdId] = useState<number | null>(null);
   const [chatDealId, setChatDealId] = useState<number | null>(null);
   const [copied, setCopied] = useState<number | null>(null);
@@ -124,12 +128,34 @@ const MyAds = () => {
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-foreground" style={{ lineHeight: "1.1" }}>My Ads</h1>
           {isConnected && (
-            <Button onClick={() => setShowCreate(true)} className="gap-2 shrink-0">
-              <Plus className="h-4 w-4" />
-              Post Ad
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={() => setShowCreateBuy(true)} variant="sell" className="gap-2 shrink-0">
+                <Plus className="h-4 w-4" /> Buy Ad
+              </Button>
+              <Button onClick={() => setShowCreate(true)} className="gap-2 shrink-0">
+                <Plus className="h-4 w-4" /> Sell Ad
+              </Button>
+            </div>
           )}
         </div>
+
+        {/* Buy Ads section (you want USDT, pay INR) */}
+        {isConnected && (
+          <section className="mb-8">
+            <h2 className="text-base font-semibold text-foreground mb-3">Your Buy Ads</h2>
+            <div className="space-y-4">
+              <MyBuyAdsList />
+              <div>
+                <h3 className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Deals on your buy ads</h3>
+                <BuyDealsSection role="buyer" />
+              </div>
+            </div>
+          </section>
+        )}
+
+        {isConnected && (
+          <h2 className="text-base font-semibold text-foreground mb-3">Your Sell Ads</h2>
+        )}
 
         {!isConnected ? (
           <div className="flex flex-col items-center justify-center rounded-lg border border-border bg-card py-16 text-center animate-fade-up">
@@ -549,6 +575,7 @@ const MyAds = () => {
       </main>
 
       <CreateOrderModal open={showCreate} onClose={() => setShowCreate(false)} />
+      <CreateBuyAdModal open={showCreateBuy} onClose={() => setShowCreateBuy(false)} />
     </div>
   );
 };
