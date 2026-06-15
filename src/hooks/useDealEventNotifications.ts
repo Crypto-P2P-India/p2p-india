@@ -34,6 +34,9 @@ export function useDealEventNotifications(deals: LiveDeal[] | undefined, myAddre
     const prev = prevRef.current;
     const next = new Map<number, Snapshot>();
 
+    const nowSec = Math.floor(Date.now() / 1000);
+    const FRESH_WINDOW = 10 * 60; // 10 minutes — never replay older events
+
     for (const d of deals) {
       const isMine = d.buyer.toLowerCase() === me || d.seller.toLowerCase() === me;
       if (!isMine) continue;
@@ -46,6 +49,8 @@ export function useDealEventNotifications(deals: LiveDeal[] | undefined, myAddre
 
       // New deal created (someone accepted my ad)
       if (!before) {
+        // Skip stale deals (older than 10 min) — we only want fresh events
+        if (d.createdAt > 0 && nowSec - d.createdAt > FRESH_WINDOW) continue;
         if (iAmSeller) {
           notify("New deal opened", `Deal #${d.dealId} — buyer locked ${d.tokenAmount} ${d.tokenSymbol}`);
           playSuccessChime();
@@ -58,6 +63,8 @@ export function useDealEventNotifications(deals: LiveDeal[] | undefined, myAddre
 
       // Status transitions
       if (before.status !== d.status) {
+        // For PAID transition, skip if marked paid more than 10 min ago
+        if (d.status === 1 && d.paidAt > 0 && nowSec - d.paidAt > FRESH_WINDOW) continue;
         switch (d.status) {
           case 1: // PAID
             if (iAmSeller) {
@@ -93,6 +100,11 @@ export function useDealEventNotifications(deals: LiveDeal[] | undefined, myAddre
     }
 
     prevRef.current = next;
-    if (!initialisedRef.current) initialisedRef.current = true;
+    // Only flip to "initialised" once we've actually seen at least one of my deals,
+    // so the very first arrival of deals after page load is treated as the baseline
+    // (not as a flurry of "new deal" notifications).
+    if (!initialisedRef.current && next.size > 0) initialisedRef.current = true;
+    // If no deals are mine yet, still initialise after a delay so future new deals notify
+    else if (!initialisedRef.current && deals.length >= 0) initialisedRef.current = true;
   }, [deals, myAddress]);
 }
