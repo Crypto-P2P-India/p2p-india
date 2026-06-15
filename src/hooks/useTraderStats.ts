@@ -82,7 +82,7 @@ export function useTraderStats(address?: string): { stats: TraderStats | null; i
     // Buy-escrow deals: seller locks USDT, buyer pays INR. Token is always USDT here.
     for (const d of buyDeals) {
       if (d.status !== 2 && d.status !== 5) continue;
-      const amt = parseFloat(d.usdtAmount) || 0;
+      const amt = parseFloat(d.amountUsdt) || 0;
       addVol(sellVol, d.seller, "USDT", amt);
       addVol(buyVol, d.buyer, "USDT", amt);
     }
