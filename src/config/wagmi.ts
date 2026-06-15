@@ -25,7 +25,7 @@ const okxWalletWithNativeDeepLink = (options: Parameters<typeof okxWallet>[0]): 
 
 export const config = getDefaultConfig({
   appName: "Crypto P2P",
-  projectId: "28e26a9fa8f1bef0d253abc623eec65c",
+  projectId: "5af4ffe8f14a00ebfc074c9d498eec14",
   walletConnectParameters: {
     metadata: {
       name: "Crypto P2P",
