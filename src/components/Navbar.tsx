@@ -139,7 +139,7 @@ const Navbar = () => {
       <div
         aria-hidden
         className="h-14 sm:h-20"
-        style={{ paddingTop: "calc(env(safe-area-inset-top) + 1cm)" }}
+        style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.5cm)" }}
       />
 
       {native && <MobileWalletSheet open={walletSheetOpen} onOpenChange={setWalletSheetOpen} />}
