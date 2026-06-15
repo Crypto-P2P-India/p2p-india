@@ -12,25 +12,30 @@ import FaqSection from "@/components/FaqSection";
 import LandingHero from "@/components/LandingHero";
 import OrderCard from "@/components/OrderCard";
 import CreateOrderModal from "@/components/CreateOrderModal";
+import CreateBuyAdModal from "@/components/CreateBuyAdModal";
+import BuyAdCard from "@/components/BuyAdCard";
 import StatsBar from "@/components/StatsBar";
 import CryptoFilter from "@/components/CryptoFilter";
 import TradeWindow from "@/components/TradeWindow";
 import { useContractAds, LiveAd } from "@/hooks/useContractAds";
+import { useBuyContractAds } from "@/hooks/useBuyContractAds";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 
 const Index = () => {
   const { address, isConnected } = useAccount();
   const navigate = useNavigate();
+  const [mode, setMode] = useState<"sell" | "buy">("sell"); // sell = sell-ads tab (buyers browsing), buy = buy-ads tab (sellers browsing)
   const [crypto, setCrypto] = useState("USDT");
   const [search, setSearch] = useState("");
   const [showCreate, setShowCreate] = useState(false);
+  const [showCreateBuy, setShowCreateBuy] = useState(false);
 
-  // Listen for bottom nav create button
+  // Listen for bottom nav create button — opens whichever tab is active
   useEffect(() => {
-    const handler = () => setShowCreate(true);
+    const handler = () => (mode === "sell" ? setShowCreate(true) : setShowCreateBuy(true));
     window.addEventListener("open-create-modal", handler);
     return () => window.removeEventListener("open-create-modal", handler);
-  }, []);
+  }, [mode]);
   const [selectedAd, setSelectedAd] = useState<LiveAd | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [maxPrice, setMaxPrice] = useState("");
@@ -38,11 +43,13 @@ const Index = () => {
   
 
   const { ads: liveAds, isLoading, refetch: refetchAds } = useContractAds();
+  const { ads: buyAds, isLoading: loadingBuyAds, refetch: refetchBuyAds } = useBuyContractAds();
 
   const handleRefresh = useCallback(async () => {
     await refetchAds();
+    await refetchBuyAds();
     await new Promise((r) => setTimeout(r, 600));
-  }, [refetchAds]);
+  }, [refetchAds, refetchBuyAds]);
 
   const { containerRef, pullDistance, isRefreshing } = usePullToRefresh({
     onRefresh: handleRefresh,
