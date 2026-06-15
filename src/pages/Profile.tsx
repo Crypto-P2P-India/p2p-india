@@ -15,6 +15,7 @@ const Profile = () => {
   const chainId = useChainId();
   const { profile, loading, updateUsername } = useWalletProfile(address);
   const { data: bnbBal } = useBalance({ address, query: { enabled: !!address } });
+  const { stats, isLoading: statsLoading } = useTraderStats(address);
   const [username, setUsername] = useState("");
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
