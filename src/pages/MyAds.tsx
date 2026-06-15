@@ -52,6 +52,7 @@ const MyAds = () => {
   const activeDealIds = deals.filter(d => d.status === 0 || d.status === 1 || d.status === 4).map(d => d.dealId);
   const unreadCounts = useUnreadCounts(activeDealIds, address || "");
   const [showCreate, setShowCreate] = useState(false);
+  const [showCreateBuy, setShowCreateBuy] = useState(false);
   const [pendingAdId, setPendingAdId] = useState<number | null>(null);
   const [chatDealId, setChatDealId] = useState<number | null>(null);
   const [copied, setCopied] = useState<number | null>(null);
@@ -574,6 +575,7 @@ const MyAds = () => {
       </main>
 
       <CreateOrderModal open={showCreate} onClose={() => setShowCreate(false)} />
+      <CreateBuyAdModal open={showCreateBuy} onClose={() => setShowCreateBuy(false)} />
     </div>
   );
 };
