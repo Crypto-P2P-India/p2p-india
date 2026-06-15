@@ -1,6 +1,6 @@
 {
   "version": "1.13",
-  "size": "8.4 MB",
-  "apkUrl": "/downloads/crypto-p2p.apk?v=1.13",
-  "notes": "Header spacing fix (1cm gap on all pages), MacBook-style smooth scrolling, sticky header polish."
+  "size": "101.5 MB",
+  "apkUrl": "https://github.com/Crypto-P2P-India/p2p-india/releases/download/v1.13/crypto-p2p.apk",
+  "notes": "Header spacing fix (1cm gap on all pages), MacBook-style smooth scrolling, sticky header polish. APK now served via GitHub Releases."
 }
