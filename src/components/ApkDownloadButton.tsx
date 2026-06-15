@@ -15,12 +15,6 @@ const DEFAULT_VERSION = "1.17";
 const defaultReleaseUrl = (version: string) =>
   `https://github.com/Crypto-P2P-India/p2p-india/releases/download/v${version}/crypto-p2p-v${version}.apk`;
 
-const formatBytes = (b: number) => {
-  if (!b) return "";
-  const mb = b / (1024 * 1024);
-  return `${mb.toFixed(1)} MB`;
-};
-
 const ApkDownloadButton = () => {
   const [open, setOpen] = useState(false);
   const [version, setVersion] = useState<string>(DEFAULT_VERSION);
