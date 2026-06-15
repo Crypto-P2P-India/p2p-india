@@ -11,8 +11,10 @@ import About from "./pages/About";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import Guide from "./pages/Guide";
+import Profile from "./pages/Profile";
 
 import NotFound from "./pages/NotFound";
+import DealNotificationsHost from "@/components/DealNotificationsHost";
 
 import DisclaimerModal from "@/components/DisclaimerModal";
 import BottomNav from "@/components/BottomNav";
@@ -25,6 +27,7 @@ const App = () => (
       <UpdateBanner />
       <DisclaimerModal />
       <NotificationPermission />
+      <DealNotificationsHost />
       <Toaster />
       <Sonner />
 
@@ -38,7 +41,8 @@ const App = () => (
             <Route path="/about" element={<About />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/guide" element={<Guide />} />
-            
+            <Route path="/profile" element={<Profile />} />
+
             <Route path="/privacy" element={<Privacy />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
