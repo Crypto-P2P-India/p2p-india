@@ -188,8 +188,8 @@ const CreateBuyAdModal = ({ open, onClose }: Props) => {
           <div className="text-center py-8 text-sm text-muted-foreground">Connect your wallet to create a buy ad</div>
         ) : isWrongNetwork ? (
           <div className="text-center py-10 space-y-4">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-sell/10">
-              <AlertTriangle className="h-7 w-7 text-sell" />
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-buy/10">
+              <AlertTriangle className="h-7 w-7 text-buy" />
             </div>
             <p className="text-foreground font-semibold">Wrong Network</p>
             <Button onClick={() => switchChain({ chainId: bsc.id })}>Switch to BNB Chain</Button>
@@ -304,8 +304,8 @@ const CreateBuyAdModal = ({ open, onClose }: Props) => {
 
             {/* Summary */}
             {totalNum > 0 && rateNum > 0 && (
-              <div className="rounded-lg border border-sell/20 bg-sell/5 p-3 space-y-1.5">
-                <div className="text-xs font-semibold text-sell uppercase tracking-wide">Buy Ad Summary</div>
+              <div className="rounded-lg border border-buy/20 bg-buy/5 p-3 space-y-1.5">
+                <div className="text-xs font-semibold text-buy uppercase tracking-wide">Buy Ad Summary</div>
                 <div className="flex justify-between text-xs"><span className="text-muted-foreground">You receive (escrow → you)</span><span className="font-medium text-foreground tabular-nums">{totalUsdt} USDT</span></div>
                 <div className="flex justify-between text-xs"><span className="text-muted-foreground">You pay (off-chain)</span><span className="font-medium text-foreground tabular-nums">₹{inrTotal.toFixed(2)}</span></div>
                 <div className="flex justify-between text-xs"><span className="text-muted-foreground">Buyer fee on release</span><span className="font-medium text-foreground tabular-nums">0.15%</span></div>
@@ -315,7 +315,7 @@ const CreateBuyAdModal = ({ open, onClose }: Props) => {
             <div className="h-20" />
             <div className="sticky bottom-0 left-0 right-0 bg-card pt-3 pb-6 -mb-5 sm:-mb-6 -mx-5 sm:-mx-6 px-5 sm:px-6 border-t border-border"
               style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
-              <Button variant="sell" className="w-full" size="lg" disabled={!canSubmit} onClick={handleSubmit}>
+              <Button variant="buy" className="w-full" size="lg" disabled={!canSubmit} onClick={handleSubmit}>
                 {(posting || isPending) && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                 {posting ? "Posting…" : "Post Buy Ad"}
               </Button>

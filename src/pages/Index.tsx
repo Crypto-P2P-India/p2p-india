@@ -198,7 +198,7 @@ const Index = () => {
                 onClick={openCreate}
                 className="gap-2 shrink-0"
                 disabled={!isConnected}
-                variant={mode === "sell" ? "default" : "sell"}
+                variant={mode === "sell" ? "buy" : "sell"}
               >
                 <Plus className="h-4 w-4" />
                 <span className="hidden sm:inline">{mode === "sell" ? "Post Buy Ad" : "Post Sell Ad"}</span>
