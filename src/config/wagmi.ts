@@ -12,6 +12,12 @@ import type { Wallet } from "@rainbow-me/rainbowkit";
 import { bsc } from "wagmi/chains";
 import { http } from "wagmi";
 
+const getWalletConnectUrl = () => {
+  if (typeof window === "undefined") return "https://crypto-p2p.store";
+  const { protocol, origin } = window.location;
+  return protocol === "http:" || protocol === "https:" ? origin : "https://crypto-p2p.store";
+};
+
 const okxWalletWithNativeDeepLink = (options: Parameters<typeof okxWallet>[0]): Wallet => {
   const wallet = okxWallet(options);
   return {
@@ -30,11 +36,11 @@ export const config = getDefaultConfig({
     metadata: {
       name: "Crypto P2P",
       description: "Crypto P2P",
-      url: "https://crypto-p2p.store",
+      url: getWalletConnectUrl(),
       icons: ["https://crypto-p2p.store/favicon.png"],
       redirect: {
         native: "com.cryptop2p.chat://",
-        universal: "https://crypto-p2p.store",
+        universal: getWalletConnectUrl(),
       },
     },
   },

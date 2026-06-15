@@ -13,7 +13,10 @@ type WalletApp = {
   name: string;
   icon: string;
   connectorNames: string[];
+  getDeepLink?: (uri: string) => string;
 };
+
+const encodeWalletUri = (uri: string) => encodeURIComponent(uri);
 
 const WALLETS: WalletApp[] = [
   {
@@ -21,18 +24,21 @@ const WALLETS: WalletApp[] = [
     name: "MetaMask",
     icon: "🦊",
     connectorNames: ["MetaMask"],
+    getDeepLink: (uri) => `https://metamask.app.link/wc?uri=${encodeWalletUri(uri)}`,
   },
   {
     id: "okx",
     name: "OKX Wallet",
     icon: "⚫",
     connectorNames: ["OKX Wallet", "OKX"],
+    getDeepLink: (uri) => `okex://main/wc?uri=${encodeWalletUri(uri)}`,
   },
   {
     id: "trust",
     name: "Trust Wallet",
     icon: "🛡️",
     connectorNames: ["Trust Wallet", "Trust"],
+    getDeepLink: (uri) => `trust://wc?uri=${encodeWalletUri(uri)}`,
   },
   {
     id: "coinbase",
@@ -103,6 +109,12 @@ const MobileWalletSheet = ({ open, onOpenChange }: Props) => {
         !(c as typeof c & { rkDetails?: { isWalletConnectModalConnector?: boolean } }).rkDetails?.isWalletConnectModalConnector
     ) ?? connectors.find((c) => c.id === "walletConnect" || c.name.toLowerCase().includes("walletconnect"));
 
+  const openWalletDeepLink = (w: WalletApp, uri: string) => {
+    const deepLink = w.getDeepLink?.(uri);
+    if (!deepLink) return;
+    window.location.href = deepLink;
+  };
+
   const startQrConnect = async () => {
     const connector = findQrConnector();
     if (!connector) {
@@ -142,7 +154,7 @@ const MobileWalletSheet = ({ open, onOpenChange }: Props) => {
     }
   };
 
-  const connectWalletApp = (w: WalletApp) => {
+  const connectWalletApp = async (w: WalletApp) => {
     const connector = findWalletConnector(w);
     if (!connector) {
       toast.error(`${w.name} is not available`, {
@@ -158,19 +170,26 @@ const MobileWalletSheet = ({ open, onOpenChange }: Props) => {
       description: "Approve the connection inside your wallet app, then return here.",
       duration: 4000,
     });
-    connect(
-      { connector },
-      {
-        onSuccess: () => {
-          toast.success("Wallet connected", { id: "wallet-connect" });
-          onOpenChange(false);
-        },
-        onError: (error) => {
-          setConnectingWallet(null);
-          toast.error("Wallet connection failed", { id: "wallet-connect", description: error.message });
-        },
+    const handleMessage = (message: { type: string; data?: unknown }) => {
+      if (message.type === "display_uri" && typeof message.data === "string") {
+        openWalletDeepLink(w, message.data);
       }
-    );
+    };
+
+    connector.emitter.on("message", handleMessage);
+    try {
+      await connectAsync({ connector });
+      toast.success("Wallet connected", { id: "wallet-connect" });
+      onOpenChange(false);
+    } catch (error) {
+      setConnectingWallet(null);
+      toast.error("Wallet connection failed", {
+        id: "wallet-connect",
+        description: error instanceof Error ? error.message : "Please try again.",
+      });
+    } finally {
+      connector.emitter.off("message", handleMessage);
+    }
   };
 
   const useWalletConnectFallback = () => {

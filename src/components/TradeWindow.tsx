@@ -73,8 +73,16 @@ const TradeWindow = ({ ad, userAddress, onClose }: TradeWindowProps) => {
   });
 
   // Contract write hooks
-  const { writeContract: acceptAd, data: acceptHash, isPending: acceptPending } = useWriteContract();
-  const { isSuccess: acceptConfirmed } = useWaitForTransactionReceipt({ hash: acceptHash });
+  const { writeContract: acceptAd, data: acceptHash, isPending: acceptPending, error: acceptError } = useWriteContract();
+  const { isSuccess: acceptConfirmed, isLoading: acceptConfirming } = useWaitForTransactionReceipt({ hash: acceptHash });
+
+  const { data: existingOpenDealId, refetch: refetchExistingOpenDeal } = useReadContract({
+    address: P2P_CONTRACT_ADDRESS,
+    abi: P2P_ESCROW_ABI,
+    functionName: "openDealByBuyer",
+    args: [BigInt(ad.adId), userAddress as `0x${string}`],
+    query: { enabled: !!userAddress && step === "accept", refetchInterval: 2000 },
+  });
 
   const { writeContract: confirmPayment, data: payHash, isPending: payPending } = useWriteContract();
   const { isSuccess: payConfirmed } = useWaitForTransactionReceipt({ hash: payHash });
@@ -101,15 +109,35 @@ const TradeWindow = ({ ad, userAddress, onClose }: TradeWindowProps) => {
     return () => clearInterval(timer);
   }, [step, timeLeft]);
 
+  // If the wallet/app returns slowly but the chain already accepted the deal,
+  // move the user forward instead of leaving the button stuck on wallet confirm.
+  useEffect(() => {
+    const openDealId = existingOpenDealId ? Number(existingOpenDealId) : 0;
+    if (step === "accept" && openDealId > 0) {
+      setDealId(openDealId);
+      toast.success("Deal accepted! Opening My Deals…");
+      playSuccessChime();
+      onClose();
+      navigate("/my-orders");
+    }
+  }, [existingOpenDealId, navigate, onClose, step]);
+
   // After accept confirmed → close modal and go to My Deals
   useEffect(() => {
     if (acceptConfirmed) {
+      refetchExistingOpenDeal();
       toast.success("Deal accepted! Redirecting to My Deals…");
       playSuccessChime();
       onClose();
       navigate("/my-orders");
     }
-  }, [acceptConfirmed]);
+  }, [acceptConfirmed, navigate, onClose, refetchExistingOpenDeal]);
+
+  useEffect(() => {
+    if (!acceptError) return;
+    const message = (acceptError as any)?.shortMessage || acceptError.message || "Wallet request failed.";
+    toast.error(message.includes("rejected") ? "Wallet request cancelled." : message);
+  }, [acceptError]);
 
   // After buyer confirms payment
   useEffect(() => {
@@ -147,6 +175,14 @@ const TradeWindow = ({ ad, userAddress, onClose }: TradeWindowProps) => {
   }, [cancelConfirmed]);
 
   const handleAcceptDeal = () => {
+    const openDealId = existingOpenDealId ? Number(existingOpenDealId) : 0;
+    if (openDealId > 0) {
+      setDealId(openDealId);
+      toast.success("This deal is already accepted. Opening My Deals…");
+      onClose();
+      navigate("/my-orders");
+      return;
+    }
     if (!amountValid) {
       toast.error(`Enter a whole number between ${minAmount} and ${maxAmount} ${ad.tokenSymbol}`);
       return;
@@ -219,7 +255,7 @@ const TradeWindow = ({ ad, userAddress, onClose }: TradeWindowProps) => {
 
   const timePercent = (timeLeft / ad.dealTimeout) * 100;
   const isUrgent = timeLeft < 120;
-  const isProcessing = acceptPending || payPending || sellerPending || disputePending || cancelPending;
+  const isProcessing = acceptPending || acceptConfirming || payPending || sellerPending || disputePending || cancelPending;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-background/80 backdrop-blur-sm animate-fade-in">
@@ -394,8 +430,12 @@ const TradeWindow = ({ ad, userAddress, onClose }: TradeWindowProps) => {
                   <p className="text-sm font-mono text-foreground break-all">{ad.seller}</p>
                 </div>
                 <Button variant="buy" className="w-full min-h-[48px]" size="lg" onClick={handleAcceptDeal} disabled={isProcessing || !amountValid}>
-                  {acceptPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                  {acceptPending ? "Confirm in wallet…" : `Accept Deal — Lock ${payoutAmount} ${ad.tokenSymbol}`}
+                  {(acceptPending || acceptConfirming) ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  {acceptPending
+                    ? "Confirm in wallet…"
+                    : acceptConfirming
+                      ? "Accepted — updating…"
+                      : `Accept Deal — Lock ${payoutAmount} ${ad.tokenSymbol}`}
                 </Button>
               </div>
             )}
