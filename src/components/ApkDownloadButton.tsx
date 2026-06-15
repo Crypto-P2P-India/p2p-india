@@ -24,6 +24,7 @@ const ApkDownloadButton = () => {
   const [version, setVersion] = useState<string>("…");
   const [size, setSize] = useState<string>("…");
   const [apkUrl, setApkUrl] = useState<string>(`${APK_BASE_URL}?t=${Date.now()}`);
+  const [filename, setFilename] = useState<string>("crypto-p2p.apk");
 
   useEffect(() => {
     fetch(`${VERSION_URL}?t=${Date.now()}`, { cache: "no-store" })
@@ -34,6 +35,7 @@ const ApkDownloadButton = () => {
           setApkUrl(d.apkUrl?.startsWith("/") || d.apkUrl?.startsWith("http")
             ? `${d.apkUrl}${d.apkUrl.includes("?") ? "&" : "?"}t=${Date.now()}`
             : `${APK_BASE_URL}?v=${d.version}&t=${Date.now()}`);
+          setFilename(d.filename || `crypto-p2p-v${d.version}.apk`);
         }
         if (d?.size) setSize(d.size);
       })
