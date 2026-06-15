@@ -125,6 +125,27 @@ export type Database = {
         }
         Relationships: []
       }
+      wallet_profiles: {
+        Row: {
+          created_at: string
+          updated_at: string
+          username: string | null
+          wallet_address: string
+        }
+        Insert: {
+          created_at?: string
+          updated_at?: string
+          username?: string | null
+          wallet_address: string
+        }
+        Update: {
+          created_at?: string
+          updated_at?: string
+          username?: string | null
+          wallet_address?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

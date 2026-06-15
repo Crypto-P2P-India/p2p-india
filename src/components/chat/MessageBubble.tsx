@@ -2,20 +2,35 @@ import { Play, Check, CheckCheck, ShieldCheck } from "lucide-react";
 import type { ChatMessage } from "@/hooks/useChatMessages";
 import { isAdminAddress, ADMIN_DISPLAY_NAME } from "@/lib/admin";
 import tobiAvatar from "@/assets/tobi-admin.jpeg.asset.json";
+import { useWalletProfiles, shortAddr } from "@/hooks/useWalletProfiles";
 
 interface MessageBubbleProps {
   msg: ChatMessage;
   onPreview: (url: string, type: string) => void;
+  /** Whether the partner is currently online (for 2-grey-ticks delivered state). */
+  partnerOnline?: boolean;
 }
 
-const shortAddr = (addr: string) => `${addr.slice(0, 6)}…${addr.slice(-4)}`;
-
-const MessageBubble = ({ msg, onPreview }: MessageBubbleProps) => {
+const MessageBubble = ({ msg, onPreview, partnerOnline = false }: MessageBubbleProps) => {
   const fromAdmin = isAdminAddress(msg.sender_address);
+  const { displayName } = useWalletProfiles([msg.sender_address]);
+  const senderLabel = fromAdmin
+    ? `${ADMIN_DISPLAY_NAME} · Admin`
+    : displayName(msg.sender_address) || shortAddr(msg.sender_address);
+
+  // Tick state for own messages:
+  //   read_at present → 2 blue ticks (read)
+  //   partner online → 2 grey ticks (delivered)
+  //   otherwise → 1 grey tick (sent)
+  const renderTicks = () => {
+    if (!msg.isOwn) return null;
+    if (msg.read_at) return <CheckCheck className="h-3 w-3 text-primary" />;
+    if (partnerOnline) return <CheckCheck className="h-3 w-3 text-muted-foreground" />;
+    return <Check className="h-3 w-3 text-muted-foreground" />;
+  };
 
   return (
     <div className={`flex gap-2 ${msg.isOwn ? "flex-row-reverse" : "flex-row"}`}>
-      {/* Avatar for admin (incoming side) */}
       {fromAdmin && !msg.isOwn && (
         <img
           src={tobiAvatar.url}
@@ -25,7 +40,6 @@ const MessageBubble = ({ msg, onPreview }: MessageBubbleProps) => {
       )}
 
       <div className={`flex flex-col ${msg.isOwn ? "items-end" : "items-start"} max-w-[85%]`}>
-        {/* Sender name + admin tag */}
         {fromAdmin && !msg.isOwn && (
           <div className="flex items-center gap-1.5 mb-0.5 px-1">
             <span className="text-xs font-semibold text-primary">{ADMIN_DISPLAY_NAME}</span>
@@ -35,7 +49,6 @@ const MessageBubble = ({ msg, onPreview }: MessageBubbleProps) => {
           </div>
         )}
 
-        {/* Attachment */}
         {msg.attachment_url && (
           <div
             className={`rounded-lg overflow-hidden mb-1 cursor-pointer ${
@@ -60,7 +73,6 @@ const MessageBubble = ({ msg, onPreview }: MessageBubbleProps) => {
             )}
           </div>
         )}
-        {/* Text */}
         {msg.message && (
           <div
             className={`rounded-lg px-3 py-2 text-sm ${
@@ -74,18 +86,9 @@ const MessageBubble = ({ msg, onPreview }: MessageBubbleProps) => {
             {msg.message}
           </div>
         )}
-        {/* Meta row */}
         <div className="flex items-center gap-1 mt-0.5 px-1">
-          <span className="text-[10px] text-muted-foreground">
-            {fromAdmin ? `${ADMIN_DISPLAY_NAME} · Admin` : shortAddr(msg.sender_address)}
-          </span>
-          {msg.isOwn && (
-            msg.read_at ? (
-              <CheckCheck className="h-3 w-3 text-primary" />
-            ) : (
-              <Check className="h-3 w-3 text-muted-foreground" />
-            )
-          )}
+          <span className="text-[10px] text-muted-foreground">{senderLabel}</span>
+          {renderTicks()}
         </div>
       </div>
     </div>

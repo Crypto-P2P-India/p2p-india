@@ -343,7 +343,7 @@ const MyOrders = () => {
 
         {showChat && (
           <div className="border-t border-border h-72">
-            <ChatPanel dealId={deal.dealId} userAddress={address!} />
+            <ChatPanel dealId={deal.dealId} userAddress={address!} partnerAddress={deal.seller} />
           </div>
         )}
       </div>

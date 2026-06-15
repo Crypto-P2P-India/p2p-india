@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { useTypingIndicator } from "@/hooks/useTypingIndicator";
+import { useChatPresence } from "@/hooks/useChatPresence";
 import MessageBubble from "@/components/chat/MessageBubble";
 import TypingIndicator from "@/components/chat/TypingIndicator";
 import MediaPreview from "@/components/chat/MediaPreview";
@@ -13,11 +14,12 @@ import MediaPreview from "@/components/chat/MediaPreview";
 interface ChatPanelProps {
   dealId: number;
   userAddress: string;
+  partnerAddress?: string;
   readOnly?: boolean;
   onDealClosed?: boolean;
 }
 
-const ChatPanel = ({ dealId, userAddress, readOnly = false, onDealClosed = false }: ChatPanelProps) => {
+const ChatPanel = ({ dealId, userAddress, partnerAddress, readOnly = false, onDealClosed = false }: ChatPanelProps) => {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -27,6 +29,7 @@ const ChatPanel = ({ dealId, userAddress, readOnly = false, onDealClosed = false
 
   const { messages } = useChatMessages(dealId, userAddress);
   const { isPartnerTyping, sendTyping, stopTyping } = useTypingIndicator(dealId, userAddress);
+  const { partnerOnline } = useChatPresence(dealId, userAddress, partnerAddress);
 
   // Auto-scroll
   useEffect(() => {
@@ -132,11 +135,19 @@ const ChatPanel = ({ dealId, userAddress, readOnly = false, onDealClosed = false
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="border-b border-border px-4 py-3">
-        <p className="text-sm font-semibold text-foreground">Deal #{dealId} Chat</p>
-        <p className="text-xs text-muted-foreground">
-          {readOnly ? "View-only — messages stored off-chain" : "Real-time off-chain messaging"}
-        </p>
+      <div className="border-b border-border px-4 py-3 flex items-center justify-between gap-2">
+        <div>
+          <p className="text-sm font-semibold text-foreground">Deal #{dealId} Chat</p>
+          <p className="text-xs text-muted-foreground">
+            {readOnly ? "View-only — messages stored off-chain" : "Real-time off-chain messaging"}
+          </p>
+        </div>
+        {partnerAddress && !readOnly && (
+          <span className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground shrink-0">
+            <span className={`h-2 w-2 rounded-full ${partnerOnline ? "bg-green-500" : "bg-muted-foreground/40"}`} />
+            {partnerOnline ? "Online" : "Offline"}
+          </span>
+        )}
       </div>
 
       {/* Messages */}
@@ -152,6 +163,7 @@ const ChatPanel = ({ dealId, userAddress, readOnly = false, onDealClosed = false
           <MessageBubble
             key={msg.id}
             msg={msg}
+            partnerOnline={partnerOnline}
             onPreview={(url, type) => setPreviewFile({ url, type })}
           />
         ))}

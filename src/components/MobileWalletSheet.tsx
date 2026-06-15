@@ -141,9 +141,26 @@ const MobileWalletSheet = ({ open, onOpenChange }: Props) => {
 
   const connectWalletApp = async (w: WalletApp) => {
     const connector = findWalletConnector(w);
+
+    // No matching connector found: still try to open the wallet's app directly via deep link.
+    // The wallet's in-app browser will then load our site and detect the injected provider.
     if (!connector) {
-      toast.error(`${w.name} is not available`, {
-        description: "Install or update the wallet app, then try again.",
+      const fallback = w.getDeepLink?.(window.location.href) ?? null;
+      if (fallback) {
+        toast.loading(`Opening ${w.name}…`, {
+          id: "wallet-connect",
+          description: "If the app doesn't open, make sure it's installed and try again.",
+          duration: 4000,
+        });
+        if (/^https?:/i.test(fallback)) {
+          window.location.href = fallback;
+        } else {
+          window.open(fallback, "_system");
+        }
+        return;
+      }
+      toast.error(`${w.name} not available`, {
+        description: "Install the wallet app, then try again.",
       });
       return;
     }
