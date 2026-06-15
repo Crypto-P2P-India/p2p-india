@@ -185,18 +185,26 @@ const MyAds = () => {
         ) : (
           <>
             {/* Tabs */}
-            <div className="flex gap-1 mb-6 border-b border-border">
+            <div className="flex gap-1 mb-6 border-b border-border overflow-x-auto">
               <button
                 onClick={() => setAdTab("live")}
-                className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${adTab === "live" ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                className={`px-4 py-2.5 text-sm font-medium transition-colors relative whitespace-nowrap ${adTab === "live" ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
               >
                 Live
                 {liveCount > 0 && <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-xs tabular-nums ${adTab === "live" ? "bg-primary/15 text-primary" : "bg-surface-3 text-muted-foreground"}`}>{liveCount}</span>}
                 {adTab === "live" && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />}
               </button>
               <button
+                onClick={() => setAdTab("expired")}
+                className={`px-4 py-2.5 text-sm font-medium transition-colors relative whitespace-nowrap ${adTab === "expired" ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                Expired / Refund
+                {expiredCount > 0 && <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-xs tabular-nums ${adTab === "expired" ? "bg-sell/15 text-sell" : "bg-sell/15 text-sell"}`}>{expiredCount}</span>}
+                {adTab === "expired" && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />}
+              </button>
+              <button
                 onClick={() => setAdTab("history")}
-                className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${adTab === "history" ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                className={`px-4 py-2.5 text-sm font-medium transition-colors relative whitespace-nowrap ${adTab === "history" ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
               >
                 History
                 {historyCount > 0 && <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-xs tabular-nums ${adTab === "history" ? "bg-primary/15 text-primary" : "bg-surface-3 text-muted-foreground"}`}>{historyCount}</span>}
@@ -205,11 +213,15 @@ const MyAds = () => {
             </div>
 
             {(() => {
-              const currentAds = adTab === "live" ? liveAds : historyAds;
+              const currentAds = adTab === "live" ? liveAds : adTab === "expired" ? expiredAds : historyAds;
               if (currentAds.length === 0) {
                 return (
                   <div className="rounded-lg border border-border bg-card p-8 text-center text-muted-foreground text-sm">
-                    {adTab === "live" ? "No live ads. Check History tab." : "No completed or cancelled ads yet."}
+                    {adTab === "live"
+                      ? "No live ads. Check History tab."
+                      : adTab === "expired"
+                      ? "No expired ads with unclaimed funds. 🎉"
+                      : "No completed or cancelled ads yet."}
                   </div>
                 );
               }
