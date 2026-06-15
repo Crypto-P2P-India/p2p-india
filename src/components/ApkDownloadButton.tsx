@@ -110,7 +110,7 @@ const ApkDownloadButton = () => {
 
           <a
             href={apkUrl}
-            download
+            download={filename}
             className="block"
             onClick={() => setOpen(false)}
           >
