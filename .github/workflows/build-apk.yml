@@ -141,20 +141,24 @@ jobs:
             -Pandroid.injected.signing.key.alias="$ANDROID_KEY_ALIAS" \
             -Pandroid.injected.signing.key.password="$ANDROID_KEY_PASSWORD"
 
-      - name: Save built APK outside git workspace
-        run: |
-          cp android/app/build/outputs/apk/release/app-release.apk /tmp/crypto-p2p.apk
-          ls -lh /tmp/crypto-p2p.apk
-
       - name: Read app version
         id: version
         run: |
           VERSION=$(node -p "require('./public/app-version.json').version")
-          SIZE_BYTES=$(stat -c%s /tmp/crypto-p2p.apk)
-          SIZE_MB=$(awk "BEGIN {printf \"%.1f MB\", $SIZE_BYTES/1024/1024}")
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "size=$SIZE_MB"   >> "$GITHUB_OUTPUT"
           echo "tag=v$VERSION"   >> "$GITHUB_OUTPUT"
+          echo "filename=crypto-p2p-v${VERSION}.apk" >> "$GITHUB_OUTPUT"
+
+      - name: Save built APK outside git workspace
+        id: apk
+        run: |
+          FILENAME="crypto-p2p-v${{ steps.version.outputs.version }}.apk"
+          cp android/app/build/outputs/apk/release/app-release.apk "/tmp/${FILENAME}"
+          ls -lh "/tmp/${FILENAME}"
+          SIZE_BYTES=$(stat -c%s "/tmp/${FILENAME}")
+          SIZE_MB=$(awk "BEGIN {printf \"%.1f MB\", $SIZE_BYTES/1024/1024}")
+          echo "size=$SIZE_MB" >> "$GITHUB_OUTPUT"
+          echo "path=/tmp/${FILENAME}" >> "$GITHUB_OUTPUT"
 
       - name: Publish APK as GitHub Release
         uses: softprops/action-gh-release@v2
