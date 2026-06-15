@@ -23,12 +23,18 @@ const MyBuyAdsList = () => {
   const { address } = useAccount();
   const { ads, refetch } = useBuyContractAds();
   const [pendingId, setPendingId] = useState<number | null>(null);
+  const [pendingAction, setPendingAction] = useState<"cancel" | "reclaim" | null>(null);
 
   const { writeContract: cancel, data: hash, isPending } = useWriteContract();
   const { isSuccess } = useWaitForTransactionReceipt({ hash });
 
   useEffect(() => {
-    if (isSuccess) { toast.success("Buy ad cancelled."); setPendingId(null); refetch(); }
+    if (isSuccess) {
+      toast.success(pendingAction === "reclaim" ? "Refund claimed. Funds returned to your wallet." : "Buy ad cancelled.");
+      setPendingId(null);
+      setPendingAction(null);
+      refetch();
+    }
   }, [isSuccess]);
 
   const myAds = address ? ads.filter(a => a.buyer.toLowerCase() === address.toLowerCase()) : [];
@@ -46,8 +52,10 @@ const MyBuyAdsList = () => {
       {myAds.sort((a, b) => b.adId - a.adId).map((ad, i) => {
         const st = STATUS_LABELS[ad.status] || STATUS_LABELS[0];
         const locked = parseFloat(ad.lockedUsdt);
+        const remaining = parseFloat(ad.remainingUsdt);
+        const canClaimRefund = ad.status === 2 && remaining > 0 && locked === 0;
         return (
-          <div key={ad.adId} className="rounded-lg border border-border bg-card p-4 sm:p-5 animate-fade-up" style={{ animationDelay: `${i * 60}ms` }}>
+          <div key={ad.adId} className={`rounded-lg border bg-card p-4 sm:p-5 animate-fade-up ${canClaimRefund ? "border-sell/40" : "border-border"}`} style={{ animationDelay: `${i * 60}ms` }}>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sell/10 text-sell font-bold text-sm">B#{ad.adId}</div>
@@ -81,10 +89,25 @@ const MyBuyAdsList = () => {
               <div className="mt-3">
                 <Button
                   variant="outline" size="sm" disabled={isPending}
-                  onClick={() => { setPendingId(ad.adId); cancel({ address: BUY_ESCROW_ADDRESS, abi: BUY_ESCROW_ABI, functionName: "cancelAd", args: [BigInt(ad.adId)] } as any); }}
+                  onClick={() => { setPendingId(ad.adId); setPendingAction("cancel"); cancel({ address: BUY_ESCROW_ADDRESS, abi: BUY_ESCROW_ABI, functionName: "cancelAd", args: [BigInt(ad.adId)] } as any); }}
                 >
                   {isPending && pendingId === ad.adId ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <XCircle className="h-3 w-3 mr-1" />}
                   Cancel Ad
+                </Button>
+              </div>
+            )}
+
+            {canClaimRefund && (
+              <div className="mt-3 rounded-md border border-sell/30 bg-sell/5 p-3">
+                <p className="text-xs text-foreground mb-2">
+                  ⏰ This buy ad expired with {ad.remainingUsdt} USDT unfilled. Claim your refund to release the reserved funds back to your wallet.
+                </p>
+                <Button
+                  variant="sell" size="sm" disabled={isPending}
+                  onClick={() => { setPendingId(ad.adId); setPendingAction("reclaim"); cancel({ address: BUY_ESCROW_ADDRESS, abi: BUY_ESCROW_ABI, functionName: "reclaimExpired", args: [BigInt(ad.adId)] } as any); }}
+                >
+                  {isPending && pendingId === ad.adId ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+                  Claim Refund
                 </Button>
               </div>
             )}
