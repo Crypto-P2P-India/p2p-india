@@ -204,17 +204,19 @@ const Index = () => {
           {showFilters && (
             <div className="flex flex-wrap gap-3 rounded-lg border border-border bg-card p-3 animate-fade-up">
               <div className="flex-1 min-w-[140px]">
-                <label className="text-xs text-muted-foreground mb-1 block">Max Price (₹)</label>
+                <label className="text-xs text-muted-foreground mb-1 block">
+                  {mode === "sell" ? "Max Price (₹)" : "Min Rate (₹)"}
+                </label>
                 <Input
                   type="number"
-                  placeholder="e.g. 95"
+                  placeholder={mode === "sell" ? "e.g. 95" : "e.g. 90"}
                   value={maxPrice}
                   onChange={(e) => setMaxPrice(e.target.value)}
                   className="bg-surface-2 border-input h-8 text-sm"
                 />
               </div>
               <div className="flex-1 min-w-[140px]">
-                <label className="text-xs text-muted-foreground mb-1 block">Min Amount ({crypto})</label>
+                <label className="text-xs text-muted-foreground mb-1 block">Min Amount ({mode === "sell" ? crypto : "USDT"})</label>
                 <Input
                   type="number"
                   placeholder="e.g. 10"
