@@ -1,101 +1,83 @@
-# Align UI/UX with the New Contract Flow
+# Buyer Ads — Plan
 
-The new contract (`0x788ea5…aca0`) introduces several flow changes that the current UI does not surface. This plan retrofits the app so every screen matches on-chain behavior 1:1.
+Mirror of the existing Sell flow, with roles inverted. Buyer creates an ad asking for USDT in exchange for INR. Sellers (who hold USDT) accept partial/full chunks by locking their USDT in the contract.
 
-## What's new in the contract
+## Phase 1 — Smart Contract (`contracts/BuyEscrowV1.sol`)
 
-1. **Per-ad fee snapshot** — `sellerFeeBpsSnapshot` / `buyerFeeBpsSnapshot` stored on each ad (instead of global only).
-2. **Configurable payWindow per ad** — seller chooses `PAY_WINDOW_15` (15m) or `PAY_WINDOW_30` (30m) at ad creation.
-3. **Configurable adDuration** — between `MIN_AD_DURATION` and `MAX_AD_DURATION`, stored as `expiresAt`.
-4. **Deal pay-deadline extensions:**
-   - `buyerExtendPayWindow(dealId)` — buyer can self-extend once by `BUYER_SELF_EXTENSION`.
-   - `sellerProposeExtension(dealId, extraSeconds)` — seller proposes `SELLER_EXTRA_15` or `SELLER_EXTRA_30`.
-   - `buyerAcceptExtension(dealId)` — buyer accepts the proposal.
-   - `sellerCancelExtensionProposal(dealId)` — seller withdraws.
-5. **`sellerReclaimExpired(dealId)`** — seller reclaims funds after pay deadline passes without payment.
-6. **`payDeadline(dealId)` view** — authoritative live deadline (handles extensions, paid state).
-7. **`quoteCreateCost(amount)`** — returns `totalRequired` + `prepaidFee` for ad creation (used by `createSellAdNative` `msg.value`).
-8. **New events** — `BuyerExtendedPayWindow`, `SellerProposedExtension`, `BuyerAcceptedExtension`, `SellerCancelledExtension`, `DealReleased` (with fee breakdown), `AdCancelled` (with refund + feeRefunded).
-9. **Deal struct changes** — adds `payDeadlineOffset`, `buyerExtensionUsed`, `sellerProposedExtra`, `sellerExtensionUsed`, `disputeRaisedBy`.
-10. **Ad struct changes** — adds `feeReserve`, `sellerFeeBpsSnapshot`, `buyerFeeBpsSnapshot`, `payWindow`, `expiresAt`, `createdAt`.
+I will write the contract and hand you the source + ABI for you to deploy on BNB Smart Chain. You then paste the deployed address back and I'll wire it up.
 
-## UI/UX changes
+### Roles
+- **Buyer (ad creator)** — wants USDT, pays INR.
+- **Seller (deal taker)** — has USDT, receives INR, locks USDT into the ad.
+- **Admin (owner)** — dispute resolver, fee withdrawer, fee setter.
 
-### Ad creation (`CreateOrderModal`)
-- Add **Pay Window** selector: `15 min` / `30 min`.
-- Add **Ad Duration** selector: 30m / 1h / 6h / 24h / 72h (clamped to `MIN_AD_DURATION`–`MAX_AD_DURATION`).
-- For BNB ads, call `quoteCreateCost(amount)` to compute exact `msg.value` (no manual fee math).
-- For USDT ads, read `quoteCreateCost` to compute `totalRequired` allowance.
-- Show a "Fee reserve: X (refunded on cancel)" hint.
+### Ad rules
+- Asset: BEP-20 USDT only (v1).
+- Amount range: min $1, max $50,000 per ad.
+- Ad duration: min 1 day, max 7 days. Auto-hide after expiry.
+- Payment window per deal: min 15m, max 30m (buyer chosen at ad creation).
+- Min trade per deal (buyer-set) within ad bounds.
+- Buyer rate (INR per USDT) stored on-chain.
+- Payment methods: UPI / Bank Transfer / Digital Rupee — buyer stores name, payment method, UPI ID / bank details / QR ref on-chain at ad creation (so any taker sees them only after locking).
+- Max 3 active ads per buyer.
 
-### Ad listing / browse (`useContractAds`, `OrderCard`)
-- Read `expiresAt` and show countdown / "Expires in".
-- Read `payWindow` per ad and show "Pay window: 15m" badge.
-- Read fee snapshots and show effective fees per ad.
-- Hide ads where `expiresAt < now` even if `active=true`.
+### Deal rules (partial fills)
+- Seller picks an amount between minTrade and remaining.
+- On accept: seller transfers `amount + 0.1% sellerFee` USDT → contract. Funds are bucketed to *this ad* (`ad.lockedTotal`) and cannot be reused for other ads.
+- Same seller cannot have 2 concurrent open deals with the same buyer (must finish first).
+- Seller cap: max 3 concurrent open deals across all buyers.
+- Payment timer starts on accept (uses ad's payment window).
+- Buyer must click **Mark as Paid** before timer ends → locks the USDT (seller can no longer cancel).
+- If buyer does NOT mark paid before timer ends → seller can `reclaim()` their locked USDT (minus nothing — sellerFee also returned on cancel per spec: "100% of locked fund back").
+- Seller has 15 minutes after `markPaid` to `release()` USDT to buyer. Buyer receives `amount - 0.15% buyerFee`. Seller's 0.1% fee stays in contract.
+- Buyer can extend payment window by +15m or +30m (requires seller approval).
+- Seller can grant +5m one-shot unilaterally.
+- After 15m post-markPaid with no release → either party can `openDispute()`.
+- Admin resolves: `adminReleaseToBuyer()` or `adminReleaseToSeller()`. Seller can still release voluntarily at any time during dispute.
 
-### My Ads
-- New action **Reclaim expired deal** (calls `sellerReclaimExpired`) when a buyer's pay window passed.
-- New action **Propose extension** (15m/30m) on a locked, unpaid deal.
-- New action **Cancel extension proposal** when `sellerProposedExtra > 0`.
-- Show pending proposal state ("Waiting for buyer to accept +15m").
+### Fees
+- `buyerFeeBps = 15` (0.15%), `sellerFeeBps = 10` (0.1%), both `setFees()` by owner, capped at 100 bps each.
+- Collected fees withdrawable by owner via `withdrawFees()`.
+- Owner transferable via `transferOwnership()`.
 
-### My Deals (buyer side, `TradeWindow`)
-- Show live `payDeadline` (refetched), not a hardcoded `createdAt + 15m`.
-- New action **Extend pay window** (one-time, +X min) when `!buyerExtensionUsed`.
-- New action **Accept seller's extension** when `sellerProposedExtra > 0 && !sellerExtensionUsed`.
-- Show banner "Seller offered +15m — Accept / Ignore".
-- Disable Mark Paid after `payDeadline` (deal effectively expired).
+### Storage layout (high level)
+```text
+struct Ad { buyer, totalAmount, remaining, lockedTotal, minTrade,
+            rateInrPerUsdt, paymentWindow, expiresAt, status,
+            paymentMethod, name, upiOrBank, qrRef }
+struct Deal { adId, seller, amount, sellerFeeLocked, acceptedAt,
+              paymentDeadline, markedPaidAt, status, disputeOpened }
+mapping(uint=>Ad) ads;  mapping(uint=>Deal) deals;
+mapping(address=>uint[]) buyerAds; mapping(address=>uint[]) sellerDeals;
+mapping(address=>mapping(address=>uint)) openDealsBetween; // seller→buyer→count
+```
 
-### Hooks (`useContractDeals`, `useContractAds`)
-- Map new struct fields (`payDeadlineOffset`, `buyerExtensionUsed`, `sellerProposedExtra`, `sellerExtensionUsed`, `disputeRaisedBy`).
-- Compute deadline via `createdAt + payWindow + extensions` and prefer `payDeadline()` for UI.
-- Use ad's `payWindow` (not the hardcoded 15-min constant).
+### Key functions
+`createAd`, `cancelAd`, `acceptDeal`, `markPaid`, `release`, `reclaimExpired`, `requestExtension`, `approveExtension`, `sellerGrantBonus`, `openDispute`, `adminReleaseToBuyer`, `adminReleaseToSeller`, `setFees`, `withdrawFees`, `transferOwnership`, plus views: `getAd`, `getDeal`, `getActiveAds`, `getBuyerAds`, `getSellerDeals`.
 
-### Deal Timeline (`useDealTxHashes`, `DealTimeline`)
-- Add event renderers: `BuyerExtendedPayWindow` ("Buyer extended +Xm"), `SellerProposedExtension` ("Seller offered +Xm"), `BuyerAcceptedExtension` ("Buyer accepted +Xm"), `SellerCancelledExtension` ("Seller withdrew offer").
-- Update `DealReleased` to show `sellerFee`/`buyerFee` breakdown.
-- Update `AdCancelled` to show refunded amount + fee refund.
+## Phase 2 — Frontend (after you give me deployed address + ABI)
 
-### Admin dashboard
-- Surface new admin actions if not already wired: `adminCloseAd`, `adminReleaseToBuyer`, `adminRefundToSeller` (these existed; verify ABI bindings).
-- Two-step ownership: show `pendingOwner` + `acceptOwnership` action.
+- New marketplace section: **Buy Ads** tab alongside existing Sell Ads.
+- `CreateBuyAdModal` — amount, min trade, rate, ad duration, payment window, payment method fields (auto-fill from `wallet_payment_profiles`).
+- Buyer-ad card with **Accept** button → opens lock modal asking seller for partial amount + USDT approval + lock tx.
+- `BuyDealWindow` (mirror of TradeWindow) showing buyer payment details, Mark Paid (buyer side) / Release (seller side) / Reclaim / Dispute / Extension flows.
+- Reuse `deal_messages` table for chat (add `deal_kind = 'buy'` discriminator client-side via deal id namespace, e.g., negative ids or new column).
+- Update My Ads page: tab for "Sell Ads" vs "Buy Ads". Update My Deals page similarly for sellers taking buy-ad deals.
+- Marketplace sorting/filtering reused; "self-listing exclusion" rule applied.
+- Admin dashboard: add Buy-ad dispute panel mirroring sell-ad one.
 
-### Misc
-- Update `useBnbPrice` consumers: nothing changes, but show prepaid-fee BNB in the create-ad summary using `quoteCreateCost`.
-- Update fee bps reads — display per-ad snapshot (from `getAd`) instead of always reading global `sellerFeeBps()` / `buyerFeeBps()`.
-- Update copy: "Pay window" terminology should match contract names.
+## Phase 3 — DB
 
-## Technical notes
+Add `deal_kind` text column to `deal_messages` (default `'sell'`) so chats route correctly. No other schema changes; ad/deal state lives on-chain.
 
-- `useContractAds.ts` — extend `LiveAd` with `payWindow`, `expiresAt`, `sellerFeeBps`, `buyerFeeBps`, `feeReserve`; map from new struct order.
-- `useContractDeals.ts` — extend `LiveDeal` with `buyerExtensionUsed`, `sellerProposedExtra`, `sellerExtensionUsed`, `payDeadlineOffset`, `disputeRaisedBy`; compute deadline from ad's `payWindow + payDeadlineOffset`.
-- New hook `useDealPayDeadline(dealId)` calling `payDeadline()` with 5s refetch for the active trade screen.
-- New hook `useQuoteCreateCost(amount)` for ad creation summary.
-- `useDealTxHashes.ts` — add the four new extension events + adjust `DealReleased`/`AdCancelled` signatures.
-- `TradeWindow.tsx` — new buttons + banners for extension flows.
-- `MyAds.tsx` — new "Reclaim" + "Propose extension" controls per deal.
-- `CreateOrderModal.tsx` — new selectors + `quoteCreateCost` call.
+## Deliverable order
 
-## Out of scope
+1. I write `contracts/BuyEscrowV1.sol` + matching ABI/artifact stub in `public/contracts/`.
+2. You deploy on BSC mainnet, paste back the contract address.
+3. I add the `deal_kind` migration, build all UI (buyer ad create, marketplace tab, accept/lock, deal window, chat, my-ads tab, admin panel).
 
-- Smart-contract changes (contract is already deployed).
-- Redesigning the visual theme (Binance-style dark theme stays).
-- Adding new payment methods.
+## Open questions before I write the contract
 
-## Estimated touch list
-
-- `src/hooks/useContractAds.ts`
-- `src/hooks/useContractDeals.ts`
-- `src/hooks/useDealTxHashes.ts`
-- `src/hooks/useDealPayDeadline.ts` (new)
-- `src/hooks/useQuoteCreateCost.ts` (new)
-- `src/components/CreateOrderModal.tsx`
-- `src/components/TradeWindow.tsx`
-- `src/components/OrderCard.tsx`
-- `src/components/DealTimeline.tsx`
-- `src/pages/MyAds.tsx`
-- `src/pages/MyOrders.tsx`
-- `src/pages/Admin.tsx`
-
-Proceed?
+1. **QR for buyer payment** — store the QR image URL on-chain (IPFS/Supabase URL string) or only payment method + UPI/bank and let seller scan from UPI app? On-chain string is cheaper if it's just a URL.
+2. **Rate units** — store `rateInrPerUsdt` as integer with 2 decimals (e.g., `8550` = ₹85.50)? Confirms with existing sell contract precision.
+3. **Extension approvals** — confirm both directions: buyer-requested extension needs seller approval; seller-granted +5m is unilateral, one-time per deal. OK?
