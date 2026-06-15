@@ -424,6 +424,7 @@ const MyAds = () => {
                                 {/* Cancel only if timed out AND buyer hasn't confirmed */}
                                 {isDealTimedOut && !relatedDeal.buyerConfirmed && (
                                   <Button variant="sell" size="sm" disabled={isProcessing} onClick={() => {
+                                    setPendingCancelDealId(relatedDeal.dealId);
                                     cancelDeal({ address: P2P_CONTRACT_ADDRESS, abi: P2P_ESCROW_ABI, functionName: "sellerReclaimExpired", args: [BigInt(relatedDeal.dealId)] } as any);
                                   }}>
                                     {cancelDealPending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <AlertTriangle className="h-3 w-3 mr-1" />}
@@ -434,6 +435,7 @@ const MyAds = () => {
                                 {/* Release button when buyer confirmed */}
                                 {relatedDeal.buyerConfirmed && !relatedDeal.sellerConfirmed && (
                                   <Button variant="buy" size="sm" disabled={isProcessing} onClick={() => {
+                                    setPendingReleaseDealId(relatedDeal.dealId);
                                     sellerConfirm({ address: P2P_CONTRACT_ADDRESS, abi: P2P_ESCROW_ABI, functionName: "confirmReceived", args: [BigInt(relatedDeal.dealId)] } as any);
                                   }}>
                                     {sellerPending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <CheckCircle2 className="h-3 w-3 mr-1" />}
