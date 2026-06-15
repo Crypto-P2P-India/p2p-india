@@ -2,10 +2,9 @@ import { useEffect, useState } from "react";
 import { useAccount, useConnect } from "wagmi";
 import { injected } from "wagmi/connectors";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
-import { QRCodeSVG } from "qrcode.react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Wallet, ExternalLink, CheckCircle2, QrCode, Smartphone, RefreshCw } from "lucide-react";
+import { Wallet, ExternalLink, CheckCircle2, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 
 type WalletApp = {
@@ -31,7 +30,7 @@ const WALLETS: WalletApp[] = [
     name: "OKX Wallet",
     icon: "⚫",
     connectorNames: ["OKX Wallet", "OKX"],
-    getDeepLink: (uri) => `okex://main/wc?uri=${encodeWalletUri(uri)}`,
+    getDeepLink: (uri) => uri,
   },
   {
     id: "trust",
@@ -59,7 +58,6 @@ const MobileWalletSheet = ({ open, onOpenChange }: Props) => {
   const { openConnectModal } = useConnectModal();
   const [hasInjected, setHasInjected] = useState(false);
   const [connectingWallet, setConnectingWallet] = useState<string | null>(null);
-  const [qrUri, setQrUri] = useState<string | null>(null);
 
   useEffect(() => {
     const check = () =>
@@ -72,14 +70,12 @@ const MobileWalletSheet = ({ open, onOpenChange }: Props) => {
   useEffect(() => {
     if (!open || !isConnected) return;
     setConnectingWallet(null);
-    setQrUri(null);
     onOpenChange(false);
   }, [isConnected, onOpenChange, open]);
 
   useEffect(() => {
     if (open) return;
     setConnectingWallet(null);
-    setQrUri(null);
   }, [open]);
 
   const connectInjected = () => {
@@ -100,58 +96,10 @@ const MobileWalletSheet = ({ open, onOpenChange }: Props) => {
   const findWalletConnector = (w: WalletApp) =>
     connectors.find((c) => w.connectorNames.some((name) => c.name.toLowerCase().includes(name.toLowerCase())));
 
-  const findQrConnector = () =>
-    connectors.find(
-      (c) =>
-        c.id === "walletConnect" &&
-        !(c as typeof c & { rkDetails?: { showQrModal?: boolean; isWalletConnectModalConnector?: boolean } }).rkDetails
-          ?.showQrModal &&
-        !(c as typeof c & { rkDetails?: { isWalletConnectModalConnector?: boolean } }).rkDetails?.isWalletConnectModalConnector
-    ) ?? connectors.find((c) => c.id === "walletConnect" || c.name.toLowerCase().includes("walletconnect"));
-
   const openWalletDeepLink = (w: WalletApp, uri: string) => {
     const deepLink = w.getDeepLink?.(uri);
     if (!deepLink) return;
     window.location.href = deepLink;
-  };
-
-  const startQrConnect = async () => {
-    const connector = findQrConnector();
-    if (!connector) {
-      toast.error("QR connection unavailable", { description: "Use Other wallets to open the full wallet list." });
-      openConnectModal?.();
-      return;
-    }
-
-    setQrUri(null);
-    setConnectingWallet("qr");
-    const handleMessage = (message: { type: string; data?: unknown }) => {
-      if (message.type === "display_uri" && typeof message.data === "string") {
-        setQrUri(message.data);
-        toast.success("QR ready", { id: "wallet-connect" });
-      }
-    };
-
-    connector.emitter.on("message", handleMessage);
-    toast.loading("Creating QR code…", {
-      id: "wallet-connect",
-      description: "Scan it with your wallet app to connect.",
-      duration: 4000,
-    });
-
-    try {
-      await connectAsync({ connector });
-      toast.success("Wallet connected", { id: "wallet-connect" });
-      onOpenChange(false);
-    } catch (error) {
-      setConnectingWallet(null);
-      toast.error("Wallet connection failed", {
-        id: "wallet-connect",
-        description: error instanceof Error ? error.message : "Please try again.",
-      });
-    } finally {
-      connector.emitter.off("message", handleMessage);
-    }
   };
 
   const connectWalletApp = async (w: WalletApp) => {
