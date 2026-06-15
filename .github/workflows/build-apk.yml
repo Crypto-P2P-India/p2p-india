@@ -144,23 +144,68 @@ jobs:
       - name: Save built APK outside git workspace
         run: |
           cp android/app/build/outputs/apk/release/app-release.apk /tmp/crypto-p2p.apk
+          ls -lh /tmp/crypto-p2p.apk
 
-      - name: Commit APK back to repo
+      - name: Read app version
+        id: version
+        run: |
+          VERSION=$(node -p "require('./public/app-version.json').version")
+          SIZE_BYTES=$(stat -c%s /tmp/crypto-p2p.apk)
+          SIZE_MB=$(awk "BEGIN {printf \"%.1f MB\", $SIZE_BYTES/1024/1024}")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "size=$SIZE_MB"   >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION"   >> "$GITHUB_OUTPUT"
+
+      - name: Publish APK as GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Crypto P2P ${{ steps.version.outputs.tag }}
+          body: |
+            Automated build of Crypto P2P Android APK.
+            Version: ${{ steps.version.outputs.version }}
+            Size: ${{ steps.version.outputs.size }}
+          files: /tmp/crypto-p2p.apk
+          fail_on_unmatched_files: true
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update app-version.json with release URL & size
+        run: |
+          set -e
+          VERSION="${{ steps.version.outputs.version }}"
+          SIZE="${{ steps.version.outputs.size }}"
+          REPO="${{ github.repository }}"
+          APK_URL="https://github.com/${REPO}/releases/download/v${VERSION}/crypto-p2p.apk"
+          node -e "
+            const fs = require('fs');
+            const p = 'public/app-version.json';
+            const j = JSON.parse(fs.readFileSync(p, 'utf8'));
+            j.apkUrl = process.env.APK_URL;
+            j.size = process.env.SIZE;
+            fs.writeFileSync(p, JSON.stringify(j, null, 2) + '\n');
+          "
+          cat public/app-version.json
+        env:
+          APK_URL: https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.version }}/crypto-p2p.apk
+          SIZE: ${{ steps.version.outputs.size }}
+
+      - name: Commit updated version manifest
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           for i in 1 2 3 4 5; do
             git fetch origin main
+            git stash push -u -- public/app-version.json || true
             git reset --hard origin/main
-            git clean -fd
-            mkdir -p public/downloads
-            cp /tmp/crypto-p2p.apk public/downloads/crypto-p2p.apk
-            git add public/downloads/crypto-p2p.apk
+            git stash pop || true
+            git add public/app-version.json
             if git diff --staged --quiet; then
-              echo "No APK changes"
+              echo "No manifest changes"
               exit 0
             fi
-            git commit -m "🤖 Auto-build: update APK"
+            git commit -m "🤖 Auto-build: APK v${{ steps.version.outputs.version }} (${{ steps.version.outputs.size }})"
             if git push origin HEAD:main; then
               exit 0
             fi
@@ -168,3 +213,4 @@ jobs:
             sleep 3
           done
           echo "Push failed after retries" && exit 1
+
