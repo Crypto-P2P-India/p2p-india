@@ -17,13 +17,15 @@ const Footer = () => (
             Decentralised peer-to-peer crypto marketplace on BNB Smart Chain. Zero fees, smart contract escrow, no middlemen.
           </p>
           <a
-            href={`/downloads/crypto-p2p.apk?v=${APP_VERSION}`}
-            download
+            href={`https://github.com/Crypto-P2P-India/p2p-india/releases/download/v${APP_VERSION}/crypto-p2p.apk`}
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-xs font-bold text-primary hover:bg-primary/20 transition-colors"
           >
             <Download className="h-3.5 w-3.5" />
             Download Android APK · v{APP_VERSION} · {APP_SIZE}
           </a>
+
 
         </div>
 
