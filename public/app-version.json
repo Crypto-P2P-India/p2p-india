@@ -1,7 +1,7 @@
 {
-  "version": "1.17",
+  "version": "1.18",
   "size": "101.5 MB",
-  "apkUrl": "https://github.com/Crypto-P2P-India/p2p-india/releases/download/v1.17/crypto-p2p-v1.17.apk",
-  "notes": "Fixed APK download cache and versioned release filename.",
-  "filename": "crypto-p2p-v1.17.apk"
+  "apkUrl": "https://github.com/Crypto-P2P-India/p2p-india/releases/download/v1.18/crypto-p2p-v1.18.apk",
+  "notes": "Added Bitget, Binance, Bybit, TokenPocket and imToken wallets with proper mobile deep linking.",
+  "filename": "crypto-p2p-v1.18.apk"
 }
