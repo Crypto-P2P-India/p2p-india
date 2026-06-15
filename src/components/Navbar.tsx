@@ -27,8 +27,8 @@ const Navbar = () => {
   return (
     <>
       <nav className="fixed top-0 inset-x-0 z-50 border-b border-white/5 bg-background/70 backdrop-blur-xl">
-        {/* Safe area spacer for mobile notch */}
-        <div className="h-[env(safe-area-inset-top)] bg-background/70" />
+        {/* Safe area spacer for mobile notch — only inside native app */}
+        {isNativeApp() && <div className="h-[env(safe-area-inset-top)] bg-background/70" />}
         <div className="mx-auto flex h-14 sm:h-20 max-w-7xl items-center justify-between gap-2 px-3 sm:px-6">
           {/* Left */}
           {native ? (
@@ -135,11 +135,11 @@ const Navbar = () => {
           </div>
         </div>
       </nav>
-      {/* Spacer to offset fixed navbar height (including safe-area inset) + breathing room */}
+      {/* Spacer to offset fixed navbar height (+ safe-area inset only in native app) */}
       <div
         aria-hidden
-        style={{ height: "calc(3.5rem + env(safe-area-inset-top) + 0.5cm)" }}
-        className="sm:!h-[calc(5rem+env(safe-area-inset-top)+0.5cm)]"
+        style={{ height: isNativeApp() ? "calc(3.5rem + env(safe-area-inset-top) + 0.25cm)" : "calc(3.5rem + 0.25cm)" }}
+        className={isNativeApp() ? "sm:!h-[calc(5rem+env(safe-area-inset-top)+0.25cm)]" : "sm:!h-[calc(5rem+0.25cm)]"}
       />
 
       {native && <MobileWalletSheet open={walletSheetOpen} onOpenChange={setWalletSheetOpen} />}
