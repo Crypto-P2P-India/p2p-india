@@ -185,48 +185,55 @@ contract BuyEscrow {
     }
 
     // ---------- Ad creation ----------
-    function createAd(
-        uint256 totalAmount,
-        uint256 minTrade,
-        uint256 rateInrPerUsdt,
-        uint32  durationSeconds,
-        uint32  paymentWindow,
-        string calldata paymentMethod,
-        string calldata name,
-        string calldata upiOrAccount,
-        string calldata bankOrIfsc,
-        string calldata qrRef
-    ) external returns (uint256 adId) {
-        require(totalAmount >= MIN_TRADE_USDT && totalAmount <= MAX_TRADE_USDT, "AMOUNT_RANGE");
-        require(minTrade >= MIN_TRADE_USDT && minTrade <= totalAmount, "MIN_TRADE_RANGE");
-        require(rateInrPerUsdt > 0, "RATE_ZERO");
-        require(durationSeconds >= AD_MIN_DURATION && durationSeconds <= AD_MAX_DURATION, "DURATION_RANGE");
-        require(paymentWindow == PAY_WINDOW_15 || paymentWindow == PAY_WINDOW_30, "PAY_WIN");
-        require(buyerActiveAdCount[msg.sender] < MAX_ACTIVE_ADS_PER_BUYER, "TOO_MANY_ADS");
-        require(bytes(paymentMethod).length > 0 && bytes(name).length > 0 && bytes(upiOrAccount).length > 0, "PAY_DETAILS");
+    struct CreateAdParams {
+        uint256 totalAmount;
+        uint256 minTrade;
+        uint256 rateInrPerUsdt;
+        uint32  durationSeconds;
+        uint32  paymentWindow;
+        string  paymentMethod;
+        string  name;
+        string  upiOrAccount;
+        string  bankOrIfsc;
+        string  qrRef;
+    }
 
+    function createAd(CreateAdParams calldata p) external returns (uint256 adId) {
+        _validateCreateAd(p);
         adId = nextAdId++;
-        ads[adId] = Ad({
-            buyer: msg.sender,
-            totalAmount: totalAmount,
-            remaining: totalAmount,
-            lockedInDeals: 0,
-            minTrade: minTrade,
-            rateInrPerUsdt: rateInrPerUsdt,
-            paymentWindow: paymentWindow,
-            expiresAt: uint64(block.timestamp + durationSeconds),
-            buyerFeeBpsSnap: buyerFeeBps,
-            sellerFeeBpsSnap: sellerFeeBps,
-            status: AdStatus.Open,
-            paymentMethod: paymentMethod,
-            name: name,
-            upiOrAccount: upiOrAccount,
-            bankOrIfsc: bankOrIfsc,
-            qrRef: qrRef
-        });
+        _storeAd(adId, p);
         buyerAds[msg.sender].push(adId);
         buyerActiveAdCount[msg.sender] += 1;
-        emit AdCreated(adId, msg.sender, totalAmount, rateInrPerUsdt, paymentWindow, ads[adId].expiresAt);
+        emit AdCreated(adId, msg.sender, p.totalAmount, p.rateInrPerUsdt, p.paymentWindow, uint64(block.timestamp + p.durationSeconds));
+    }
+
+    function _validateCreateAd(CreateAdParams calldata p) internal view {
+        require(p.totalAmount >= MIN_TRADE_USDT && p.totalAmount <= MAX_TRADE_USDT, "AMOUNT_RANGE");
+        require(p.minTrade >= MIN_TRADE_USDT && p.minTrade <= p.totalAmount, "MIN_TRADE_RANGE");
+        require(p.rateInrPerUsdt > 0, "RATE_ZERO");
+        require(p.durationSeconds >= AD_MIN_DURATION && p.durationSeconds <= AD_MAX_DURATION, "DURATION_RANGE");
+        require(p.paymentWindow == PAY_WINDOW_15 || p.paymentWindow == PAY_WINDOW_30, "PAY_WIN");
+        require(buyerActiveAdCount[msg.sender] < MAX_ACTIVE_ADS_PER_BUYER, "TOO_MANY_ADS");
+        require(bytes(p.paymentMethod).length > 0 && bytes(p.name).length > 0 && bytes(p.upiOrAccount).length > 0, "PAY_DETAILS");
+    }
+
+    function _storeAd(uint256 adId, CreateAdParams calldata p) internal {
+        Ad storage a = ads[adId];
+        a.buyer = msg.sender;
+        a.totalAmount = p.totalAmount;
+        a.remaining = p.totalAmount;
+        a.minTrade = p.minTrade;
+        a.rateInrPerUsdt = p.rateInrPerUsdt;
+        a.paymentWindow = p.paymentWindow;
+        a.expiresAt = uint64(block.timestamp + p.durationSeconds);
+        a.buyerFeeBpsSnap = buyerFeeBps;
+        a.sellerFeeBpsSnap = sellerFeeBps;
+        a.status = AdStatus.Open;
+        a.paymentMethod = p.paymentMethod;
+        a.name = p.name;
+        a.upiOrAccount = p.upiOrAccount;
+        a.bankOrIfsc = p.bankOrIfsc;
+        a.qrRef = p.qrRef;
     }
 
     function cancelAd(uint256 adId) external {
