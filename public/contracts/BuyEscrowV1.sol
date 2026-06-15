@@ -324,7 +324,6 @@ contract BuyEscrow {
     // ---------- Seller reclaims after expired pay window (buyer didn't mark paid) ----------
     function reclaimExpired(uint256 dealId) external nonReentrant {
         Deal storage d = deals[dealId];
-        Ad storage a = ads[d.adId];
         require(msg.sender == d.seller, "NOT_SELLER");
         require(d.status == DealStatus.Pending, "NOT_PENDING");
         require(block.timestamp > d.paymentDeadline, "NOT_EXPIRED");
