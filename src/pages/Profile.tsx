@@ -3,11 +3,12 @@ import { useAccount } from "wagmi";
 import { useBalance, useChainId } from "wagmi";
 import { useWalletProfile } from "@/hooks/useWalletProfile";
 import { invalidateProfile } from "@/hooks/useWalletProfiles";
+import { useTraderStats } from "@/hooks/useTraderStats";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Wallet, User as UserIcon, Loader2, Copy, CheckCircle2 } from "lucide-react";
+import { Wallet, User as UserIcon, Loader2, Copy, CheckCircle2, TrendingUp, TrendingDown, Trophy, Users, Megaphone, ShoppingCart, XCircle, Activity } from "lucide-react";
 
 const Profile = () => {
   const { address, isConnected } = useAccount();
