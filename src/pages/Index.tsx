@@ -335,6 +335,7 @@ const Index = () => {
       <Footer />
 
       <CreateOrderModal open={showCreate} onClose={() => setShowCreate(false)} />
+      <CreateBuyAdModal open={showCreateBuy} onClose={() => { setShowCreateBuy(false); refetchBuyAds(); }} />
 
       {selectedAd && address && (
         <TradeWindow
