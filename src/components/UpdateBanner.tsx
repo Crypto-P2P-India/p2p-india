@@ -53,9 +53,10 @@ const UpdateBanner = () => {
 
   if (!latest || dismissed) return null;
 
-  const apkAbs = latest.apkUrl.startsWith("http")
+  const rawApkAbs = latest.apkUrl.startsWith("http")
     ? latest.apkUrl
     : `https://crypto-p2p.store${latest.apkUrl}`;
+  const apkAbs = `${rawApkAbs}${rawApkAbs.includes("?") ? "&" : "?"}t=${Date.now()}`;
 
   return (
     <div
@@ -74,6 +75,7 @@ const UpdateBanner = () => {
         </div>
         <a
           href={apkAbs}
+          download={`crypto-p2p-v${latest.version}.apk`}
           className="rounded-full bg-primary-foreground/15 px-3 py-1 text-[11px] font-bold backdrop-blur hover:bg-primary-foreground/25 active:scale-95 transition"
         >
           Update
