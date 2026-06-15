@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths-ignore:
       - 'public/downloads/**'
+      - 'public/app-version.json'
   workflow_dispatch:
 
 concurrency:
@@ -212,7 +213,7 @@ jobs:
               echo "No manifest changes"
               exit 0
             fi
-            git commit -m "🤖 Auto-build: APK v${{ steps.version.outputs.version }} (${{ steps.version.outputs.size }})"
+            git commit -m "🤖 Auto-build: APK v${{ steps.version.outputs.version }} (${{ steps.apk.outputs.size }})"
             if git push origin HEAD:main; then
               exit 0
             fi
