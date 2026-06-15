@@ -561,7 +561,7 @@ const MyAds = () => {
                         {/* Chat panel */}
                         {showChat && relatedDeal && (
                           <div className="border-t border-border h-72">
-                            <ChatPanel dealId={relatedDeal.dealId} userAddress={address!} />
+                            <ChatPanel dealId={relatedDeal.dealId} userAddress={address!} partnerAddress={relatedDeal.buyer} />
                           </div>
                         )}
                       </div>
