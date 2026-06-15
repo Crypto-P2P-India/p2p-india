@@ -135,11 +135,19 @@ const ChatPanel = ({ dealId, userAddress, partnerAddress, readOnly = false, onDe
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="border-b border-border px-4 py-3">
-        <p className="text-sm font-semibold text-foreground">Deal #{dealId} Chat</p>
-        <p className="text-xs text-muted-foreground">
-          {readOnly ? "View-only — messages stored off-chain" : "Real-time off-chain messaging"}
-        </p>
+      <div className="border-b border-border px-4 py-3 flex items-center justify-between gap-2">
+        <div>
+          <p className="text-sm font-semibold text-foreground">Deal #{dealId} Chat</p>
+          <p className="text-xs text-muted-foreground">
+            {readOnly ? "View-only — messages stored off-chain" : "Real-time off-chain messaging"}
+          </p>
+        </div>
+        {partnerAddress && !readOnly && (
+          <span className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground shrink-0">
+            <span className={`h-2 w-2 rounded-full ${partnerOnline ? "bg-green-500" : "bg-muted-foreground/40"}`} />
+            {partnerOnline ? "Online" : "Offline"}
+          </span>
+        )}
       </div>
 
       {/* Messages */}
@@ -155,6 +163,7 @@ const ChatPanel = ({ dealId, userAddress, partnerAddress, readOnly = false, onDe
           <MessageBubble
             key={msg.id}
             msg={msg}
+            partnerOnline={partnerOnline}
             onPreview={(url, type) => setPreviewFile({ url, type })}
           />
         ))}
