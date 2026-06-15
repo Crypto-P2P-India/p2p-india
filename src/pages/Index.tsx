@@ -237,18 +237,21 @@ const Index = () => {
 
           {/* Sort indicator */}
           <p className="text-xs text-muted-foreground">
-            Showing {filteredAds.length} ad{filteredAds.length !== 1 ? "s" : ""} · sorted low → high price
+            {mode === "sell"
+              ? `Showing ${filteredAds.length} ad${filteredAds.length !== 1 ? "s" : ""} · sorted low → high price`
+              : `Showing ${filteredBuyAds.length} buy ad${filteredBuyAds.length !== 1 ? "s" : ""} · sorted high → low rate`}
           </p>
 
-          {isConnected && ownAdsCount > 0 && (
+          {isConnected && mode === "sell" && ownAdsCount > 0 && (
             <p className="text-xs text-muted-foreground">
               You have <span className="font-semibold text-foreground">{ownAdsCount}</span> ad{ownAdsCount > 1 ? "s" : ""} of your own — hidden here.{" "}
-              <button
-                onClick={() => navigate("/my-ads")}
-                className="text-primary font-semibold hover:underline"
-              >
-                View in My Ads →
-              </button>
+              <button onClick={() => navigate("/my-ads")} className="text-primary font-semibold hover:underline">View in My Ads →</button>
+            </p>
+          )}
+          {isConnected && mode === "buy" && ownBuyAdsCount > 0 && (
+            <p className="text-xs text-muted-foreground">
+              You have <span className="font-semibold text-foreground">{ownBuyAdsCount}</span> buy ad{ownBuyAdsCount > 1 ? "s" : ""} of your own — hidden here.{" "}
+              <button onClick={() => navigate("/my-ads")} className="text-sell font-semibold hover:underline">View in My Ads →</button>
             </p>
           )}
         </div>
@@ -270,7 +273,7 @@ const Index = () => {
         )}
 
         {/* Order List */}
-        {isConnected && (
+        {isConnected && mode === "sell" && (
           <div className="space-y-3">
             {isLoading ? (
               <div className="flex flex-col items-center justify-center rounded-lg border border-border bg-card py-16 text-center animate-pulse">
@@ -278,37 +281,48 @@ const Index = () => {
               </div>
             ) : filteredAds.length > 0 ? (
               filteredAds.map((ad, i) => (
-                <OrderCard
-                  key={ad.adId}
-                  {...ad}
-                  index={i}
-                  onTrade={() => setSelectedAd(ad)}
-                />
+                <OrderCard key={ad.adId} {...ad} index={i} onTrade={() => setSelectedAd(ad)} />
               ))
             ) : (
               <div className="flex flex-col items-center justify-center rounded-lg border border-border bg-card py-16 text-center animate-fade-up">
                 <p className="text-muted-foreground text-sm mb-1">
-                  {ownAdsCount > 0 && !maxPrice && !minAmount
-                    ? "Your own live ads are hidden here"
-                    : `No live ads for ${crypto}`}
+                  {ownAdsCount > 0 && !maxPrice && !minAmount ? "Your own live ads are hidden here" : `No live ads for ${crypto}`}
                 </p>
                 <p className="text-xs text-muted-foreground mb-3">
-                  {maxPrice || minAmount
-                    ? "Try adjusting your filters."
-                    : ownAdsCount > 0
-                      ? "Other buyers can still see and accept the remaining available amount."
-                      : "Be the first to post a sell ad and start trading."}
+                  {maxPrice || minAmount ? "Try adjusting your filters." : ownAdsCount > 0 ? "Other buyers can still see and accept the remaining available amount." : "Be the first to post a sell ad and start trading."}
                 </p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setMaxPrice("");
-                    setMinAmount("");
-                    ownAdsCount > 0 ? navigate("/my-ads") : setShowCreate(true);
-                  }}
-                >
+                <Button variant="outline" size="sm" onClick={() => { setMaxPrice(""); setMinAmount(""); ownAdsCount > 0 ? navigate("/my-ads") : setShowCreate(true); }}>
                   {maxPrice || minAmount ? "Clear Filters" : ownAdsCount > 0 ? "View My Ads" : "Create the first ad"}
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Buy Ads List */}
+        {isConnected && mode === "buy" && (
+          <div className="space-y-3">
+            {loadingBuyAds ? (
+              <div className="flex flex-col items-center justify-center rounded-lg border border-border bg-card py-16 text-center animate-pulse">
+                <p className="text-muted-foreground text-sm">Loading buy ads from contract…</p>
+              </div>
+            ) : filteredBuyAds.length > 0 ? (
+              filteredBuyAds.map((ad, i) => (
+                <BuyAdCard key={ad.adId} ad={ad} index={i} onTrade={() => {
+                  // Phase 2 will mount BuyTradeWindow here.
+                  navigate("/my-orders");
+                }} />
+              ))
+            ) : (
+              <div className="flex flex-col items-center justify-center rounded-lg border border-border bg-card py-16 text-center animate-fade-up">
+                <p className="text-muted-foreground text-sm mb-1">
+                  {ownBuyAdsCount > 0 && !maxPrice && !minAmount ? "Your own buy ads are hidden here" : "No active buy ads right now"}
+                </p>
+                <p className="text-xs text-muted-foreground mb-3">
+                  {maxPrice || minAmount ? "Try adjusting your filters." : ownBuyAdsCount > 0 ? "Sellers will see your buy ad and accept it." : "Be the first to post a buy ad and let sellers come to you."}
+                </p>
+                <Button variant="outline" size="sm" onClick={() => { setMaxPrice(""); setMinAmount(""); ownBuyAdsCount > 0 ? navigate("/my-ads") : setShowCreateBuy(true); }}>
+                  {maxPrice || minAmount ? "Clear Filters" : ownBuyAdsCount > 0 ? "View My Ads" : "Create the first buy ad"}
                 </Button>
               </div>
             )}
