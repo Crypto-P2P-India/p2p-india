@@ -16,6 +16,7 @@ import { P2P_CONTRACT_ADDRESS } from "@/config/wagmi";
 import { P2P_ESCROW_ABI } from "@/config/abi";
 import { toast } from "sonner";
 import ChatPanel from "@/components/ChatPanel";
+import BuyDealsSection from "@/components/BuyDealsSection";
 import { playSuccessChime, playAlertChime } from "@/lib/sounds";
 import { useUnreadCounts } from "@/hooks/useUnreadCounts";
 
@@ -354,6 +355,15 @@ const MyOrders = () => {
       <Navbar />
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
         <h1 className="text-2xl font-bold text-foreground mb-6" style={{ lineHeight: "1.1" }}>My Deals</h1>
+
+        {isConnected && (
+          <section className="mb-8">
+            <h2 className="text-base font-semibold text-foreground mb-3">USDT you sold on Buy Ads</h2>
+            <BuyDealsSection role="seller" />
+          </section>
+        )}
+
+        {isConnected && <h2 className="text-base font-semibold text-foreground mb-3">Crypto you bought on Sell Ads</h2>}
 
         {!isConnected ? (
           <div className="flex flex-col items-center justify-center rounded-lg border border-border bg-card py-16 text-center animate-fade-up">
