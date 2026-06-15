@@ -22,6 +22,7 @@ const Navbar = () => {
     { label: "Marketplace", href: "/", icon: Store },
     { label: "My Ads", href: "/my-ads", icon: ShoppingBag },
     { label: "My Deals", href: "/my-orders", icon: Handshake, badge: true },
+    { label: "Profile", href: "/profile", icon: User },
   ];
 
   return (
