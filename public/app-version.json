@@ -1,6 +1,6 @@
 {
-  "version": "1.14",
+  "version": "1.15",
   "size": "101.5 MB",
-  "apkUrl": "https://github.com/Crypto-P2P-India/p2p-india/releases/download/v1.14/crypto-p2p.apk",
-  "notes": "Scrolling fix — removed aggressive overscroll containment that blocked page scroll in app and web."
+  "apkUrl": "https://github.com/Crypto-P2P-India/p2p-india/releases/download/v1.15/crypto-p2p.apk",
+  "notes": "Updated WalletConnect project ID for reliable wallet connections."
 }
