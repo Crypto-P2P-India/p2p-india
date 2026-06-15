@@ -24,32 +24,33 @@ serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    // Delete all files in the deal folder
+    // 1) Delete all attachment files in the deal folder
     const folderPath = `deal-${dealId}/`;
     const { data: files } = await supabase.storage
       .from("deal-attachments")
       .list(folderPath);
 
+    let deletedFiles = 0;
     if (files && files.length > 0) {
       const filePaths = files.map((f: any) => `${folderPath}${f.name}`);
       const { error: deleteError } = await supabase.storage
         .from("deal-attachments")
         .remove(filePaths);
-
-      if (deleteError) {
-        console.error("Delete error:", deleteError);
-      }
+      if (deleteError) console.error("Storage delete error:", deleteError);
+      else deletedFiles = filePaths.length;
     }
 
-    // Clear attachment URLs from messages (keep text messages)
-    await supabase
+    // 2) Delete ALL chat messages for this completed deal (text + attachment rows)
+    //    to free up database storage. Service role bypasses RLS.
+    const { error: msgError, count } = await supabase
       .from("deal_messages")
-      .update({ attachment_url: null, attachment_type: null })
-      .eq("deal_id", dealId)
-      .not("attachment_url", "is", null);
+      .delete({ count: "exact" })
+      .eq("deal_id", dealId);
+
+    if (msgError) console.error("Message delete error:", msgError);
 
     return new Response(
-      JSON.stringify({ success: true, deleted: files?.length || 0 }),
+      JSON.stringify({ success: true, deletedFiles, deletedMessages: count ?? 0 }),
       {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
