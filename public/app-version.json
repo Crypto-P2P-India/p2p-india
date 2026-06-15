@@ -1,6 +1,7 @@
 {
   "version": "1.16",
   "size": "101.5 MB",
-  "apkUrl": "https://github.com/Crypto-P2P-India/p2p-india/releases/download/v1.16/crypto-p2p.apk",
-  "notes": "Fixed mobile wallet deep links and stuck accepted-deal status updates."
+  "apkUrl": "https://github.com/Crypto-P2P-India/p2p-india/releases/download/v1.16/crypto-p2p-v1.16.apk",
+  "notes": "Fixed mobile wallet deep links and stuck accepted-deal status updates.",
+  "filename": "crypto-p2p-v1.16.apk"
 }
