@@ -115,7 +115,10 @@ const OrderCard = ({
         </div>
         <div>
           <span className="text-muted-foreground text-xs">Payment</span>
-          <p className="text-foreground text-xs mt-1 truncate">{paymentInfo}</p>
+          <p className="text-foreground text-xs mt-1 flex items-center gap-1 truncate">
+            <Lock className="h-3 w-3 text-muted-foreground shrink-0" />
+            {parsePaymentInfo(paymentInfo).method || "Hidden"}
+          </p>
         </div>
         <div>
           <span className="text-muted-foreground text-xs">Ad Expires</span>
