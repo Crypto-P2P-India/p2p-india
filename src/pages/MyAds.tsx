@@ -93,9 +93,31 @@ const MyAds = () => {
 
   useEffect(() => { if (cancelConfirmed) { toast.success("Ad cancelled. Funds returned."); setPendingAdId(null); refetchAds(); refetchDeals(); } }, [cancelConfirmed]);
 
-  useEffect(() => { if (sellerDone) { toast.success("Tokens released! Trade completed."); playSuccessChime(); refetchAds(); refetchDeals(); } }, [sellerDone]);
+  useEffect(() => {
+    if (sellerDone) {
+      toast.success("Tokens released! Trade completed.");
+      playSuccessChime();
+      refetchAds();
+      refetchDeals();
+      if (pendingReleaseDealId) {
+        cleanupDealAttachments(pendingReleaseDealId);
+        setPendingReleaseDealId(null);
+      }
+    }
+  }, [sellerDone]);
   useEffect(() => { if (disputeDone) { toast.info("Dispute raised. Admin will review."); playAlertChime(); refetchAds(); refetchDeals(); } }, [disputeDone]);
-  useEffect(() => { if (cancelDealDone) { toast.success("Deal cancelled. Funds returned to your wallet."); playAlertChime(); refetchAds(); refetchDeals(); } }, [cancelDealDone]);
+  useEffect(() => {
+    if (cancelDealDone) {
+      toast.success("Deal cancelled. Funds returned to your wallet.");
+      playAlertChime();
+      refetchAds();
+      refetchDeals();
+      if (pendingCancelDealId) {
+        cleanupDealAttachments(pendingCancelDealId);
+        setPendingCancelDealId(null);
+      }
+    }
+  }, [cancelDealDone]);
   useEffect(() => { if (proposeDone) { toast.success("Extension proposed. Buyer can accept."); refetchDeals(); } }, [proposeDone]);
   useEffect(() => { if (cancelPropDone) { toast.success("Extension proposal withdrawn."); refetchDeals(); } }, [cancelPropDone]);
 
