@@ -145,10 +145,30 @@ const Index = () => {
           <StatsBar />
         </div>
 
+        {/* Buy/Sell tabs */}
+        <div className="mb-4 inline-flex rounded-lg border border-border bg-surface-2 p-1 animate-fade-up">
+          <button
+            onClick={() => setMode("sell")}
+            className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-all ${
+              mode === "sell" ? "bg-buy text-buy-foreground shadow" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Buy crypto
+          </button>
+          <button
+            onClick={() => setMode("buy")}
+            className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-all ${
+              mode === "buy" ? "bg-sell text-sell-foreground shadow" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Sell crypto
+          </button>
+        </div>
+
         {/* Controls */}
         <div className="mb-6 space-y-3 animate-fade-up" style={{ animationDelay: "200ms" }}>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <CryptoFilter selected={crypto} onSelect={setCrypto} />
+            {mode === "sell" ? <CryptoFilter selected={crypto} onSelect={setCrypto} /> : <div />}
 
             <div className="flex items-center gap-2">
               <div className="relative flex-1 sm:w-56 sm:flex-none">
@@ -169,12 +189,13 @@ const Index = () => {
                 <SlidersHorizontal className="h-4 w-4" />
               </Button>
               <Button
-                onClick={() => setShowCreate(true)}
+                onClick={() => (mode === "sell" ? setShowCreate(true) : setShowCreateBuy(true))}
                 className="gap-2 shrink-0"
                 disabled={!isConnected}
+                variant={mode === "buy" ? "sell" : "default"}
               >
                 <Plus className="h-4 w-4" />
-                <span className="hidden sm:inline">Post Ad</span>
+                <span className="hidden sm:inline">{mode === "sell" ? "Post Sell Ad" : "Post Buy Ad"}</span>
               </Button>
             </div>
           </div>
