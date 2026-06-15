@@ -1,7 +1,7 @@
 import { Capacitor } from "@capacitor/core";
 
 /** Current bundled app version. Bump this whenever you build a new APK. */
-export const APP_VERSION = "1.16";
+export const APP_VERSION = "1.17";
 export const APP_SIZE = "101.5 MB";
 
 
