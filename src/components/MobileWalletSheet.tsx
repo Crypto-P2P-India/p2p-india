@@ -99,6 +99,10 @@ const MobileWalletSheet = ({ open, onOpenChange }: Props) => {
   const openWalletDeepLink = (w: WalletApp, uri: string) => {
     const deepLink = w.getDeepLink?.(uri);
     if (!deepLink) return;
+    if (/^(wc|okx|okex|trust|metamask):/i.test(deepLink)) {
+      window.open(deepLink, "_system");
+      return;
+    }
     window.location.href = deepLink;
   };
 
@@ -165,43 +169,6 @@ const MobileWalletSheet = ({ open, onOpenChange }: Props) => {
         </SheetHeader>
 
         <div className="p-5 space-y-4">
-          <div className="rounded-2xl border border-border bg-card p-4">
-            <div className="flex items-center justify-between gap-3 mb-3">
-              <div>
-                <p className="font-semibold text-foreground">Scan QR to connect</p>
-                <p className="text-xs text-muted-foreground">Open any wallet app and scan this code.</p>
-              </div>
-              <QrCode className="h-5 w-5 text-primary" />
-            </div>
-            {qrUri ? (
-              <div className="flex flex-col items-center gap-3">
-                <div className="rounded-xl border border-border p-2">
-                  <QRCodeSVG value={qrUri} size={210} level="M" includeMargin bgColor="#ffffff" fgColor="#000000" />
-                </div>
-                <p className="text-center text-xs text-muted-foreground">After scanning, approve in the wallet app and return here.</p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={startQrConnect}
-                  disabled={isPending || connectingWallet === "qr"}
-                  className="w-full gap-2"
-                >
-                  <RefreshCw className="h-4 w-4" />
-                  Refresh QR
-                </Button>
-              </div>
-            ) : (
-              <Button
-                onClick={startQrConnect}
-                disabled={isPending || connectingWallet === "qr"}
-                className="w-full h-14 text-base font-semibold gap-2"
-              >
-                {connectingWallet === "qr" ? <RefreshCw className="h-5 w-5 animate-spin" /> : <QrCode className="h-5 w-5" />}
-                {connectingWallet === "qr" ? "Preparing QR…" : "Show Wallet QR"}
-              </Button>
-            )}
-          </div>
-
           {hasInjected && (
             <Button
               onClick={connectInjected}
