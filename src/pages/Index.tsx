@@ -80,6 +80,25 @@ const Index = () => {
       .sort((a, b) => parseFloat(a.pricePerToken) - parseFloat(b.pricePerToken));
   }, [liveAds, crypto, search, maxPrice, minAmount, address, now]);
 
+  const ownBuyAdsCount = useMemo(() => {
+    if (!address) return 0;
+    return buyAds.filter((ad) => ad.buyer.toLowerCase() === address.toLowerCase() && ad.status === 0).length;
+  }, [buyAds, address]);
+
+  const filteredBuyAds = useMemo(() => {
+    return buyAds
+      .filter((ad) => {
+        if (ad.status !== 0) return false;
+        if (parseFloat(ad.remainingUsdt) <= 0) return false;
+        if (address && ad.buyer.toLowerCase() === address.toLowerCase()) return false;
+        const matchesSearch = !search || ad.buyer.toLowerCase().includes(search.toLowerCase());
+        const matchesPrice = !maxPrice || parseFloat(ad.rateInrPerUsdt) >= parseFloat(maxPrice);
+        const matchesAmount = !minAmount || parseFloat(ad.remainingUsdt) >= parseFloat(minAmount);
+        return matchesSearch && matchesPrice && matchesAmount;
+      })
+      .sort((a, b) => parseFloat(b.rateInrPerUsdt) - parseFloat(a.rateInrPerUsdt));
+  }, [buyAds, search, maxPrice, minAmount, address]);
+
   return (
     <div ref={containerRef} className="min-h-screen bg-background overflow-auto">
       {/* Pull-to-refresh indicator */}
