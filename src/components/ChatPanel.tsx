@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { useTypingIndicator } from "@/hooks/useTypingIndicator";
+import { useChatPresence } from "@/hooks/useChatPresence";
 import MessageBubble from "@/components/chat/MessageBubble";
 import TypingIndicator from "@/components/chat/TypingIndicator";
 import MediaPreview from "@/components/chat/MediaPreview";
@@ -13,11 +14,12 @@ import MediaPreview from "@/components/chat/MediaPreview";
 interface ChatPanelProps {
   dealId: number;
   userAddress: string;
+  partnerAddress?: string;
   readOnly?: boolean;
   onDealClosed?: boolean;
 }
 
-const ChatPanel = ({ dealId, userAddress, readOnly = false, onDealClosed = false }: ChatPanelProps) => {
+const ChatPanel = ({ dealId, userAddress, partnerAddress, readOnly = false, onDealClosed = false }: ChatPanelProps) => {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -27,6 +29,7 @@ const ChatPanel = ({ dealId, userAddress, readOnly = false, onDealClosed = false
 
   const { messages } = useChatMessages(dealId, userAddress);
   const { isPartnerTyping, sendTyping, stopTyping } = useTypingIndicator(dealId, userAddress);
+  const { partnerOnline } = useChatPresence(dealId, userAddress, partnerAddress);
 
   // Auto-scroll
   useEffect(() => {
