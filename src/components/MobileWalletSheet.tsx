@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
 import { useAccount, useConnect } from "wagmi";
 import { injected } from "wagmi/connectors";
-import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Wallet, ExternalLink, CheckCircle2, Smartphone } from "lucide-react";
+import { Wallet, ExternalLink, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 
 type WalletApp = {
@@ -55,7 +54,6 @@ interface Props {
 const MobileWalletSheet = ({ open, onOpenChange }: Props) => {
   const { connectors, connect, connectAsync, isPending } = useConnect();
   const { isConnected } = useAccount();
-  const { openConnectModal } = useConnectModal();
   const [hasInjected, setHasInjected] = useState(false);
   const [connectingWallet, setConnectingWallet] = useState<string | null>(null);
 
@@ -110,9 +108,8 @@ const MobileWalletSheet = ({ open, onOpenChange }: Props) => {
     const connector = findWalletConnector(w);
     if (!connector) {
       toast.error(`${w.name} is not available`, {
-        description: "Use Other wallets to connect with WalletConnect.",
+        description: "Install or update the wallet app, then try again.",
       });
-      openConnectModal?.();
       return;
     }
 
@@ -142,11 +139,6 @@ const MobileWalletSheet = ({ open, onOpenChange }: Props) => {
     } finally {
       connector.emitter.off("message", handleMessage);
     }
-  };
-
-  const useWalletConnectFallback = () => {
-    onOpenChange(false);
-    setTimeout(() => openConnectModal?.(), 200);
   };
 
   return (
@@ -205,24 +197,6 @@ const MobileWalletSheet = ({ open, onOpenChange }: Props) => {
             </div>
           </div>
 
-          <div className="pt-2 border-t border-border/50">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 px-1">
-              Other options
-            </p>
-            <button
-              onClick={useWalletConnectFallback}
-              className="w-full flex items-center justify-between gap-3 p-4 rounded-xl bg-card border border-border hover:bg-muted/60 active:scale-[0.98] transition-all"
-            >
-              <div className="flex items-center gap-3">
-                <Smartphone className="h-5 w-5 text-primary" />
-                <div className="text-left">
-                  <p className="font-semibold text-foreground">Other wallets</p>
-                  <p className="text-xs text-muted-foreground">Use WalletConnect / full wallet list</p>
-                </div>
-              </div>
-              <ExternalLink className="h-4 w-4 text-muted-foreground" />
-            </button>
-          </div>
         </div>
       </SheetContent>
     </Sheet>
