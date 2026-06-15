@@ -73,8 +73,9 @@ const Index = () => {
   const filteredAds = useMemo(() => {
     return liveAds
       .filter((ad) => {
-        if (ad.status === 3) return false;
-        
+        if (ad.status === 3 || ad.status === 4) return false;
+        // Hide expired ads from the marketplace
+        if (ad.adExpiry && ad.adExpiry < now) return false;
         if (parseFloat(ad.tokenAmount) <= 0) return false;
         if (address && ad.seller.toLowerCase() === address.toLowerCase()) return false;
         const matchesCrypto = ad.tokenSymbol === crypto;
@@ -83,6 +84,7 @@ const Index = () => {
         const matchesAmount = !minAmount || parseFloat(ad.tokenAmount) >= parseFloat(minAmount);
         return matchesCrypto && matchesSearch && matchesPrice && matchesAmount;
       })
+      // Buyers: lowest price first so they can buy cheap
       .sort((a, b) => parseFloat(a.pricePerToken) - parseFloat(b.pricePerToken));
   }, [liveAds, crypto, search, maxPrice, minAmount, address, now]);
 
@@ -95,6 +97,8 @@ const Index = () => {
     return buyAds
       .filter((ad) => {
         if (ad.status !== 0) return false;
+        // Hide expired buy ads from the marketplace
+        if (ad.expiresAt && ad.expiresAt < now) return false;
         if (parseFloat(ad.remainingUsdt) <= 0) return false;
         if (address && ad.buyer.toLowerCase() === address.toLowerCase()) return false;
         const matchesSearch = !search || ad.buyer.toLowerCase().includes(search.toLowerCase());
@@ -102,8 +106,9 @@ const Index = () => {
         const matchesAmount = !minAmount || parseFloat(ad.remainingUsdt) >= parseFloat(minAmount);
         return matchesSearch && matchesPrice && matchesAmount;
       })
+      // Sellers: highest rate first so they get the best price
       .sort((a, b) => parseFloat(b.rateInrPerUsdt) - parseFloat(a.rateInrPerUsdt));
-  }, [buyAds, search, maxPrice, minAmount, address]);
+  }, [buyAds, search, maxPrice, minAmount, address, now]);
 
   return (
     <div ref={containerRef} className="min-h-screen bg-background overflow-auto">
