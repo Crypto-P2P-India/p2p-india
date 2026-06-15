@@ -295,10 +295,15 @@ const CreateBuyAdModal = ({ open, onClose }: Props) => {
               </div>
               <div>
                 <Label className="text-xs text-muted-foreground mb-1.5 block">Ad expires after</Label>
-                <select value={adDur} onChange={(e) => setAdDur(Number(e.target.value))} disabled={posting}
-                  className="w-full rounded-md border border-input bg-surface-2 px-3 py-2 text-sm text-foreground">
-                  {AD_DURATION_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
+                <div className="flex flex-wrap gap-1.5">
+                  {AD_DURATION_OPTIONS.map((o) => (
+                    <button key={o.value} type="button" onClick={() => setAdDur(o.value)} disabled={posting}
+                      className={`rounded-md px-3 py-1.5 text-xs font-medium ${
+                        adDur === o.value ? "bg-primary text-primary-foreground"
+                          : "bg-surface-3 text-muted-foreground hover:text-foreground"
+                      }`}>{o.label}</button>
+                  ))}
+                </div>
               </div>
             </div>
 
