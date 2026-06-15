@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BUY_ESCROW_ABI, BUY_ESCROW_ADDRESS } from "@/config/buyEscrowAbi";
-import { formatUnits, parseUnits } from "viem";
+import { formatUnits } from "viem";
 import { toast } from "sonner";
 import ChatPanel from "@/components/ChatPanel";
 
