@@ -691,16 +691,23 @@ const CreateOrderModal = ({ open, onClose }: CreateOrderModalProps) => {
               </div>
               <div>
                 <Label className="text-xs text-muted-foreground mb-1.5 block">Ad expires after</Label>
-                <select
-                  value={adDurationSec}
-                  onChange={(e) => setAdDurationSec(Number(e.target.value))}
-                  disabled={isProcessing}
-                  className="w-full rounded-md border border-input bg-surface-2 px-3 py-2 text-sm text-foreground"
-                >
+                <div className="flex flex-wrap gap-1.5">
                   {AD_DURATION_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setAdDurationSec(opt.value)}
+                      disabled={isProcessing}
+                      className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+                        adDurationSec === opt.value
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-surface-3 text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
                   ))}
-                </select>
+                </div>
               </div>
             </div>
 
