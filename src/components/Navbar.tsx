@@ -6,12 +6,13 @@ import ThemeToggle from "@/components/ThemeToggle";
 import ApkDownloadButton from "@/components/ApkDownloadButton";
 import SideMenu from "@/components/SideMenu";
 import MobileWalletSheet from "@/components/MobileWalletSheet";
-import { isNativeApp } from "@/lib/platform";
+import { isNativeApp, useAppStyleUI } from "@/lib/platform";
 import { useAccount } from "wagmi";
 import { useGlobalUnreadCount } from "@/hooks/useGlobalUnreadCount";
 
 const Navbar = () => {
-  const native = isNativeApp();
+  const appStyle = useAppStyleUI();
+  const native = appStyle;
   const { pathname } = useLocation();
   const { address } = useAccount();
   const unread = useGlobalUnreadCount(address);
