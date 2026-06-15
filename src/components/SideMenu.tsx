@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, ArrowLeftRight, ShoppingBag, Handshake, PlusCircle, Info, BookOpen, FileText, Shield, MessageCircle, Wallet } from "lucide-react";
+import { Menu, ArrowLeftRight, ShoppingBag, Handshake, PlusCircle, Info, BookOpen, FileText, Shield, MessageCircle, Wallet, UserCircle2 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useAccount } from "wagmi";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
@@ -12,6 +12,7 @@ const PRIMARY = [
   { label: "P2P Marketplace", href: "/", icon: ArrowLeftRight },
   { label: "My Ads", href: "/my-ads", icon: ShoppingBag },
   { label: "My Deals", href: "/my-orders", icon: Handshake, badge: true },
+  { label: "Profile", href: "/profile", icon: UserCircle2 },
 ];
 
 const SECONDARY = [
