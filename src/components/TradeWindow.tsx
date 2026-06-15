@@ -601,7 +601,7 @@ const TradeWindow = ({ ad, userAddress, onClose }: TradeWindowProps) => {
           {/* Chat sidebar */}
           {showChat && dealId !== null && (
             <div className="w-80 border-l border-border flex-shrink-0">
-              <ChatPanel dealId={dealId} userAddress={userAddress} />
+              <ChatPanel dealId={dealId} userAddress={userAddress} partnerAddress={ad.seller} />
             </div>
           )}
         </div>
