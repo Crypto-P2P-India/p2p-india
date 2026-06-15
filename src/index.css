@@ -114,7 +114,7 @@
     font-family: 'Inter', sans-serif;
     -webkit-tap-highlight-color: transparent;
     -webkit-touch-callout: none;
-    overscroll-behavior-y: none;
+    overscroll-behavior-y: auto;
   }
 
   /* Safe area insets for notched devices */
@@ -190,24 +190,9 @@
   }
 }
 
-/* Smooth, MacBook-style scrolling for the whole app */
-html {
-  scroll-behavior: smooth;
+/* MacBook-style momentum scrolling (native, non-blocking) */
+html, body {
   -webkit-overflow-scrolling: touch;
 }
 
-body {
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
-}
-
-/* Inner scroll containers get momentum + smooth too */
-.overflow-auto,
-.overflow-y-auto,
-.overflow-scroll,
-.overflow-y-scroll {
-  -webkit-overflow-scrolling: touch;
-  scroll-behavior: smooth;
-  overscroll-behavior: contain;
-}
 
