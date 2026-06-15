@@ -24,6 +24,7 @@ public class MainActivity extends BridgeActivity {
     private static final int PERMISSION_REQUEST_CODE = 1209;
     private static final String PREFS_NAME = "crypto_p2p_native";
     private static final String PERMISSIONS_PROMPTED_KEY = "runtime_permissions_prompted";
+    private static final String[] OKX_PACKAGES = {"com.okinc.okex.gp", "com.okinc.okex"};
 
     @Override
     protected void load() {
@@ -51,22 +52,30 @@ public class MainActivity extends BridgeActivity {
         String scheme = uri.getScheme();
         if (scheme == null) return bridge.launchIntent(uri);
 
-        Uri target = uri;
         if ("wc".equalsIgnoreCase(scheme)) {
-            target = Uri.parse("okex://main/wc?uri=" + Uri.encode(uri.toString()));
+            for (String packageName : OKX_PACKAGES) {
+                if (startWalletIntent(uri, packageName)) return true;
+            }
+            return startWalletIntent(uri, null) || bridge.launchIntent(uri);
         }
 
-        if ("okx".equalsIgnoreCase(scheme) || "okex".equalsIgnoreCase(scheme) || "wc".equalsIgnoreCase(scheme)) {
-            try {
-                Intent intent = new Intent(Intent.ACTION_VIEW, target);
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                startActivity(intent);
-            } catch (ActivityNotFoundException ignored) {
-            }
-            return true;
+        if ("okx".equalsIgnoreCase(scheme) || "okex".equalsIgnoreCase(scheme)) {
+            return startWalletIntent(uri, null) || bridge.launchIntent(uri);
         }
 
         return bridge.launchIntent(uri);
+    }
+
+    private boolean startWalletIntent(Uri uri, String packageName) {
+        try {
+            Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            if (packageName != null) intent.setPackage(packageName);
+            startActivity(intent);
+            return true;
+        } catch (ActivityNotFoundException ignored) {
+            return false;
+        }
     }
 
     private void requestStartupPermissionsOnce() {

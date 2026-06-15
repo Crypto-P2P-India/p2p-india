@@ -5,12 +5,12 @@ import { Capacitor } from "@capacitor/core";
 import { SplashScreen } from "@capacitor/splash-screen";
 import { toast } from "sonner";
 
-// In Capacitor Android WebView, `window.open('okx://wc?uri=...')` and similar
+// In Capacitor Android WebView, `window.open('wc:...')` and similar
 // wallet deep links are silently dropped. We override window.open AND
 // anchor clicks so any non-http(s) scheme is dispatched via a hidden iframe
 // navigation — this reliably triggers Android's shouldOverrideUrlLoading
 // with the FULL URI (including the WalletConnect `uri` query param)
-// preserved, so OKX / Trust / MetaMask actually receive the connection
+// preserved, so OKX / Trust / MetaMask can receive the connection
 // request and prompt the user.
 if (Capacitor.isNativePlatform()) {
   setTimeout(() => {
@@ -19,7 +19,7 @@ if (Capacitor.isNativePlatform()) {
 
   const walletNameFromScheme = (href: string): string | null => {
     const scheme = href.split(":")[0].toLowerCase();
-    if (scheme.startsWith("okx")) return "OKX Wallet";
+    if (scheme.startsWith("okx") || scheme.startsWith("okex")) return "OKX Wallet";
     if (scheme.startsWith("metamask")) return "MetaMask";
     if (scheme.startsWith("trust")) return "Trust Wallet";
     if (scheme.startsWith("rainbow")) return "Rainbow";
