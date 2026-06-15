@@ -56,6 +56,8 @@ const MyAds = () => {
   const [pendingAdId, setPendingAdId] = useState<number | null>(null);
   const [chatDealId, setChatDealId] = useState<number | null>(null);
   const [copied, setCopied] = useState<number | null>(null);
+  const [pendingReleaseDealId, setPendingReleaseDealId] = useState<number | null>(null);
+  const [pendingCancelDealId, setPendingCancelDealId] = useState<number | null>(null);
   const [now, setNow] = useState(Math.floor(Date.now() / 1000));
 
   useEffect(() => {
