@@ -310,10 +310,7 @@ const Index = () => {
               </div>
             ) : filteredBuyAds.length > 0 ? (
               filteredBuyAds.map((ad, i) => (
-                <BuyAdCard key={ad.adId} ad={ad} index={i} onTrade={() => {
-                  // Phase 2 will mount BuyTradeWindow here.
-                  navigate("/my-orders");
-                }} />
+                <BuyAdCard key={ad.adId} ad={ad} index={i} onTrade={() => setSelectedBuyAd(ad)} />
               ))
             ) : (
               <div className="flex flex-col items-center justify-center rounded-lg border border-border bg-card py-16 text-center animate-fade-up">
@@ -340,11 +337,10 @@ const Index = () => {
       <CreateBuyAdModal open={showCreateBuy} onClose={() => { setShowCreateBuy(false); refetchBuyAds(); }} />
 
       {selectedAd && address && (
-        <TradeWindow
-          ad={selectedAd}
-          userAddress={address}
-          onClose={() => { setSelectedAd(null); refetchAds(); }}
-        />
+        <TradeWindow ad={selectedAd} userAddress={address} onClose={() => { setSelectedAd(null); refetchAds(); }} />
+      )}
+      {selectedBuyAd && address && (
+        <BuyTradeWindow ad={selectedBuyAd} userAddress={address} onClose={() => { setSelectedBuyAd(null); refetchBuyAds(); }} />
       )}
     </div>
   );
