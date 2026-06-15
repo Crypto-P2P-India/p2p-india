@@ -1,5 +1,6 @@
 {
-  "version": "1.12",
-  "apkUrl": "/downloads/crypto-p2p.apk?v=1.12",
-  "notes": "Cache-busted APK download, green-tinted theme, network guard and audit fixes."
+  "version": "1.13",
+  "size": "8.4 MB",
+  "apkUrl": "/downloads/crypto-p2p.apk?v=1.13",
+  "notes": "Header spacing fix (1cm gap on all pages), MacBook-style smooth scrolling, sticky header polish."
 }

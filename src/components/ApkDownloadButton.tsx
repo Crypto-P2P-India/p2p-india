@@ -35,6 +35,7 @@ const ApkDownloadButton = () => {
             ? `${d.apkUrl}${d.apkUrl.includes("?") ? "&" : "?"}t=${Date.now()}`
             : `${APK_BASE_URL}?v=${d.version}&t=${Date.now()}`);
         }
+        if (d?.size) setSize(d.size);
       })
       .catch(() => setVersion(""));
 
@@ -43,8 +44,9 @@ const ApkDownloadButton = () => {
         const len = r.headers.get("content-length");
         if (len) setSize(formatBytes(parseInt(len, 10)));
       })
-      .catch(() => setSize(""));
+      .catch(() => {});
   }, []);
+
 
 
   return (

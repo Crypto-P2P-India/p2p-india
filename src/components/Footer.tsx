@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Download } from "lucide-react";
-import { APP_VERSION } from "@/lib/platform";
+import { APP_VERSION, APP_SIZE } from "@/lib/platform";
 import { P2P_CONTRACT_ADDRESS } from "@/config/wagmi";
 
 const Footer = () => (
@@ -22,8 +22,9 @@ const Footer = () => (
             className="inline-flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-xs font-bold text-primary hover:bg-primary/20 transition-colors"
           >
             <Download className="h-3.5 w-3.5" />
-            Download Android APK · v{APP_VERSION}
+            Download Android APK · v{APP_VERSION} · {APP_SIZE}
           </a>
+
         </div>
 
         {/* Quick Links */}
