@@ -125,8 +125,10 @@ contract BuyEscrow {
 
     uint256 public nextAdId = 1;
     uint256 public nextDealId = 1;
-    mapping(uint256 => Ad) public ads;
-    mapping(uint256 => Deal) public deals;
+    // Keep these private: Solidity's auto-generated getter for the large Ad
+    // struct can hit "Stack too deep" in Remix. Use getAd/getDeal below.
+    mapping(uint256 => Ad) private ads;
+    mapping(uint256 => Deal) private deals;
     mapping(address => uint256[]) public buyerAds;
     mapping(address => uint256[]) public sellerDeals;
     mapping(address => uint8) public sellerOpenCount;
@@ -322,7 +324,6 @@ contract BuyEscrow {
     // ---------- Seller reclaims after expired pay window (buyer didn't mark paid) ----------
     function reclaimExpired(uint256 dealId) external nonReentrant {
         Deal storage d = deals[dealId];
-        Ad storage a = ads[d.adId];
         require(msg.sender == d.seller, "NOT_SELLER");
         require(d.status == DealStatus.Pending, "NOT_PENDING");
         require(block.timestamp > d.paymentDeadline, "NOT_EXPIRED");
