@@ -14,6 +14,7 @@ import Navbar from "@/components/Navbar";
 import ChatPanel from "@/components/ChatPanel";
 import { cleanupDealAttachments } from "@/lib/dealCleanup";
 import DeployContractCard from "@/components/DeployContractCard";
+import BuyEscrowAdmin from "@/components/admin/BuyEscrowAdmin";
 import { ADMIN_ALLOWLIST } from "@/lib/admin";
 
 const DEAL_STATUS_LABELS: Record<number, string> = {
@@ -257,6 +258,9 @@ const isAllowlisted = address && ADMIN_ALLOWLIST.includes(address.toLowerCase())
             </CardContent>
           </Card>
         </div>
+
+        {/* Buy Escrow contract admin */}
+        <BuyEscrowAdmin />
       </main>
     </div>
   );
