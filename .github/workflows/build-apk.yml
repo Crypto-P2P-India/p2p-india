@@ -168,8 +168,8 @@ jobs:
           body: |
             Automated build of Crypto P2P Android APK.
             Version: ${{ steps.version.outputs.version }}
-            Size: ${{ steps.version.outputs.size }}
-          files: /tmp/crypto-p2p.apk
+            Size: ${{ steps.apk.outputs.size }}
+          files: ${{ steps.apk.outputs.path }}
           fail_on_unmatched_files: true
           make_latest: true
         env:
@@ -179,21 +179,24 @@ jobs:
         run: |
           set -e
           VERSION="${{ steps.version.outputs.version }}"
-          SIZE="${{ steps.version.outputs.size }}"
+          SIZE="${{ steps.apk.outputs.size }}"
+          FILENAME="${{ steps.version.outputs.filename }}"
           REPO="${{ github.repository }}"
-          APK_URL="https://github.com/${REPO}/releases/download/v${VERSION}/crypto-p2p.apk"
+          APK_URL="https://github.com/${REPO}/releases/download/v${VERSION}/${FILENAME}"
           node -e "
             const fs = require('fs');
             const p = 'public/app-version.json';
             const j = JSON.parse(fs.readFileSync(p, 'utf8'));
             j.apkUrl = process.env.APK_URL;
             j.size = process.env.SIZE;
+            j.filename = process.env.FILENAME;
             fs.writeFileSync(p, JSON.stringify(j, null, 2) + '\n');
           "
           cat public/app-version.json
         env:
-          APK_URL: https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.version }}/crypto-p2p.apk
-          SIZE: ${{ steps.version.outputs.size }}
+          APK_URL: https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.version }}/${{ steps.version.outputs.filename }}
+          SIZE: ${{ steps.apk.outputs.size }}
+          FILENAME: ${{ steps.version.outputs.filename }}
 
       - name: Commit updated version manifest
         run: |
