@@ -618,6 +618,27 @@ const MyAds = () => {
                               </div>
                             );
                           })()}
+
+                          {/* Actions for expired ads with unclaimed funds */}
+                          {ad.status === 4 && parseFloat(ad.tokenAmount) > 0 && (() => {
+                            const hasLocked = parseFloat(ad.lockedAmount) > 0;
+                            return (
+                              <div className="mt-3 space-y-2 rounded-md border border-sell/30 bg-sell/5 p-3">
+                                <p className="text-xs text-foreground">
+                                  ⏰ This ad expired with <span className="font-medium">{ad.tokenAmount} {ad.tokenSymbol}</span> unsold.
+                                  {hasLocked
+                                    ? " Some funds are still locked in an active deal — resolve it first to claim the rest."
+                                    : " Claim your refund to return the funds to your wallet."}
+                                </p>
+                                <div className="flex gap-2">
+                                  <Button variant="sell" size="sm" onClick={() => { setPendingAdId(ad.adId); cancelAd({ address: P2P_CONTRACT_ADDRESS, abi: P2P_ESCROW_ABI, functionName: "cancelAd", args: [BigInt(ad.adId)] } as any); }} disabled={hasLocked || (cancelPending && pendingAdId === ad.adId)}>
+                                    {cancelPending && pendingAdId === ad.adId ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+                                    Claim Refund
+                                  </Button>
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </div>
 
                         {/* Chat panel */}
