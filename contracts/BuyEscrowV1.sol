@@ -125,8 +125,10 @@ contract BuyEscrow {
 
     uint256 public nextAdId = 1;
     uint256 public nextDealId = 1;
-    mapping(uint256 => Ad) public ads;
-    mapping(uint256 => Deal) public deals;
+    // Keep these private: Solidity's auto-generated getter for the large Ad
+    // struct can hit "Stack too deep" in Remix. Use getAd/getDeal below.
+    mapping(uint256 => Ad) private ads;
+    mapping(uint256 => Deal) private deals;
     mapping(address => uint256[]) public buyerAds;
     mapping(address => uint256[]) public sellerDeals;
     mapping(address => uint8) public sellerOpenCount;
