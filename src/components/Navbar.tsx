@@ -135,11 +135,11 @@ const Navbar = () => {
           </div>
         </div>
       </nav>
-      {/* Spacer to offset fixed navbar height (including safe-area inset) + ~1cm breathing room */}
+      {/* Spacer to offset fixed navbar height (including safe-area inset) + breathing room */}
       <div
         aria-hidden
-        className="h-14 sm:h-20"
-        style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.5cm)" }}
+        style={{ height: "calc(3.5rem + env(safe-area-inset-top) + 0.5cm)" }}
+        className="sm:!h-[calc(5rem+env(safe-area-inset-top)+0.5cm)]"
       />
 
       {native && <MobileWalletSheet open={walletSheetOpen} onOpenChange={setWalletSheetOpen} />}
