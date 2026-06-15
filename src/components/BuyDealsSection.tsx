@@ -196,7 +196,7 @@ const BuyDealsSection = ({ role }: Props) => {
                   <X className="h-4 w-4" />
                 </button>
                 <div className="h-96">
-                  <ChatPanel dealId={BUY_CHAT_OFFSET + d.dealId} userAddress={address} />
+                  <ChatPanel dealId={BUY_CHAT_OFFSET + d.dealId} userAddress={address} partnerAddress={role === "seller" ? d.buyer : d.seller} />
                 </div>
               </div>
             )}
