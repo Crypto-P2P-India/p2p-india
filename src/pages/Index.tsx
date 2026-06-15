@@ -38,6 +38,7 @@ const Index = () => {
     return () => window.removeEventListener("open-create-modal", handler);
   }, [mode]);
   const [selectedAd, setSelectedAd] = useState<LiveAd | null>(null);
+  const [selectedBuyAd, setSelectedBuyAd] = useState<LiveBuyAd | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [maxPrice, setMaxPrice] = useState("");
   const [minAmount, setMinAmount] = useState("");
