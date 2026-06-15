@@ -7,6 +7,14 @@ import {
   coinbaseWallet,
   phantomWallet,
   injectedWallet,
+  bitgetWallet,
+  binanceWallet,
+  bybitWallet,
+  rainbowWallet,
+  safeWallet,
+  ledgerWallet,
+  tokenPocketWallet,
+  imTokenWallet,
 } from "@rainbow-me/rainbowkit/wallets";
 import { bsc } from "wagmi/chains";
 import { http } from "wagmi";
@@ -40,11 +48,28 @@ export const config = getDefaultConfig({
   wallets: [
     {
       groupName: "Popular",
-      wallets: [metaMaskWallet, okxWallet, trustWallet, coinbaseWallet, walletConnectWallet],
+      wallets: [
+        injectedWallet,
+        metaMaskWallet,
+        okxWallet,
+        bitgetWallet,
+        binanceWallet,
+        trustWallet,
+        walletConnectWallet,
+      ],
     },
     {
       groupName: "More",
-      wallets: [phantomWallet, injectedWallet],
+      wallets: [
+        bybitWallet,
+        coinbaseWallet,
+        rainbowWallet,
+        tokenPocketWallet,
+        imTokenWallet,
+        phantomWallet,
+        ledgerWallet,
+        safeWallet,
+      ],
     },
   ],
 });

@@ -29,14 +29,49 @@ const WALLETS: WalletApp[] = [
     name: "OKX Wallet",
     icon: "⚫",
     connectorNames: ["OKX Wallet", "OKX"],
-    getDeepLink: (uri) => uri,
+    getDeepLink: (uri) => `okx://wallet/wc?uri=${encodeWalletUri(uri)}`,
+  },
+  {
+    id: "bitget",
+    name: "Bitget Wallet",
+    icon: "🟢",
+    connectorNames: ["Bitget Wallet", "Bitget", "BitKeep"],
+    getDeepLink: (uri) => `https://bkcode.vip/wc?uri=${encodeWalletUri(uri)}`,
+  },
+  {
+    id: "binance",
+    name: "Binance Wallet",
+    icon: "🟡",
+    connectorNames: ["Binance Wallet", "Binance"],
+    getDeepLink: (uri) => `bnc://app.binance.com/cedefi/wc?uri=${encodeWalletUri(uri)}`,
   },
   {
     id: "trust",
     name: "Trust Wallet",
     icon: "🛡️",
     connectorNames: ["Trust Wallet", "Trust"],
-    getDeepLink: (uri) => `trust://wc?uri=${encodeWalletUri(uri)}`,
+    getDeepLink: (uri) => `https://link.trustwallet.com/wc?uri=${encodeWalletUri(uri)}`,
+  },
+  {
+    id: "bybit",
+    name: "Bybit Wallet",
+    icon: "🟠",
+    connectorNames: ["Bybit Wallet", "Bybit"],
+    getDeepLink: (uri) => `bybitapp://open?targetUrl=bybitapp%3A%2F%2Fwallet%2Fwc%3Furi%3D${encodeWalletUri(uri)}`,
+  },
+  {
+    id: "tokenpocket",
+    name: "TokenPocket",
+    icon: "🟣",
+    connectorNames: ["TokenPocket", "Token Pocket"],
+    getDeepLink: (uri) => `tpoutside://wc?uri=${encodeWalletUri(uri)}`,
+  },
+  {
+    id: "imtoken",
+    name: "imToken",
+    icon: "🔷",
+    connectorNames: ["imToken"],
+    getDeepLink: (uri) => `imtokenv2://wc?uri=${encodeWalletUri(uri)}`,
   },
   {
     id: "coinbase",
@@ -97,11 +132,11 @@ const MobileWalletSheet = ({ open, onOpenChange }: Props) => {
   const openWalletDeepLink = (w: WalletApp, uri: string) => {
     const deepLink = w.getDeepLink?.(uri);
     if (!deepLink) return;
-    if (/^(wc|okx|okex|trust|metamask):/i.test(deepLink)) {
-      window.open(deepLink, "_system");
+    if (/^https?:/i.test(deepLink)) {
+      window.location.href = deepLink;
       return;
     }
-    window.location.href = deepLink;
+    window.open(deepLink, "_system");
   };
 
   const connectWalletApp = async (w: WalletApp) => {
