@@ -90,15 +90,9 @@ export function useBuyContractDeals() {
       const amount = BigInt(String(d.amount ?? 0));
       const rate = BigInt(String(ad.rateInrPerUsdt ?? 0));
       const stateEnum = Number(d.status ?? 0);
-      // Contract DealStatus enum: 0 None, 1 Locked, 2 Paid, 3 Released, 4 Reclaimed, 5 Disputed, 6 ResolvedToBuyer, 7 ResolvedToSeller
-      const status =
-        stateEnum === 1 ? 0 :
-        stateEnum === 2 ? 1 :
-        stateEnum === 3 ? 2 :
-        stateEnum === 4 ? 3 :
-        stateEnum === 5 ? 4 :
-        stateEnum === 6 ? 5 :
-        stateEnum === 7 ? 6 : 0;
+      // Contract DealStatus enum (BuyEscrowV1): 0 Pending, 1 Paid, 2 Released, 3 Cancelled, 4 Disputed, 5 ResolvedToBuyer, 6 ResolvedToSeller
+      // App-facing status (1:1): 0 active/locked, 1 buyer-paid, 2 completed, 3 reclaimed, 4 disputed, 5 resolved→buyer, 6 resolved→seller
+      const status = stateEnum;
 
       const inrRaw = amount * rate;
       deals.push({
