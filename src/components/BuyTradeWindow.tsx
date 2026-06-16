@@ -25,18 +25,22 @@ const BuyTradeWindow = ({ ad, userAddress, onClose }: Props) => {
   const { switchChain } = useSwitchChain();
   const wrongNet = chainId !== bsc.id;
 
-  const minAmt = Math.max(1, Math.floor(parseFloat(ad.minTradeUsdt) || 1));
-  const maxAmt = Math.floor(parseFloat(ad.remainingUsdt) || 0);
-  const [sellAmount, setSellAmount] = useState(String(Math.min(minAmt, maxAmt || minAmt)));
+  const DECIMALS = 2; // USDT input precision
+  const roundDown = (n: number, d: number) => Math.floor(n * 10 ** d) / 10 ** d;
+  const minAmt = Math.max(0.01, parseFloat(ad.minTradeUsdt) || 0.01);
+  const maxAmt = roundDown(parseFloat(ad.remainingUsdt) || 0, DECIMALS);
+  const fmt = (n: number) => parseFloat(n.toFixed(DECIMALS)).toString();
+  const [sellAmount, setSellAmount] = useState(fmt(Math.min(minAmt, maxAmt || minAmt)));
 
-  const sellNum = parseInt(sellAmount, 10);
+  const sellNum = parseFloat(sellAmount);
   const sellSafe = Number.isFinite(sellNum) ? sellNum : 0;
-  const valid = Number.isInteger(sellSafe) && sellSafe >= minAmt && sellSafe <= maxAmt;
+  const decUsed = (sellAmount.split(".")[1] || "").length;
+  const valid = sellSafe >= minAmt && sellSafe <= maxAmt && decUsed <= DECIMALS;
   const rate = parseFloat(ad.rateInrPerUsdt) || 0;
   const inrTotal = useMemo(() => (sellSafe * rate).toFixed(2), [sellSafe, rate]);
 
   const isSelf = ad.buyer.toLowerCase() === userAddress.toLowerCase();
-  const amountWei = sellSafe > 0 ? parseUnits(String(sellSafe), 18) : 0n;
+  const amountWei = sellSafe > 0 ? parseUnits(fmt(sellSafe), 18) : 0n;
   // Seller upfront fee = amount * sellerFeeBps / 10000
   const sellerFeeWei = (amountWei * BigInt(ad.sellerFeeBps)) / 10000n;
   const totalNeededWei = amountWei + sellerFeeWei;
@@ -111,7 +115,7 @@ const BuyTradeWindow = ({ ad, userAddress, onClose }: Props) => {
   };
 
   const handleSubmit = () => {
-    if (!valid) { toast.error(`Whole number ${minAmt}-${maxAmt}`); return; }
+    if (!valid) { toast.error(`Enter ${minAmt}–${maxAmt} USDT (max ${DECIMALS} decimals)`); return; }
     if (exceeds) { toast.error("Insufficient USDT"); return; }
     if (isSelf) { toast.error("Cannot accept your own ad"); return; }
     if (needsApproval) {
@@ -183,17 +187,26 @@ const BuyTradeWindow = ({ ad, userAddress, onClose }: Props) => {
               </div>
               <div className="relative">
                 <Input
-                  type="number" inputMode="numeric" min={minAmt} max={maxAmt} step={1}
+                  type="text" inputMode="decimal"
                   value={sellAmount}
-                  onChange={(e) => setSellAmount(e.target.value.replace(/[^\d]/g, ""))}
-                  onKeyDown={(e) => { if (["e","E","+","-",".",","].includes(e.key)) e.preventDefault(); }}
+                  onChange={(e) => {
+                    let v = e.target.value.replace(/[^\d.]/g, "");
+                    const firstDot = v.indexOf(".");
+                    if (firstDot !== -1) {
+                      v = v.slice(0, firstDot + 1) + v.slice(firstDot + 1).replace(/\./g, "");
+                      const [i, d = ""] = v.split(".");
+                      v = i + "." + d.slice(0, DECIMALS);
+                    }
+                    setSellAmount(v);
+                  }}
+                  onKeyDown={(e) => { if (["e","E","+","-",","].includes(e.key)) e.preventDefault(); }}
                   className="bg-surface-2 border-input pr-16 text-base h-11"
                   disabled={processing}
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">USDT</span>
               </div>
               {!valid && sellAmount !== "" && (
-                <p className="text-xs text-sell">Enter a whole number {minAmt}–{maxAmt}.</p>
+                <p className="text-xs text-sell">Enter {minAmt}–{maxAmt} USDT (max {DECIMALS} decimals).</p>
               )}
               {exceeds && (
                 <p className="text-xs text-sell">Insufficient USDT (need {parseFloat(formatUnits(totalNeededWei, 18)).toFixed(4)}).</p>
@@ -220,8 +233,8 @@ const BuyTradeWindow = ({ ad, userAddress, onClose }: Props) => {
               {processing && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
               {step === "approving" ? "Approving USDT…"
                 : step === "accepting" ? "Locking USDT…"
-                : needsApproval ? `Approve & Lock ${sellSafe} USDT`
-                : `Lock ${sellSafe} USDT — Accept Deal`}
+                : needsApproval ? `Approve & Lock ${fmt(sellSafe)} USDT`
+                : `Lock ${fmt(sellSafe)} USDT — Accept Deal`}
             </Button>
           </div>
         )}
