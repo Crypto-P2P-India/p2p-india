@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import ChatPanel from "@/components/ChatPanel";
 import { cleanupDealAttachments } from "@/lib/dealCleanup";
-import DeployContractCard from "@/components/DeployContractCard";
+
 import BuyEscrowAdmin from "@/components/admin/BuyEscrowAdmin";
 import { ADMIN_ALLOWLIST } from "@/lib/admin";
 
@@ -172,7 +172,6 @@ const isAllowlisted = address && ADMIN_ALLOWLIST.includes(address.toLowerCase())
           </Button>
         </div>
 
-        <DeployContractCard />
 
         {/* Stats cards */}
         <div className="grid grid-cols-2 gap-4 mb-8 sm:grid-cols-4 animate-fade-up" style={{ animationDelay: "100ms" }}>
