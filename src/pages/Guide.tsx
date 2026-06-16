@@ -9,17 +9,35 @@ const SECTIONS = [
     title: "What is Crypto P2P?",
     content: [
       "Crypto P2P is a fully decentralised peer-to-peer marketplace built on BNB Smart Chain. It allows users to transfer USDT and BNB directly with each other using Indian Rupees (INR) — without any middlemen or centralised intermediaries.",
-      "Every transfer is secured by an on-chain escrow smart contract. The seller's tokens are locked in the contract the moment they create an ad. This means buyers can proceed with confidence — the crypto is already held safely before any money changes hands.",
-      "There are zero platform fees. The only cost is the tiny BNB gas fee for on-chain transactions, which is usually under ₹1.",
+      "Every transfer is secured by an on-chain escrow smart contract. Whether someone posts a Sell ad (locks crypto) or a Buy ad (locks INR-equivalent value as collateral concept), the funds are protected by contract logic — not by us.",
+      "There are zero platform fees. The only cost is the tiny BNB gas fee for on-chain transactions, which is usually under ₹1. The platform is available on web and as an Android app.",
     ],
   },
   {
     id: "connect",
     title: "Step 1 — Connect Your Wallet",
     content: [
-      "To get started, you need a crypto wallet that supports BNB Smart Chain. Popular options include MetaMask, Trust Wallet, and Coinbase Wallet.",
-      "Click the \"Connect Wallet\" button in the top-right corner of the navbar. A popup will appear showing supported wallets. Select yours, approve the connection, and make sure you're on the BNB Smart Chain network.",
-      "Your wallet address acts as your identity on the platform — no account creation, email, or password needed.",
+      "You can connect with any BNB Smart Chain wallet — MetaMask, Trust Wallet, OKX Wallet, Bitget, Binance Wallet, TokenPocket, Coinbase Wallet and more, both on desktop browsers and inside mobile wallet apps via WalletConnect.",
+      "On mobile, tap \"Connect Wallet\" → choose your wallet from the bottom sheet. The platform deep-links straight into the installed app (no copying URIs). If the app isn't installed, you're sent to its download page.",
+      "Your wallet address is your identity — no email, no password, no KYC. Make sure you're switched to BNB Smart Chain (Mainnet) before trading.",
+    ],
+  },
+  {
+    id: "username",
+    title: "Step 1b — Set a Username (Optional)",
+    content: [
+      "Open the Profile page to claim a public username for your wallet. It shows up on your ads and in chat so traders see a name instead of a long 0x... address.",
+      "Usernames are secured by wallet signature — when you save or change one, your wallet pops up to sign a short message. The backend verifies that signature on-chain, so only the true wallet owner can edit their own username. Nobody (not even us) can change it for you.",
+      "Usernames are unique and case-insensitive. You can update yours anytime by signing again.",
+    ],
+  },
+  {
+    id: "ad-types",
+    title: "Sell Ads vs Buy Ads",
+    content: [
+      "Sell Ads: posted by people who already hold crypto and want INR. The seller's USDT/BNB is locked in escrow up-front. Buyers browse these on the main P2P page.",
+      "Buy Ads: posted by people who want to buy crypto with INR. The Buy escrow contract coordinates the matching seller delivering tokens. Sellers can browse open Buy ads and fulfil them.",
+      "My Deals page is for buyers tracking their purchases. My Ads page is for sellers managing their listings. The two are kept separate to avoid confusion.",
     ],
   },
   {
