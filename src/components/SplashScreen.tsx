@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
+import { isNativeApp } from "@/lib/platform";
 
 const SplashScreen = () => {
-  const [visible, setVisible] = useState(true);
+  const [visible, setVisible] = useState(() => isNativeApp());
   const [fading, setFading] = useState(false);
 
   useEffect(() => {
+    if (!isNativeApp()) return;
     if (typeof window !== "undefined" && sessionStorage.getItem("splash_shown") === "1") {
       setVisible(false);
       return;
