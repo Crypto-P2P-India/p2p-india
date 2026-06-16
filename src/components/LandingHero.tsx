@@ -55,7 +55,7 @@ const LandingHero = () => (
 
           <ScrollReveal delay={140} duration={600}>
             <p className="mt-5 max-w-2xl text-sm sm:text-lg leading-relaxed text-muted-foreground">
-              Trade crypto directly with other users with zero fees. Full custody, decentralized escrow, and lightning-fast settlement.
+              Trade crypto directly with other users. <Link to="/transparency" className="text-primary hover:underline font-semibold">0% platform fee</Link> — you only pay ~₹2–₹10 BSC gas. Full custody, decentralized escrow, lightning-fast settlement.
             </p>
           </ScrollReveal>
 
