@@ -29,7 +29,7 @@ const WALLETS: WalletApp[] = [
     name: "OKX Wallet",
     icon: "⚫",
     connectorNames: ["OKX Wallet", "OKX"],
-    getDeepLink: (uri) => `okx://wallet/wc?uri=${encodeWalletUri(uri)}`,
+    getDeepLink: (uri) => `https://www.okx.com/download?deeplink=${encodeWalletUri(`okx://wallet/wc?uri=${uri}`)}`,
   },
   {
     id: "bitget",
