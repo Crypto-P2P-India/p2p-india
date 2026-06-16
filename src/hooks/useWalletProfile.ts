@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
+import { signMessage } from "@wagmi/core";
+import { config as wagmiConfig } from "@/config/wagmi";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface WalletProfile {
@@ -10,7 +12,7 @@ export interface WalletProfile {
 
 const norm = (a: string) => a.toLowerCase();
 
-/** Manage the current user's wallet profile (read + upsert). */
+/** Manage the current user's wallet profile (read + signature-gated update). */
 export function useWalletProfile(address: string | undefined) {
   const [profile, setProfile] = useState<WalletProfile | null>(null);
   const [loading, setLoading] = useState(false);
@@ -41,23 +43,28 @@ export function useWalletProfile(address: string | undefined) {
       if (!/^[A-Za-z0-9_]{3,20}$/.test(trimmed)) {
         return { ok: false, error: "3-20 chars, letters, numbers, underscore only" };
       }
-      // Pre-check uniqueness (case-insensitive via citext)
-      const { data: existing } = await supabase
-        .from("wallet_profiles")
-        .select("wallet_address")
-        .eq("username", trimmed)
-        .maybeSingle();
-      if (existing && existing.wallet_address !== norm(address)) {
-        return { ok: false, error: "Username already taken" };
+
+      // Ask the wallet owner to sign a structured message proving control of this address.
+      const timestamp = Date.now();
+      const message = `Crypto P2P username update\nWallet: ${address}\nUsername: ${trimmed}\nTimestamp: ${timestamp}`;
+
+      let signature: string;
+      try {
+        signature = await signMessage(wagmiConfig, { message, account: address as `0x${string}` });
+      } catch (e) {
+        return { ok: false, error: "Signature rejected" };
       }
 
-      const { error } = await supabase
-        .from("wallet_profiles")
-        .upsert(
-          { wallet_address: norm(address), username: trimmed },
-          { onConflict: "wallet_address" }
-        );
-      if (error) return { ok: false, error: error.message };
+      const { data, error } = await supabase.functions.invoke("update-wallet-username", {
+        body: { address: norm(address), username: trimmed, message, signature },
+      });
+      if (error) {
+        const msg = (data as { error?: string } | null)?.error || error.message;
+        return { ok: false, error: msg };
+      }
+      if (data && (data as { error?: string }).error) {
+        return { ok: false, error: (data as { error: string }).error };
+      }
       await fetchProfile();
       return { ok: true };
     },
