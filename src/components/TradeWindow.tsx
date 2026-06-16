@@ -400,9 +400,7 @@ const TradeWindow = ({ ad, userAddress, onClose }: TradeWindowProps) => {
                           if (firstDot !== -1) {
                             v = v.slice(0, firstDot + 1) + v.slice(firstDot + 1).replace(/\./g, "");
                             const [intPart, decPart = ""] = v.split(".");
-                            v = decimalsAllowed === 0
-                              ? intPart
-                              : intPart + "." + decPart.slice(0, decimalsAllowed);
+                            v = intPart + "." + decPart.slice(0, decimalsAllowed);
                           }
                           setBuyAmount(v);
                         }}
