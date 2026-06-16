@@ -172,15 +172,29 @@ const MyAds = () => {
         {isConnected && (
           <section className="mb-8">
             <h2 className="text-base font-semibold text-foreground mb-3">Your Buy Ads</h2>
+            {/* Sub-tabs for buy section */}
+            <div className="flex gap-1 mb-4 border-b border-border overflow-x-auto">
+              {(["live","cancelled","completed","history"] as const).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setBuyTab(t)}
+                  className={`px-4 py-2.5 text-sm font-medium transition-colors relative whitespace-nowrap capitalize ${buyTab === t ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  {t}
+                  {buyTab === t && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />}
+                </button>
+              ))}
+            </div>
             <div className="space-y-4">
-              <MyBuyAdsList />
+              <MyBuyAdsList filter={buyTab} />
               <div>
                 <h3 className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Deals on your buy ads</h3>
-                <BuyDealsSection role="buyer" />
+                <BuyDealsSection role="buyer" filter={buyTab} />
               </div>
             </div>
           </section>
         )}
+
 
         {isConnected && (
           <h2 className="text-base font-semibold text-foreground mb-3">Your Sell Ads</h2>
