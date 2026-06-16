@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import ChatPanel from "@/components/ChatPanel";
 import { cleanupDealAttachments } from "@/lib/dealCleanup";
-import DeployContractCard from "@/components/DeployContractCard";
+
 import BuyEscrowAdmin from "@/components/admin/BuyEscrowAdmin";
 import { ADMIN_ALLOWLIST } from "@/lib/admin";
 
@@ -131,14 +131,10 @@ const isAllowlisted = address && ADMIN_ALLOWLIST.includes(address.toLowerCase())
           <div className="flex flex-col items-center text-center mb-6">
             <XCircle className="h-12 w-12 text-destructive mb-4" />
             <p className="text-foreground font-semibold mb-1">Not the current contract owner</p>
-            <p className="text-muted-foreground text-sm">
-              You can still deploy a new escrow contract below.
-            </p>
             <p className="text-muted-foreground text-xs mt-2">
               Connected: {shortenAddress(address)}
             </p>
           </div>
-          <DeployContractCard />
           <div className="flex justify-center">
             <Link to="/">
               <Button variant="outline" size="sm" className="gap-2">
@@ -176,7 +172,6 @@ const isAllowlisted = address && ADMIN_ALLOWLIST.includes(address.toLowerCase())
           </Button>
         </div>
 
-        <DeployContractCard />
 
         {/* Stats cards */}
         <div className="grid grid-cols-2 gap-4 mb-8 sm:grid-cols-4 animate-fade-up" style={{ animationDelay: "100ms" }}>
