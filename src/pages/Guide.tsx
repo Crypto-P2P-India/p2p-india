@@ -157,7 +157,50 @@ const SECTIONS = [
       "For general questions, check the FAQ section on the homepage — it covers the most common questions about the platform.",
     ],
   },
+  {
+    id: "payment-profiles",
+    title: "Saved Payment Profiles",
+    content: [
+      "The first time you create a Sell ad with payment details (UPI ID, bank account, etc.), they're saved to your wallet's private payment profile. Next time, the fields auto-fill so you don't have to retype them.",
+      "Payment profiles are tied to your wallet address and can only be edited by signing with that wallet — same security model as usernames. No one else can read or modify them.",
+    ],
+  },
+  {
+    id: "notifications",
+    title: "Real-time Notifications & Chat",
+    content: [
+      "Every deal has a built-in real-time chat with read-receipts, typing indicators and 10 MB media attachments (images, payment screenshots, etc.). Messages auto-delete after the trade closes.",
+      "You'll get browser/app notifications for new deals, payments marked sent, releases, disputes and incoming chat messages — even when the tab is in the background. Permission is requested only after you start using the app, never on first load.",
+      "A global unread badge in the bottom nav tells you when any of your deals has new activity.",
+    ],
+  },
+  {
+    id: "mobile-app",
+    title: "Mobile App (Android)",
+    content: [
+      "Crypto P2P ships as a native Android app built with Capacitor. Download the APK from the homepage or install from the Play Store listing when available.",
+      "The mobile app supports deep-linking into installed wallet apps (OKX, MetaMask, Trust, Bitget, Binance, TokenPocket) via WalletConnect, has safe-area-aware layouts, 44px touch targets and 16px input fields (so iOS doesn't zoom in).",
+      "Push-style in-app notifications, background polling and pull-to-refresh make it feel as snappy as any chat app.",
+    ],
+  },
+  {
+    id: "news",
+    title: "Crypto News Feed",
+    content: [
+      "The News tab shows AI-curated crypto headlines, refreshed automatically. Posts older than 4 days are purged so the feed stays current.",
+      "News is informational only. Every article carries a disclaimer — we never give financial advice and you should always do your own research before trading.",
+    ],
+  },
+  {
+    id: "stats",
+    title: "Transparency & Live Stats",
+    content: [
+      "The Transparency page shows live on-chain totals: cumulative trade volume, total completed deals and active ads — all read directly from the smart contracts. Nothing is faked or stored off-chain.",
+      "You can verify every figure yourself by viewing the contract on BscScan.",
+    ],
+  },
 ];
+
 
 const Guide = () => (
   <div className="min-h-screen bg-background flex flex-col">
