@@ -1,15 +1,7 @@
 {
-<<<<<<< Updated upstream
-  "version": "1.18",
+  "version": "1.19",
   "size": "101.6 MB",
-  "apkUrl": "https://github.com/Crypto-P2P-India/p2p-india/releases/download/v1.18/crypto-p2p-v1.18.apk",
-  "notes": "Added Bitget, Binance, Bybit, TokenPocket and imToken wallets with proper mobile deep linking.",
-  "filename": "crypto-p2p-v1.18.apk"
-=======
-  "version": "1.17",
-  "size": "101.6 MB",
-  "apkUrl": "https://github.com/Crypto-P2P-India/p2p-india/releases/download/v1.17/crypto-p2p-v1.17.apk",
-  "notes": "Fixed APK download cache and versioned release filename.",
-  "filename": "crypto-p2p-v1.17.apk"
->>>>>>> Stashed changes
+  "apkUrl": "https://github.com/Crypto-P2P-India/p2p-india/releases/download/v1.19/crypto-p2p-v1.19.apk",
+  "notes": "Decimal support for BNB/USDT trades, My Ads tabs (Live/Cancelled/Completed) split by Buy & Sell, accurate 0.25% fee disclosure, and new Transparency page explaining fees and smart contract.",
+  "filename": "crypto-p2p-v1.19.apk"
 }
