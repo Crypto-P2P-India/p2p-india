@@ -1,12 +1,13 @@
 import { ExternalLink, Zap, Lock, ShieldCheck, Link2 } from "lucide-react";
+import { Link } from "react-router-dom";
 import ScrollReveal from "@/components/ScrollReveal";
 import { P2P_CONTRACT_ADDRESS } from "@/config/wagmi";
 
 const HIGHLIGHTS = [
-  { icon: Zap, title: "Zero Fees", sub: "No commissions on trades. Direct value transfer without middlemen.", glow: true },
-  { icon: Lock, title: "Non-Custodial", sub: "Your keys, your crypto. Funds only locked in transparent smart contracts." },
-  { icon: ShieldCheck, title: "Smart Escrow", sub: "Automated protection for both buyers and sellers using on-chain logic." },
-  { icon: Link2, title: "BNB Smart Chain", sub: "Fully on-chain, verifiable, and lightning-fast settlement." },
+  { icon: Zap, title: "0% Platform Fee", sub: "We charge nothing on buys or sells. You only pay tiny BSC network gas (~₹2–₹10). See full breakdown.", glow: true, href: "/transparency" },
+  { icon: Lock, title: "Non-Custodial", sub: "Your keys, your crypto. Funds only locked in transparent smart contracts.", href: "/transparency" },
+  { icon: ShieldCheck, title: "Smart Escrow", sub: "Automated protection for both buyers and sellers using on-chain logic.", href: "/transparency" },
+  { icon: Link2, title: "BNB Smart Chain", sub: "Fully on-chain, verifiable, and lightning-fast settlement.", href: "/transparency" },
 ];
 
 const STEPS = [
@@ -54,7 +55,7 @@ const LandingHero = () => (
 
           <ScrollReveal delay={140} duration={600}>
             <p className="mt-5 max-w-2xl text-sm sm:text-lg leading-relaxed text-muted-foreground">
-              Trade crypto directly with other users with zero fees. Full custody, decentralized escrow, and lightning-fast settlement.
+              Trade crypto directly with other users. <Link to="/transparency" className="text-primary hover:underline font-semibold">0% platform fee</Link> — you only pay ~₹2–₹10 BSC gas. Full custody, decentralized escrow, lightning-fast settlement.
             </p>
           </ScrollReveal>
 
@@ -84,16 +85,18 @@ const LandingHero = () => (
         <div className="mt-16 sm:mt-24 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {HIGHLIGHTS.map((h, i) => (
             <ScrollReveal key={h.title} delay={80 + i * 60} duration={500}>
-              <div className="group relative h-full overflow-hidden rounded-2xl border border-border/40 bg-card/30 backdrop-blur-sm p-5 sm:p-7 transition-all hover:border-primary/30 hover:bg-card/50">
-                {h.glow && (
-                  <div className="pointer-events-none absolute -right-4 -top-4 h-24 w-24 rounded-full bg-primary/10 blur-3xl transition-all group-hover:bg-primary/20" />
-                )}
-                <div className="relative mb-4 sm:mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <h.icon className="h-5 w-5" />
+              <Link to={h.href} className="block h-full">
+                <div className="group relative h-full overflow-hidden rounded-2xl border border-border/40 bg-card/30 backdrop-blur-sm p-5 sm:p-7 transition-all hover:border-primary/30 hover:bg-card/50">
+                  {h.glow && (
+                    <div className="pointer-events-none absolute -right-4 -top-4 h-24 w-24 rounded-full bg-primary/10 blur-3xl transition-all group-hover:bg-primary/20" />
+                  )}
+                  <div className="relative mb-4 sm:mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <h.icon className="h-5 w-5" />
+                  </div>
+                  <h3 className="relative text-base sm:text-lg font-bold text-foreground">{h.title}</h3>
+                  <p className="relative mt-1.5 text-xs sm:text-sm leading-relaxed text-muted-foreground">{h.sub}</p>
                 </div>
-                <h3 className="relative text-base sm:text-lg font-bold text-foreground">{h.title}</h3>
-                <p className="relative mt-1.5 text-xs sm:text-sm leading-relaxed text-muted-foreground">{h.sub}</p>
-              </div>
+              </Link>
             </ScrollReveal>
           ))}
         </div>

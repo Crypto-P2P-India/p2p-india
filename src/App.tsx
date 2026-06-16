@@ -12,6 +12,7 @@ import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import Guide from "./pages/Guide";
 import Profile from "./pages/Profile";
+import Transparency from "./pages/Transparency";
 
 import NotFound from "./pages/NotFound";
 import DealNotificationsHost from "@/components/DealNotificationsHost";
@@ -42,6 +43,9 @@ const App = () => (
             <Route path="/terms" element={<Terms />} />
             <Route path="/guide" element={<Guide />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/transparency" element={<Transparency />} />
+            <Route path="/how-it-works" element={<Transparency />} />
+            <Route path="/fees" element={<Transparency />} />
 
             <Route path="/privacy" element={<Privacy />} />
             <Route path="*" element={<NotFound />} />
