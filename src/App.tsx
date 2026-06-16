@@ -21,12 +21,15 @@ import DisclaimerModal from "@/components/DisclaimerModal";
 import BottomNav from "@/components/BottomNav";
 import NotificationPermission from "@/components/NotificationPermission";
 import UpdateBanner from "@/components/UpdateBanner";
+import SplashScreen from "@/components/SplashScreen";
 
 const App = () => (
   <WalletProvider>
     <TooltipProvider>
+      <SplashScreen />
       <UpdateBanner />
       <DisclaimerModal />
+
       <NotificationPermission />
       <DealNotificationsHost />
       <Toaster />
