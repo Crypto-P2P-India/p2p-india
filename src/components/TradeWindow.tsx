@@ -48,20 +48,29 @@ const TradeWindow = ({ ad, userAddress, onClose }: TradeWindowProps) => {
   const [showChat, setShowChat] = useState(false);
   const [copied, setCopied] = useState(false);
   const [dealId, setDealId] = useState<number | null>(null);
-  // Integer-only buy amount. Default to seller's minimum (or 1).
-  const minAmount = Math.max(1, Math.floor(parseFloat(ad.minFillAmount || "1") || 1));
-  const maxAmount = Math.floor(parseFloat(ad.tokenAmount) || 0);
-  const [buyAmount, setBuyAmount] = useState<string>(String(Math.min(minAmount, maxAmount || minAmount)));
+  // Decimal-aware buy amount. BNB → up to 6 decimals, USDT → up to 2 decimals.
+  const decimalsAllowed = ad.tokenSymbol?.toUpperCase() === "BNB" ? 6 : 2;
+  const stepValue = decimalsAllowed > 0 ? `0.${"0".repeat(decimalsAllowed - 1)}1` : "1";
+  const roundDown = (n: number, d: number) => Math.floor(n * 10 ** d) / 10 ** d;
+  const minAmount = Math.max(
+    parseFloat((1 / 10 ** decimalsAllowed).toFixed(decimalsAllowed)),
+    parseFloat(ad.minFillAmount || "0") || 0
+  );
+  const maxAmount = roundDown(parseFloat(ad.tokenAmount) || 0, decimalsAllowed);
+  const formatAmt = (n: number) => parseFloat(n.toFixed(decimalsAllowed)).toString();
+  const [buyAmount, setBuyAmount] = useState<string>(formatAmt(Math.min(minAmount, maxAmount || minAmount)));
   const isSeller = ad.seller.toLowerCase() === userAddress.toLowerCase();
 
-  const buyNum = parseInt(buyAmount, 10);
+  const buyNum = parseFloat(buyAmount);
   const buyNumSafe = Number.isFinite(buyNum) ? buyNum : 0;
   const priceNum = parseFloat(ad.pricePerToken) || 0;
   const buyInrTotal = useMemo(() => (buyNumSafe * priceNum).toFixed(2), [buyNumSafe, priceNum]);
+  // Validate precision: no more than allowed decimal places
+  const decimalsUsed = (buyAmount.split(".")[1] || "").length;
   const amountValid =
-    Number.isInteger(buyNumSafe) && buyNumSafe >= minAmount && buyNumSafe <= maxAmount;
+    buyNumSafe >= minAmount && buyNumSafe <= maxAmount && decimalsUsed <= decimalsAllowed;
   const payoutInr = step === "accept" ? buyInrTotal : ad.inrTotal;
-  const payoutAmount = step === "accept" ? String(buyNumSafe || minAmount) : ad.tokenAmount;
+  const payoutAmount = step === "accept" ? formatAmt(buyNumSafe || minAmount) : ad.tokenAmount;
   const timeoutMin = Math.round(ad.dealTimeout / 60);
 
   // Read nextDealId BEFORE accepting — this will be the dealId assigned
@@ -184,7 +193,7 @@ const TradeWindow = ({ ad, userAddress, onClose }: TradeWindowProps) => {
       return;
     }
     if (!amountValid) {
-      toast.error(`Enter a whole number between ${minAmount} and ${maxAmount} ${ad.tokenSymbol}`);
+      toast.error(`Enter an amount between ${minAmount} and ${maxAmount} ${ad.tokenSymbol} (max ${decimalsAllowed} decimals)`);
       return;
     }
     // Capture the nextDealId before sending the tx
@@ -195,7 +204,7 @@ const TradeWindow = ({ ad, userAddress, onClose }: TradeWindowProps) => {
       address: P2P_CONTRACT_ADDRESS,
       abi: P2P_ESCROW_ABI,
       functionName: "takeDeal",
-      args: [BigInt(ad.adId), parseUnits(String(buyNumSafe), 18)],
+      args: [BigInt(ad.adId), parseUnits(formatAmt(buyNumSafe), 18)],
     } as any);
   };
 
@@ -380,19 +389,22 @@ const TradeWindow = ({ ad, userAddress, onClose }: TradeWindowProps) => {
                     </div>
                     <div className="relative">
                       <Input
-                        type="number"
-                        inputMode="numeric"
-                        min={minAmount}
-                        max={maxAmount}
-                        step={1}
+                        type="text"
+                        inputMode="decimal"
                         value={buyAmount}
                         onChange={(e) => {
-                          // Whole numbers only — strip anything else.
-                          const v = e.target.value.replace(/[^\d]/g, "");
+                          // Allow digits + single decimal point, cap to allowed precision
+                          let v = e.target.value.replace(/[^\d.]/g, "");
+                          const firstDot = v.indexOf(".");
+                          if (firstDot !== -1) {
+                            v = v.slice(0, firstDot + 1) + v.slice(firstDot + 1).replace(/\./g, "");
+                            const [intPart, decPart = ""] = v.split(".");
+                            v = intPart + "." + decPart.slice(0, decimalsAllowed);
+                          }
                           setBuyAmount(v);
                         }}
                         onKeyDown={(e) => {
-                          if (["e", "E", "+", "-", ".", ","].includes(e.key)) e.preventDefault();
+                          if (["e", "E", "+", "-", ","].includes(e.key)) e.preventDefault();
                         }}
                         className="bg-surface-2 border-input pr-16 text-base h-11"
                         placeholder={String(minAmount)}
@@ -402,11 +414,11 @@ const TradeWindow = ({ ad, userAddress, onClose }: TradeWindowProps) => {
                       </span>
                     </div>
                     <p className="text-[11px] text-muted-foreground">
-                      Whole numbers only. Seller's minimum per trade is {minAmount} {ad.tokenSymbol}.
+                      Up to {decimalsAllowed} decimal places. Seller's minimum per trade is {minAmount} {ad.tokenSymbol}.
                     </p>
                     {!amountValid && buyAmount !== "" && (
                       <p className="text-xs text-sell">
-                        Enter a whole number between {minAmount} and {maxAmount} {ad.tokenSymbol}.
+                        Enter an amount between {minAmount} and {maxAmount} {ad.tokenSymbol} (max {decimalsAllowed} decimals).
                       </p>
                     )}
                   </div>
