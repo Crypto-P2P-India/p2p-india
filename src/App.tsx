@@ -12,6 +12,7 @@ import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import Guide from "./pages/Guide";
 import Profile from "./pages/Profile";
+import Transparency from "./pages/Transparency";
 
 import NotFound from "./pages/NotFound";
 import DealNotificationsHost from "@/components/DealNotificationsHost";
