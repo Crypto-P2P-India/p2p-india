@@ -9,9 +9,12 @@ import { toast } from "sonner";
 import { playSuccessChime, playAlertChime } from "@/lib/sounds";
 import ChatPanel from "@/components/ChatPanel";
 
+type BuyFilter = "live" | "cancelled" | "completed" | "history";
+
 interface Props {
   /** 'seller' = show deals where I locked USDT; 'buyer' = show deals on my own buy ads */
   role: "seller" | "buyer";
+  filter?: BuyFilter;
 }
 
 const shortAddr = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
@@ -27,7 +30,7 @@ const STATUS: Record<number, { label: string; color: string }> = {
   6: { label: "Resolved → Seller", color: "text-primary" },
 };
 
-const BuyDealsSection = ({ role }: Props) => {
+const BuyDealsSection = ({ role, filter = "history" }: Props) => {
   const { address } = useAccount();
   const { deals, refetch } = useBuyContractDeals();
   const { refetch: refetchAds } = useBuyContractAds();
@@ -39,11 +42,18 @@ const BuyDealsSection = ({ role }: Props) => {
   useEffect(() => { const t = setInterval(() => setNow(Math.floor(Date.now() / 1000)), 1000); return () => clearInterval(t); }, []);
 
   // Filter
-  const myDeals: LiveBuyDeal[] = address
+  const allMine: LiveBuyDeal[] = address
     ? deals.filter((d) => role === "seller"
         ? d.seller.toLowerCase() === address.toLowerCase()
         : d.buyer.toLowerCase() === address.toLowerCase())
     : [];
+
+  const myDeals = allMine.filter((d) => {
+    if (filter === "live") return d.status === 0 || d.status === 1;
+    if (filter === "completed") return d.status === 2 || d.status === 5;
+    if (filter === "cancelled") return d.status === 3 || d.status === 4 || d.status === 6;
+    return true;
+  });
 
   const { writeContract: markPaid, data: paidHash, isPending: paidPending } = useWriteContract();
   const { isSuccess: paidOk } = useWaitForTransactionReceipt({ hash: paidHash });
@@ -63,12 +73,21 @@ const BuyDealsSection = ({ role }: Props) => {
   useEffect(() => { if (dOk) { toast.info("Dispute opened. Admin will review."); playAlertChime(); setPendingId(null); refetch(); } }, [dOk]);
 
   if (myDeals.length === 0) {
+    const base = role === "seller" ? "deals you've accepted" : "deals on your buy ads";
+    const msg = filter === "live"
+      ? `No live ${base}.`
+      : filter === "completed"
+      ? `No completed ${base}.`
+      : filter === "cancelled"
+      ? `No cancelled / expired / disputed ${base}.`
+      : role === "seller" ? "You haven't accepted any buy ads yet." : "No sellers have accepted your buy ads yet.";
     return (
       <div className="rounded-lg border border-border bg-card p-6 text-center text-muted-foreground text-sm">
-        {role === "seller" ? "You haven't accepted any buy ads yet." : "No sellers have accepted your buy ads yet."}
+        {msg}
       </div>
     );
   }
+
 
   const processing = paidPending || relPending || rcPending || dPending;
 
