@@ -19,7 +19,11 @@ const STATUS_LABELS: Record<number, { label: string; color: string }> = {
   2: { label: "Expired", color: "text-sell" },
 };
 
-const MyBuyAdsList = () => {
+type BuyFilter = "live" | "cancelled" | "completed" | "history";
+
+interface Props { filter?: BuyFilter }
+
+const MyBuyAdsList = ({ filter = "history" }: Props) => {
   const { address } = useAccount();
   const { ads, refetch } = useBuyContractAds();
   const [pendingId, setPendingId] = useState<number | null>(null);
@@ -37,15 +41,29 @@ const MyBuyAdsList = () => {
     }
   }, [isSuccess]);
 
-  const myAds = address ? ads.filter(a => a.buyer.toLowerCase() === address.toLowerCase()) : [];
+  const allMine = address ? ads.filter(a => a.buyer.toLowerCase() === address.toLowerCase()) : [];
+  const myAds = allMine.filter(a => {
+    if (filter === "live") return a.status === 0;
+    if (filter === "completed") return a.status === 1;
+    if (filter === "cancelled") return a.status === 2;
+    return true;
+  });
 
   if (myAds.length === 0) {
+    const msg = filter === "live"
+      ? "No live buy ads."
+      : filter === "completed"
+      ? "No completed buy ads yet."
+      : filter === "cancelled"
+      ? "No cancelled or expired buy ads."
+      : "You haven't posted any buy ads yet.";
     return (
       <div className="rounded-lg border border-border bg-card p-6 text-center text-muted-foreground text-sm">
-        You haven't posted any buy ads yet.
+        {msg}
       </div>
     );
   }
+
 
   return (
     <div className="space-y-3">

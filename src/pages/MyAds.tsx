@@ -131,15 +131,16 @@ const MyAds = () => {
 
   const sortedAds = [...myAds].sort((a, b) => b.adId - a.adId);
   const liveAds = sortedAds.filter((a) => a.status === 0 || a.status === 1);
-  const expiredAds = sortedAds.filter((a) => a.status === 4 && parseFloat(a.tokenAmount) > 0);
-  const historyAds = sortedAds.filter(
-    (a) => a.status === 2 || a.status === 3 || (a.status === 4 && parseFloat(a.tokenAmount) <= 0)
-  );
+  const cancelledAds = sortedAds.filter((a) => a.status === 3 || a.status === 4);
+  const completedAds = sortedAds.filter((a) => a.status === 2);
 
-  const [adTab, setAdTab] = useState<"live" | "expired" | "history">("live");
+  const [adTab, setAdTab] = useState<"live" | "cancelled" | "completed" | "history">("live");
+  const [buyTab, setBuyTab] = useState<"live" | "cancelled" | "completed" | "history">("live");
   const liveCount = liveAds.length;
-  const expiredCount = expiredAds.length;
-  const historyCount = historyAds.length;
+  const cancelledCount = cancelledAds.length;
+  const completedCount = completedAds.length;
+  const historyCount = sortedAds.length;
+
 
   const isProcessing = cancelPending || sellerPending || disputePending || cancelDealPending || proposePending || cancelPropPending;
 
@@ -171,15 +172,29 @@ const MyAds = () => {
         {isConnected && (
           <section className="mb-8">
             <h2 className="text-base font-semibold text-foreground mb-3">Your Buy Ads</h2>
+            {/* Sub-tabs for buy section */}
+            <div className="flex gap-1 mb-4 border-b border-border overflow-x-auto">
+              {(["live","cancelled","completed","history"] as const).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setBuyTab(t)}
+                  className={`px-4 py-2.5 text-sm font-medium transition-colors relative whitespace-nowrap capitalize ${buyTab === t ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  {t}
+                  {buyTab === t && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />}
+                </button>
+              ))}
+            </div>
             <div className="space-y-4">
-              <MyBuyAdsList />
+              <MyBuyAdsList filter={buyTab} />
               <div>
                 <h3 className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Deals on your buy ads</h3>
-                <BuyDealsSection role="buyer" />
+                <BuyDealsSection role="buyer" filter={buyTab} />
               </div>
             </div>
           </section>
         )}
+
 
         {isConnected && (
           <h2 className="text-base font-semibold text-foreground mb-3">Your Sell Ads</h2>
@@ -210,45 +225,44 @@ const MyAds = () => {
           <>
             {/* Tabs */}
             <div className="flex gap-1 mb-6 border-b border-border overflow-x-auto">
-              <button
-                onClick={() => setAdTab("live")}
-                className={`px-4 py-2.5 text-sm font-medium transition-colors relative whitespace-nowrap ${adTab === "live" ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-              >
-                Live
-                {liveCount > 0 && <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-xs tabular-nums ${adTab === "live" ? "bg-primary/15 text-primary" : "bg-surface-3 text-muted-foreground"}`}>{liveCount}</span>}
-                {adTab === "live" && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />}
-              </button>
-              <button
-                onClick={() => setAdTab("expired")}
-                className={`px-4 py-2.5 text-sm font-medium transition-colors relative whitespace-nowrap ${adTab === "expired" ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-              >
-                Expired / Refund
-                {expiredCount > 0 && <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-xs tabular-nums ${adTab === "expired" ? "bg-sell/15 text-sell" : "bg-sell/15 text-sell"}`}>{expiredCount}</span>}
-                {adTab === "expired" && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />}
-              </button>
-              <button
-                onClick={() => setAdTab("history")}
-                className={`px-4 py-2.5 text-sm font-medium transition-colors relative whitespace-nowrap ${adTab === "history" ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-              >
-                History
-                {historyCount > 0 && <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-xs tabular-nums ${adTab === "history" ? "bg-primary/15 text-primary" : "bg-surface-3 text-muted-foreground"}`}>{historyCount}</span>}
-                {adTab === "history" && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />}
-              </button>
+              {([
+                { key: "live", label: "Live", count: liveCount, accent: "bg-primary/15 text-primary" },
+                { key: "cancelled", label: "Cancelled", count: cancelledCount, accent: "bg-sell/15 text-sell" },
+                { key: "completed", label: "Completed", count: completedCount, accent: "bg-buy/15 text-buy" },
+                { key: "history", label: "History", count: historyCount, accent: "bg-primary/15 text-primary" },
+              ] as const).map((t) => (
+                <button
+                  key={t.key}
+                  onClick={() => setAdTab(t.key)}
+                  className={`px-4 py-2.5 text-sm font-medium transition-colors relative whitespace-nowrap ${adTab === t.key ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  {t.label}
+                  {t.count > 0 && <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-xs tabular-nums ${adTab === t.key ? t.accent : "bg-surface-3 text-muted-foreground"}`}>{t.count}</span>}
+                  {adTab === t.key && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />}
+                </button>
+              ))}
             </div>
 
             {(() => {
-              const currentAds = adTab === "live" ? liveAds : adTab === "expired" ? expiredAds : historyAds;
+              const currentAds =
+                adTab === "live" ? liveAds
+                : adTab === "cancelled" ? cancelledAds
+                : adTab === "completed" ? completedAds
+                : sortedAds;
               if (currentAds.length === 0) {
                 return (
                   <div className="rounded-lg border border-border bg-card p-8 text-center text-muted-foreground text-sm">
                     {adTab === "live"
-                      ? "No live ads. Check History tab."
-                      : adTab === "expired"
-                      ? "No expired ads with unclaimed funds. 🎉"
-                      : "No completed or cancelled ads yet."}
+                      ? "No live sell ads."
+                      : adTab === "cancelled"
+                      ? "No cancelled or expired sell ads."
+                      : adTab === "completed"
+                      ? "No completed sell ads yet."
+                      : "No ads yet."}
                   </div>
                 );
               }
+
               return (
                 <div className="space-y-3">
                   {currentAds.map((ad, i) => {
