@@ -13,6 +13,7 @@ import Privacy from "./pages/Privacy";
 import Guide from "./pages/Guide";
 import Profile from "./pages/Profile";
 import Transparency from "./pages/Transparency";
+import WalletDebug from "./pages/WalletDebug";
 
 import NotFound from "./pages/NotFound";
 import DealNotificationsHost from "@/components/DealNotificationsHost";
@@ -51,6 +52,7 @@ const App = () => (
             <Route path="/fees" element={<Transparency />} />
 
             <Route path="/privacy" element={<Privacy />} />
+            <Route path="/wallet-debug" element={<WalletDebug />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <BottomNav />
