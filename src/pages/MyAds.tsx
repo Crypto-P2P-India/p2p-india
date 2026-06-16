@@ -157,10 +157,10 @@ const MyAds = () => {
           <h1 className="text-2xl font-bold text-foreground" style={{ lineHeight: "1.1" }}>My Ads</h1>
           {isConnected && (
             <div className="flex gap-2">
-              <Button onClick={() => setShowCreateBuy(true)} variant="sell" className="gap-2 shrink-0">
+              <Button onClick={() => setShowCreateBuy(true)} variant="buy" className="gap-2 shrink-0">
                 <Plus className="h-4 w-4" /> Buy Ad
               </Button>
-              <Button onClick={() => setShowCreate(true)} className="gap-2 shrink-0">
+              <Button onClick={() => setShowCreate(true)} variant="sell" className="gap-2 shrink-0">
                 <Plus className="h-4 w-4" /> Sell Ad
               </Button>
             </div>
