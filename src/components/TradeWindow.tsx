@@ -57,8 +57,7 @@ const TradeWindow = ({ ad, userAddress, onClose }: TradeWindowProps) => {
     parseFloat(ad.minFillAmount || "0") || 0
   );
   const maxAmount = roundDown(parseFloat(ad.tokenAmount) || 0, decimalsAllowed);
-  const formatAmt = (n: number) =>
-    decimalsAllowed > 0 ? parseFloat(n.toFixed(decimalsAllowed)).toString() : String(Math.floor(n));
+  const formatAmt = (n: number) => parseFloat(n.toFixed(decimalsAllowed)).toString();
   const [buyAmount, setBuyAmount] = useState<string>(formatAmt(Math.min(minAmount, maxAmount || minAmount)));
   const isSeller = ad.seller.toLowerCase() === userAddress.toLowerCase();
 
