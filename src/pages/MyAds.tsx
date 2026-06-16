@@ -131,15 +131,16 @@ const MyAds = () => {
 
   const sortedAds = [...myAds].sort((a, b) => b.adId - a.adId);
   const liveAds = sortedAds.filter((a) => a.status === 0 || a.status === 1);
-  const expiredAds = sortedAds.filter((a) => a.status === 4 && parseFloat(a.tokenAmount) > 0);
-  const historyAds = sortedAds.filter(
-    (a) => a.status === 2 || a.status === 3 || (a.status === 4 && parseFloat(a.tokenAmount) <= 0)
-  );
+  const cancelledAds = sortedAds.filter((a) => a.status === 3 || a.status === 4);
+  const completedAds = sortedAds.filter((a) => a.status === 2);
 
-  const [adTab, setAdTab] = useState<"live" | "expired" | "history">("live");
+  const [adTab, setAdTab] = useState<"live" | "cancelled" | "completed" | "history">("live");
+  const [buyTab, setBuyTab] = useState<"live" | "cancelled" | "completed" | "history">("live");
   const liveCount = liveAds.length;
-  const expiredCount = expiredAds.length;
-  const historyCount = historyAds.length;
+  const cancelledCount = cancelledAds.length;
+  const completedCount = completedAds.length;
+  const historyCount = sortedAds.length;
+
 
   const isProcessing = cancelPending || sellerPending || disputePending || cancelDealPending || proposePending || cancelPropPending;
 
