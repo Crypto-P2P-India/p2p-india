@@ -1,12 +1,13 @@
 import { ExternalLink, Zap, Lock, ShieldCheck, Link2 } from "lucide-react";
+import { Link } from "react-router-dom";
 import ScrollReveal from "@/components/ScrollReveal";
 import { P2P_CONTRACT_ADDRESS } from "@/config/wagmi";
 
 const HIGHLIGHTS = [
-  { icon: Zap, title: "Zero Fees", sub: "No commissions on trades. Direct value transfer without middlemen.", glow: true },
-  { icon: Lock, title: "Non-Custodial", sub: "Your keys, your crypto. Funds only locked in transparent smart contracts." },
-  { icon: ShieldCheck, title: "Smart Escrow", sub: "Automated protection for both buyers and sellers using on-chain logic." },
-  { icon: Link2, title: "BNB Smart Chain", sub: "Fully on-chain, verifiable, and lightning-fast settlement." },
+  { icon: Zap, title: "0% Platform Fee", sub: "We charge nothing on buys or sells. You only pay tiny BSC network gas (~₹2–₹10). See full breakdown.", glow: true, href: "/transparency" },
+  { icon: Lock, title: "Non-Custodial", sub: "Your keys, your crypto. Funds only locked in transparent smart contracts.", href: "/transparency" },
+  { icon: ShieldCheck, title: "Smart Escrow", sub: "Automated protection for both buyers and sellers using on-chain logic.", href: "/transparency" },
+  { icon: Link2, title: "BNB Smart Chain", sub: "Fully on-chain, verifiable, and lightning-fast settlement.", href: "/transparency" },
 ];
 
 const STEPS = [
