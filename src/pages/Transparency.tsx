@@ -76,10 +76,10 @@ const Transparency = () => {
         {/* FEES */}
         <Section icon={Coins} title="Fees — exactly what you pay">
           <div className="grid sm:grid-cols-2 gap-3">
-            <div className="rounded-lg border border-buy/30 bg-buy/5 p-4">
+            <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
               <div className="flex items-center gap-2 mb-2"><Pill tone="buy">Platform fee</Pill></div>
-              <p className="text-2xl font-bold text-buy">0%</p>
-              <p className="text-xs mt-1">We charge <b>nothing</b> on either side. Buyers and sellers receive the exact INR / USDT amount shown in the deal. No spread, no commission, no withdrawal fee.</p>
+              <p className="text-2xl font-bold text-primary">0.25% total</p>
+              <p className="text-xs mt-1"><b>0.15%</b> from the ad <b>creator</b> + <b>0.10%</b> from the <b>acceptor</b>. Charged in USDT/BNB on-chain, <b>only when the deal completes successfully</b>. Cancelled, expired, or disputed-back-to-original-owner deals → fee is <b>fully refunded</b>.</p>
             </div>
             <div className="rounded-lg border border-sell/20 bg-sell/5 p-4">
               <div className="flex items-center gap-2 mb-2"><Pill tone="sell">Network gas</Pill></div>
@@ -88,42 +88,53 @@ const Transparency = () => {
             </div>
           </div>
 
+          <div className="rounded-lg border border-border bg-surface-1 p-4 space-y-2 text-xs">
+            <h4 className="text-foreground font-semibold text-sm">How the 0.25% fee works</h4>
+            <ul className="list-disc pl-4 space-y-1.5">
+              <li><b>Ad creator (0.15%)</b> — locked upfront together with the trade amount when the ad is posted. If the ad is cancelled or never accepted, the full 0.15% is returned with the principal.</li>
+              <li><b>Deal acceptor (0.10%)</b> — locked upfront when the deal is opened. If the deal expires, is cancelled, or resolved back to the acceptor, the 0.10% is returned.</li>
+              <li><b>Trigger</b> — fees are deducted by the contract only at the moment of successful release (seller calls <code className="text-primary">confirmReceived()</code> / <code className="text-primary">release()</code>).</li>
+              <li><b>Worked example</b> — 100 USDT deal: creator deposits 100.15 USDT, acceptor deposits 100.10 USDT. On success → 0.25 USDT goes to platform, both sides receive their net trade amount. On failure → both get every cent back.</li>
+            </ul>
+          </div>
+
           <div>
-            <h4 className="text-foreground font-semibold mb-2">When gas is paid (per action)</h4>
+            <h4 className="text-foreground font-semibold mb-2">When fees & gas apply (per action)</h4>
             <div className="rounded-lg border border-border overflow-hidden">
               <table className="w-full text-xs">
                 <thead className="bg-surface-2 text-muted-foreground">
                   <tr>
                     <th className="text-left p-2.5">Who</th>
                     <th className="text-left p-2.5">Action</th>
-                    <th className="text-left p-2.5">Pays gas?</th>
+                    <th className="text-left p-2.5">Gas?</th>
                     <th className="text-left p-2.5">Platform fee?</th>
                   </tr>
                 </thead>
                 <tbody className="text-foreground">
                   {[
-                    ["Seller", "Create sell ad (locks USDT)", "Yes", "No"],
-                    ["Seller", "Cancel ad (unlocks USDT)", "Yes", "No"],
-                    ["Seller", "Release USDT to buyer", "Yes", "No"],
-                    ["Seller", "Reclaim expired deal", "Yes", "No"],
-                    ["Buyer", "Accept ad / open deal", "Yes", "No"],
-                    ["Buyer", "Create buy ad (locks USDT-equivalent reserve)", "Yes", "No"],
+                    ["Seller", "Create sell ad (locks USDT + 0.15% fee)", "Yes", "0.15% locked, refunded if not used"],
+                    ["Seller", "Cancel ad (unlocks USDT)", "Yes", "0.15% refunded"],
+                    ["Seller", "Release USDT to buyer (success)", "Yes", "0.15% taken now"],
+                    ["Seller", "Reclaim expired deal", "Yes", "0.15% refunded"],
+                    ["Buyer", "Accept ad / open deal (locks 0.10% fee)", "Yes", "0.10% locked, refunded if not used"],
+                    ["Buyer", "Create buy ad (locks reserve + 0.15% fee)", "Yes", "0.15% locked, refunded if not used"],
                     ["Buyer", "Mark paid", "Yes", "No"],
-                    ["Buyer", "Cancel deal (only if seller agrees / timeout)", "Yes", "No"],
-                    ["Either", "Open dispute", "Yes", "No"],
+                    ["Buyer", "Cancel deal (timeout / mutual)", "Yes", "0.10% refunded"],
+                    ["Acceptor", "On successful release", "—", "0.10% taken now"],
+                    ["Either", "Open dispute", "Yes", "Fee only moves if dispute is resolved"],
                     ["Either", "Chat / send images", "No (off-chain)", "No"],
                   ].map((r, i) => (
                     <tr key={i} className="border-t border-border">
                       <td className="p-2.5">{r[0]}</td>
                       <td className="p-2.5">{r[1]}</td>
                       <td className="p-2.5">{r[2]}</td>
-                      <td className="p-2.5"><span className="text-buy font-semibold">{r[3]}</span></td>
+                      <td className="p-2.5"><span className="text-primary font-semibold">{r[3]}</span></td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            <p className="text-[11px] mt-2">Gas estimates assume 1 BNB ≈ ₹50,000 and typical BSC gwei pricing. Actual cost shown by your wallet at signing.</p>
+            <p className="text-[11px] mt-2">Gas estimates assume 1 BNB ≈ ₹50,000 and typical BSC gwei pricing. Actual cost shown by your wallet at signing. Platform fee is enforced by the smart contract — we cannot change it per-deal or take more than 0.25% total.</p>
           </div>
         </Section>
 

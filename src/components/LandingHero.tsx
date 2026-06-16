@@ -4,7 +4,7 @@ import ScrollReveal from "@/components/ScrollReveal";
 import { P2P_CONTRACT_ADDRESS } from "@/config/wagmi";
 
 const HIGHLIGHTS = [
-  { icon: Zap, title: "0% Platform Fee", sub: "We charge nothing on buys or sells. You only pay tiny BSC network gas (~₹2–₹10). See full breakdown.", glow: true, href: "/transparency" },
+  { icon: Zap, title: "0.25% Total Fee", sub: "0.15% from ad creator + 0.10% from acceptor — charged only on successful deals, fully refunded if the trade fails. See full breakdown.", glow: true, href: "/transparency" },
   { icon: Lock, title: "Non-Custodial", sub: "Your keys, your crypto. Funds only locked in transparent smart contracts.", href: "/transparency" },
   { icon: ShieldCheck, title: "Smart Escrow", sub: "Automated protection for both buyers and sellers using on-chain logic.", href: "/transparency" },
   { icon: Link2, title: "BNB Smart Chain", sub: "Fully on-chain, verifiable, and lightning-fast settlement.", href: "/transparency" },
@@ -55,7 +55,7 @@ const LandingHero = () => (
 
           <ScrollReveal delay={140} duration={600}>
             <p className="mt-5 max-w-2xl text-sm sm:text-lg leading-relaxed text-muted-foreground">
-              Trade crypto directly with other users. <Link to="/transparency" className="text-primary hover:underline font-semibold">0% platform fee</Link> — you only pay ~₹2–₹10 BSC gas. Full custody, decentralized escrow, lightning-fast settlement.
+              Trade crypto directly with other users. <Link to="/transparency" className="text-primary hover:underline font-semibold">0.25% total fee</Link> (0.15% creator + 0.10% acceptor) — only on successful deals, refunded if cancelled. Plus ~₹2–₹10 BSC gas.
             </p>
           </ScrollReveal>
 
