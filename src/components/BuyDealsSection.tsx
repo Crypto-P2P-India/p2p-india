@@ -164,7 +164,9 @@ const BuyDealsSection = ({ role, filter = "history" }: Props) => {
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {role === "seller"
-                      ? `Wait for buyer to send ₹${d.inrAmount}, then release USDT.`
+                      ? d.status === 4
+                        ? `Deal is disputed, but you can still release USDT to the buyer if you received ₹${d.inrAmount}.`
+                        : `Wait for buyer to send ₹${d.inrAmount}, then release USDT.`
                       : `Send exactly ₹${d.inrAmount} to the buyer (yourself) — wait, you ARE the buyer. Verify the seller has accepted, then mark paid after sending INR.`}
                   </p>
                 </div>
@@ -179,8 +181,8 @@ const BuyDealsSection = ({ role, filter = "history" }: Props) => {
                     I've Sent ₹{d.inrAmount} — Mark Paid
                   </Button>
                 )}
-                {/* Seller release */}
-                {role === "seller" && d.status === 1 && (
+                {/* Seller release — allowed while Paid or Disputed */}
+                {role === "seller" && canSellerRelease && (
                   <Button variant="buy" size="sm" disabled={processing} onClick={() => { setPendingId(d.dealId); release({ address: BUY_ESCROW_ADDRESS, abi: BUY_ESCROW_ABI, functionName: "release", args: [BigInt(d.dealId)] } as any); }}>
                     {relPending && pendingId === d.dealId ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <CheckCircle2 className="h-3 w-3 mr-1" />}
                     I Received ₹{d.inrAmount} — Release USDT
