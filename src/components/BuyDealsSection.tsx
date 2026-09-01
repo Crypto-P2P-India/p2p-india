@@ -99,10 +99,11 @@ const BuyDealsSection = ({ role, filter = "history" }: Props) => {
     <div className="space-y-3">
       {myDeals.sort((a, b) => b.dealId - a.dealId).map((d, i) => {
         const st = STATUS[d.status] || STATUS[0];
-        const isActive = d.status === 0 || d.status === 1;
+        const isActive = d.status === 0 || d.status === 1 || d.status === 4;
         const timeLeft = d.paymentDeadline - now;
         const isTimedOut = timeLeft <= 0 && d.status === 0;
         const canDisputeAfterPay = d.status === 1 && d.markedPaidAt > 0 && now > d.markedPaidAt + 15 * 60;
+        const canSellerRelease = d.status === 1 || d.status === 4;
 
         return (
           <div key={d.dealId} className="rounded-lg border border-border bg-card overflow-hidden animate-fade-up" style={{ animationDelay: `${i * 60}ms` }}>
